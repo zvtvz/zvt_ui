@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background-color: #f8f8f8 !important;
+  font-size: 14px;
+  /* background: radial-gradient(
+    farthest-corner circle at 0% 0%,
+    #f3f6f9 0%,
+    #ebf5ff 100%
+  ); */
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+li::marker {
+  margin-inline-end: 6px !important;
+}
+
+.text-right > input {
+  text-align: right;
+}
+
+.header {
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+}
+
+.joy-pvuyop-JoyCard-root {
+  background-color: #fff !important;
+}
