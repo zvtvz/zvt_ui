@@ -1,10 +1,15 @@
 'use client';
 
+import services from '@/services';
+import { toMoney, toTradePercent } from '@/utils';
+import { useRequest } from 'ahooks';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function Header() {
   const pathname = usePathname();
+  const { data } = useRequest(services.getTimeMessage);
+
   const activeCls = (name: string) =>
     pathname.startsWith(name) ? '!border-[#0d6efd]' : '';
   return (
@@ -12,6 +17,7 @@ export default function Header() {
       <div className="w-container mx-auto h-14 flex flex-row justify-between font-bold">
         <div className="text-2xl leading-14">ZVT</div>
         <div className="flex flex-row justify-end items-center h-full ">
+          <div className="text-sm font-normal mr-8">{data?.message}</div>
           <div
             className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
               '/trade'

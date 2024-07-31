@@ -48,3 +48,8 @@ li::marker {
 .joy-pvuyop-JoyCard-root {
   background-color: #fff !important;
 }
+
+.w-container {
+  max-width: 1600px;
+  min-width: 1366px;
+}

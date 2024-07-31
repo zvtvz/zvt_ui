@@ -1,4 +1,9 @@
-import { useAsyncEffect, useSetState, useUnmountedRef } from 'ahooks';
+import {
+  useAsyncEffect,
+  useRequest,
+  useSetState,
+  useUnmountedRef,
+} from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
 import services from '@/services';
 import { getDate } from '@/utils';
@@ -62,6 +67,10 @@ export default function useData() {
   });
   const unmountedRef = useUnmountedRef();
 
+  const { data: dailyStats } = useRequest(services.getDailyQuoteStats, {
+    pollingInterval: 1000 * 60,
+  });
+
   const updatePool = async (pool: Pool) => {
     const { stock_pool_name, main_tags, global_tags } = settingRef.current;
 
@@ -80,7 +89,7 @@ export default function useData() {
     // 优先使用pool stats中的tags
     if (poolTags.length > 0) {
       displayTags = poolTags;
-    } else if (stock_pool_name == pool.stock_pool_name && main_tags.length) {
+    } else if (main_tags.length) {
       displayTags = main_tags.map((name: string) =>
         global_tags.find((tag: any) => tag.tag === name)
       );
@@ -220,8 +229,14 @@ export default function useData() {
       stock_pool_name: pool?.stock_pool_name,
       main_tags: newTags.map((t) => t.tag),
     });
+
+    const sortedTags = statses.map((stats: any) =>
+      newTags.find((tag) => tag.tag === stats.main_tag)
+    );
+
+    // tags 根据 status进行排序
     setTags({
-      data: newTags,
+      data: sortedTags,
       statses,
     });
 
@@ -243,8 +258,8 @@ export default function useData() {
         });
     }, 5000);
 
-    if (!newTags.find((t) => t.id === tags.current?.id)) {
-      changeActiveTag(newTags[0], pool);
+    if (!sortedTags.find((t: any) => t.id === tags.current?.id)) {
+      changeActiveTag(sortedTags[0], pool);
     }
   };
 
@@ -262,7 +277,7 @@ export default function useData() {
   const changeSort = async (field: string, type: string) => {
     sortRef.current.field = field;
     sortRef.current.type = type;
-    await changeActiveTag(tags.current as any);
+    await changeActiveTag(tags.current as any, pools.current);
   };
 
   useAsyncEffect(async () => {
@@ -304,5 +319,6 @@ export default function useData() {
     selectStock,
     checkStock,
     checkAllStock,
+    dailyStats,
   };
 }

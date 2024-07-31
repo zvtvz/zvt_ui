@@ -9,14 +9,14 @@ export function getDate(date?: any) {
   return dayjs(date).format('YYYY-MM-DD');
 }
 
-export function toMoney(value: number) {
+export function toMoney(value: number, digits = 2) {
   value = value || 0;
   if (value >= 10000 * 10000) {
-    return (value / (10000 * 10000)).toFixed(2) + '亿';
+    return (value / (10000 * 10000)).toFixed(digits) + '亿';
   }
 
   if (value >= 10000) {
-    return (value / 10000).toFixed(2) + '万';
+    return (value / 10000).toFixed(digits) + '万';
   }
 
   return value;

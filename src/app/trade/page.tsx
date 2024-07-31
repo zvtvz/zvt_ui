@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import useData from './useData';
 import TagsDialog from './TagsDialog';
 import { useState } from 'react';
+import cls from 'classnames';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
 
 import NewsAnalysises from './NewsAnalysises';
@@ -40,6 +41,7 @@ export default function Workspace() {
     selectStock,
     checkStock,
     checkAllStock,
+    dailyStats,
   } = useData();
   const router = useRouter();
   const [open, setOpen] = useState<any>({
@@ -66,18 +68,44 @@ export default function Workspace() {
 
   return (
     <>
-      <div className="flex flex-row">
-        {pools.data?.map((pool, index) => (
-          <div
-            key={index}
-            className={`mr-4 px-2 text-[14px] h-6 cursor-pointer hover:text-[#416df9] rounded-md ${
-              pools.current?.id === pool.id && 'bg-[rgba(65,109,249,.1)]'
-            }`}
-            onClick={() => changePool(pool.id)}
-          >
-            {pool.stock_pool_name}
+      <div className="mb-2 pl-2">
+        {dailyStats && (
+          <div className="text-sm border-b pb-2 ">
+            <span>涨跌停:</span>
+            <span className="text-red-600">{dailyStats.limit_up_count}</span>/
+            <span className="text-green-600">
+              {dailyStats.limit_down_count}
+            </span>
+            <span className="ml-6">涨跌比:</span>
+            <span className="text-red-600">{dailyStats.up_count}</span>/
+            <span className="text-green-600">{dailyStats.down_count}</span>
+            <span className="ml-6">
+              平均涨幅:{toTradePercent(dailyStats.change_pct)}
+            </span>
+            <span className="ml-6">
+              交易量:{toMoney(dailyStats.turnover, 0)}
+            </span>
+            <span className="ml-6 mr-2">
+              同比{dailyStats.turnover_change > 0 ? '放量' : '缩量'}:
+              {toMoney(dailyStats.turnover_change, 0)}
+            </span>
           </div>
-        ))}
+        )}
+      </div>
+      <div className="flex flex-row justify-between">
+        <div className="flex flex-row">
+          {pools.data?.map((pool, index) => (
+            <div
+              key={index}
+              className={`mr-4 px-2 text-[14px] h-6 cursor-pointer hover:text-[#416df9] rounded-md ${
+                pools.current?.id === pool.id && 'bg-[rgba(65,109,249,.1)]'
+              }`}
+              onClick={() => changePool(pool.id)}
+            >
+              {pool.stock_pool_name}
+            </div>
+          ))}
+        </div>
       </div>
       <div className="flex flex-row justify-between my-2 mt-2 ">
         <div className="flex flex-row flex-nowrap flex-grow overflow-x-auto pt-2 py-3 h-[60px] ">
@@ -167,14 +195,14 @@ export default function Workspace() {
       </div>
       <div className="flex flex-row items-start justify-between mt-0 mb-2">
         <Card
-          className="w-[1000px] overflow-auto relative min-h-[1000px]"
+          className=" flex-grow overflow-auto relative min-h-[1000px] mr-4"
           size="sm"
           variant="plain"
         >
           <Stocks {...stocksProps} />
         </Card>
         <Card
-          className="w-[358px] !sticky !top-[56px] "
+          className="w-[500px] !sticky !top-[56px] flex-shrink-0 "
           size="sm"
           variant="plain"
         >
