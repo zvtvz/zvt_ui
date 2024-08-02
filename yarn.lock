@@ -2199,6 +2199,11 @@ keyv@^4.5.3:
   dependencies:
     json-buffer "3.0.1"
 
+klinecharts@^9.8.10:
+  version "9.8.10"
+  resolved "https://npm-int.fiture.com/klinecharts/-/klinecharts-9.8.10.tgz#cc177e8a016e265e36c5a1a47ff4a5ba07f4d225"
+  integrity sha512-4h0u749uprwaw8CifpegpjHzHnw/I9VTYb2wkUtBQqWnUPvxS4IpkkyMAwPcYbuzXWoqfqFGO02sRd3QDW4sbQ==
+
 language-subtag-registry@^0.3.20:
   version "0.3.22"
   resolved "https://registry.npmmirror.com/language-subtag-registry/-/language-subtag-registry-0.3.22.tgz#2e1500861b2e457eba7e7ae86877cbd08fa1fd1d"

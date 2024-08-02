@@ -10,16 +10,17 @@ export function getDate(date?: any) {
 }
 
 export function toMoney(value: number, digits = 2) {
-  value = value || 0;
+  const sign = Math.sign(value);
+  value = Math.abs(value || 0);
   if (value >= 10000 * 10000) {
-    return (value / (10000 * 10000)).toFixed(digits) + '亿';
+    return ((sign * value) / (10000 * 10000)).toFixed(digits) + '亿';
   }
 
   if (value >= 10000) {
-    return (value / 10000).toFixed(digits) + '万';
+    return ((sign * value) / 10000).toFixed(digits) + '万';
   }
 
-  return value;
+  return sign * value;
 }
 
 export function toPercent(value: number, nx = 2) {

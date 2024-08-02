@@ -1,9 +1,17 @@
-import { Card, Typography, Select, Option } from '@mui/joy';
+import {
+  Card,
+  Typography,
+  Select,
+  Option,
+  ToggleButtonGroup,
+  Button,
+} from '@mui/joy';
 import { useAsyncEffect } from 'ahooks';
 import { useState, useRef, useEffect } from 'react';
 import * as echarts from 'echarts';
 import services from '@/services';
 import dayjs from 'dayjs';
+import { init, dispose, registerIndicator } from 'klinecharts';
 
 type Props = {
   entityId: string;
@@ -32,94 +40,159 @@ const upBorderColor = '#8A0000';
 const downColor = '#00da3c';
 const downBorderColor = '#008F28';
 
-export default function CandlestickChartDom({ entityId }: Props) {
-  const [factors, setFactors] = useState([]);
-  const [kdata, setKdata] = useState<KData>();
-  const [factorResults, setFactorResults] = useState<FactorResult[]>([]);
-  const [selectedFactor, setSelectedFactor] = useState<string>();
+const chartStyleType = {
+  kline: 'candle_solid',
+  ts: 'area',
+} as any;
 
-  const chartContainer = useRef<HTMLDivElement>(null);
+const chartCustomTooltips = {
+  kline: [
+    { title: '', value: '{time}' },
+    { title: '开', value: '{open}' },
+    { title: '高', value: '{high}' },
+    { title: '低', value: '{low}' },
+    { title: '收', value: '{close}' },
+    { title: '量', value: '{volume}' },
+  ],
+  ts: [
+    { title: '', value: '{time}' },
+    { title: '价', value: '{close}' },
+    { title: '均', value: '{low}' },
+    { title: '量', value: '{volume}' },
+    { title: '幅', value: '{open}' },
+  ],
+} as any;
+
+export default function CandlestickChartDom({ entityId }: Props) {
+  const [chartType, setChartType] = useState('kline');
   const chartRef = useRef<any>();
 
-  useEffect(() => {
-    chartRef.current = echarts.init(chartContainer.current, {});
-  }, []);
-
   useAsyncEffect(async () => {
-    const [kdata] = await services.getKData({ entity_ids: [entityId] });
+    if (chartType === 'kline') {
+      const [kdata] = await services.getKData({ entity_ids: [entityId] });
+      const datas = kdata.datas.map((item: any) => {
+        return {
+          close: item[4],
+          high: item[2],
+          low: item[3],
+          open: item[1],
+          timestamp: item[0] * 1000,
+          volume: item[5],
+        };
+      });
+      chartRef.current.applyNewData(datas);
+      chartRef.current.overrideIndicator({
+        name: 'MA',
+        showName: 'MA',
+        visible: true,
+      });
+      chartRef.current.overrideIndicator({
+        name: 'VOL',
+        showName: 'VOL',
+        visible: true,
+      });
+      chartRef.current.overrideIndicator({
+        name: 'TS_MA',
+        showName: 'TS_MA',
+        visible: false,
+      });
+    } else {
+      const [result] = await services.getTData({
+        entity_ids: [entityId],
+        data_provider: 'qmt',
+        days_count: 5,
+      });
+      const datas = result.datas.map((item: any) => {
+        return {
+          close: item[1],
+          high: item[2],
+          avg_price: item[2],
+          low: item[2],
+          open: item[3],
+          timestamp: item[0],
+          volume: item[4],
+          turnover: item[5],
+          change_pct: item[3],
+          turnover_rate: item[6],
+        };
+      });
+      chartRef.current.applyNewData(datas);
+      chartRef.current.overrideIndicator({
+        name: 'MA',
+        showName: 'MA',
+        visible: false,
+      });
+      chartRef.current.overrideIndicator({
+        name: 'VOL',
+        showName: 'VOL',
+        visible: false,
+      });
+      chartRef.current.overrideIndicator({
+        name: 'TS_MA',
+        showName: 'TS_MA',
+        visible: true,
+      });
+    }
 
-    const dates = kdata.datas.map((x: any) =>
-      dayjs(x[0] * 1000).format('YYYY-MM-DD')
-    );
-    const values = kdata.datas.map((x: any) => x.slice(1));
-
-    chartRef.current.setOption({
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross',
+    chartRef.current.setStyles({
+      candle: {
+        type: chartStyleType[chartType],
+        tooltip: {
+          custom: chartCustomTooltips[chartType],
         },
       },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        axisLine: { onZero: false },
-        splitLine: { show: false },
-        min: 'dataMin',
-        max: 'dataMax',
-        data: dates,
-      },
-      yAxis: {
-        scale: true,
-        splitArea: {
-          show: true,
-        },
-      },
-      dataZoom: [
-        // {
-        //   type: 'inside',
-        //   start: 90,
-        //   end: 100,
-        // },
-        {
-          show: true,
-          type: 'slider',
-          top: '90%',
-          start: 50,
-          end: 100,
-        },
-      ],
-      series: [
-        {
-          name: '日K',
-          type: 'candlestick',
-          data: values,
-          top: 0,
-          itemStyle: {
-            // color: upColor,
-            // color0: downColor,
-            // borderColor: upBorderColor,
-            // borderColor0: downBorderColor,
-          },
-          // markPoint: {
-          //   label: {
-          //     formatter: function (param: Record<string, any>) {
-          //       return param.name;
-          //     },
-          //     color: '#fff',
-          //   },
-          //   data: marks,
-          // },
-        },
-      ],
     });
-    chartRef.current.render();
-  }, [entityId]);
+  }, [entityId, chartType]);
+
+  useEffect(() => {
+    registerIndicator({
+      name: 'TS_MA',
+      figures: [{ key: 'MA', title: 'MA: ', type: 'line' }],
+      calc: (kLineDataList) => {
+        return kLineDataList.map((kLineData, i) => {
+          return {
+            MA: kLineData.avg_price,
+          };
+        });
+      },
+    });
+
+    chartRef.current = init('k-line-chart');
+    // 均线图
+    chartRef.current.createIndicator('MA', false, { id: 'candle_pane' });
+    chartRef.current.createIndicator('TS_MA', false, { id: 'candle_pane' });
+    chartRef.current.createIndicator('VOL');
+
+    return () => {
+      dispose('k-line-chart');
+    };
+  }, []);
 
   return (
     <div className="mb-4">
-      <div className="text-sm font-bold opacity-85 h-0">K线图</div>
-      <div ref={chartContainer} className="h-[350px]"></div>
+      <div className="text-sm font-bold opacity-85 py-1 ">
+        <ToggleButtonGroup
+          size="sm"
+          value={chartType}
+          onChange={(event, value) => setChartType(value as string)}
+        >
+          <Button
+            value="kline"
+            size="sm"
+            className="!text-xs !leading-4 !min-h-[24px] !px-2 !font-normal"
+          >
+            K线图
+          </Button>
+          <Button
+            value="ts"
+            size="sm"
+            className="!text-xs !leading-4 !min-h-[24px] !px-2 !font-normal"
+          >
+            分时图
+          </Button>
+        </ToggleButtonGroup>
+      </div>
+      <div id="k-line-chart" className="h-[350px]"></div>
     </div>
   );
 }

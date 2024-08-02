@@ -24,7 +24,6 @@ const apis = {
   getTagsStats: '/api/trading/query_tag_quotes',
 
   getFactors: 'GET /api/factor/get_factors',
-  getKData: '/api/trading/query_kdata',
   getFactorResult: '/api/factor/query_factor_result',
 
   getPoolSetting: 'GET /api/trading/get_query_stock_quote_setting',
@@ -41,6 +40,9 @@ const apis = {
   getStockTagOptions: 'GET /api/work/get_stock_tag_options',
   getTimeMessage: 'GET /api/misc/time_message',
   getDailyQuoteStats: 'GET /api/trading/get_quote_stats',
+
+  getKData: '/api/trading/query_kdata',
+  getTData: '/api/trading/query_ts',
 } as const;
 
 const instance = createInstance<keyof typeof apis>({

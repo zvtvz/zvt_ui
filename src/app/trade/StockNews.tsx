@@ -17,7 +17,7 @@ export default function StockNews({ loading, stocks, dialog }: Props) {
 
   return (
     <>
-      <Typography className="border-b !pb-2 !mb-2 " level="title-sm">
+      <div className="border-b !pb-2 !mb-2 font-bold">
         <div className="flex flex-row justify-between items-center">
           <div>
             <span className="mr-1">{stocks.current?.name}</span>
@@ -31,7 +31,7 @@ export default function StockNews({ loading, stocks, dialog }: Props) {
             更新标签
           </Button>
         </div>
-      </Typography>
+      </div>
       {stocks.current && (
         <CandlestickChart entityId={stocks.current?.entity_id} />
       )}
