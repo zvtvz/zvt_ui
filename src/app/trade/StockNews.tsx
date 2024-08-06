@@ -5,6 +5,7 @@ import { Button, Typography } from '@mui/joy';
 import TagUpdateDialog from './TagUpdateDialog';
 import { useState } from 'react';
 import CandlestickChart from './CandlestickChart';
+import StockChart from './StockChart';
 
 type Props = {
   loading: any;
@@ -33,7 +34,7 @@ export default function StockNews({ loading, stocks, dialog }: Props) {
         </div>
       </div>
       {stocks.current && (
-        <CandlestickChart entityId={stocks.current?.entity_id} />
+        <StockChart entityId={stocks.current?.entity_id} />
       )}
       <Loading loading={loading.events} fixedTop={100}>
         <>
