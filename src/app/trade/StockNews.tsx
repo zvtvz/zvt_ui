@@ -11,9 +11,15 @@ type Props = {
   loading: any;
   stocks: any;
   dialog: any;
+  refreshNews: () => any;
 };
 
-export default function StockNews({ loading, stocks, dialog }: Props) {
+export default function StockNews({
+  loading,
+  stocks,
+  dialog,
+  refreshNews,
+}: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -33,14 +39,17 @@ export default function StockNews({ loading, stocks, dialog }: Props) {
           </Button>
         </div>
       </div>
-      {stocks.current && (
-        <StockChart entityId={stocks.current?.entity_id} />
-      )}
+      {stocks.current && <StockChart entityId={stocks.current?.entity_id} />}
       <Loading loading={loading.events} fixedTop={100}>
         <>
           <Events title="利好事件" events={stocks.events?.good_events} />
           <Events title="利空事件" events={stocks.events?.bad_events} />
-          <News title="新闻" news={stocks.events?.news} dialog={dialog} />
+          <News
+            title="新闻"
+            news={stocks.events?.news}
+            dialog={dialog}
+            refreshNews={refreshNews}
+          />
         </>
       </Loading>
       {open && (

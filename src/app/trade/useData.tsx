@@ -175,6 +175,20 @@ export default function useData() {
     }
   };
 
+  const updateStockEvents = async () => {
+    setLoading({ events: true });
+    try {
+      const events = await services.getStockEvents({
+        entity_id: stocks.current.entity_id,
+      });
+      setStocks({
+        events,
+      });
+    } finally {
+      setLoading({ events: false });
+    }
+  };
+
   const checkStock = (stock: any, isChecked: boolean) => {
     if (isChecked) {
       setStocks({
@@ -320,5 +334,6 @@ export default function useData() {
     checkStock,
     checkAllStock,
     dailyStats,
+    updateStockEvents,
   };
 }

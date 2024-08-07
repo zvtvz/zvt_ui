@@ -5,21 +5,39 @@ export default function useDialog() {
     title: '',
     content: '',
     open: false,
+    onOk() {},
+    onCancel() {},
   });
 
-
-  const show = ({ title, content }: { title: string; content?: string }) => {
+  const show = ({
+    title,
+    content,
+    onOk = () => {},
+    onCancel = () => {},
+  }: {
+    title: string;
+    content?: string;
+    onOk(): void;
+    onCancel?: () => void;
+  }) => {
     setDialog({
       title,
       content: content || '',
       open: true,
+      onOk,
+      onCancel,
     });
   };
 
-  const close = () => {
+  const close = (isOk: boolean) => {
     setDialog({
       open: false,
     });
+    if (isOk) {
+      dialog.onOk();
+    } else {
+      dialog.onCancel();
+    }
   };
 
   return {

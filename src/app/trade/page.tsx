@@ -42,6 +42,7 @@ export default function Workspace() {
     checkStock,
     checkAllStock,
     dailyStats,
+    updateStockEvents,
   } = useData();
   const router = useRouter();
   const [open, setOpen] = useState<any>({
@@ -49,6 +50,7 @@ export default function Workspace() {
     buy: false,
   });
   const dialog = useDialog();
+  const confirmDialog = useDialog();
 
   const handleSaveSetting = async () => {
     await saveSetting();
@@ -207,7 +209,12 @@ export default function Workspace() {
           variant="plain"
         >
           <CardContent>
-            <StockNews loading={loading} stocks={stocks} dialog={dialog} />
+            <StockNews
+              loading={loading}
+              stocks={stocks}
+              dialog={dialog}
+              refreshNews={updateStockEvents}
+            />
           </CardContent>
         </Card>
       </div>

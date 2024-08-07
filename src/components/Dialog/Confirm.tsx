@@ -9,7 +9,7 @@ import ModalDialog from '@mui/joy/ModalDialog';
 
 type Props = {
   open: boolean;
-  onClose(): void;
+  onClose(isOk?: boolean): void;
   title: string;
   content: string;
 };
@@ -25,10 +25,14 @@ export default function Confirm({ open, onClose, title, content }: Props) {
         <Divider />
         <DialogContent>{content}</DialogContent>
         <DialogActions>
-          <Button variant="solid" color="danger" onClick={() => onClose}>
+          <Button variant="solid" color="danger" onClick={() => onClose(true)}>
             确定
           </Button>
-          <Button variant="plain" color="neutral" onClick={() => onClose()}>
+          <Button
+            variant="plain"
+            color="neutral"
+            onClick={() => onClose(false)}
+          >
             取消
           </Button>
         </DialogActions>

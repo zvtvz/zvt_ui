@@ -2,13 +2,17 @@ import services from '@/services';
 import { Button, Chip, Tooltip } from '@mui/joy';
 import { useSetState } from 'ahooks';
 import dayjs from 'dayjs';
+import { AiOutlineClose } from 'react-icons/ai';
 import { useState } from 'react';
 import SelectTagTypeDialog from './SelectTagTypeDialog';
+import useConfirmDialog from '@/components/Dialog/useConfirmDialog';
+import Dialog from '@/components/Dialog';
 
 type Props = {
   title: string;
   news: any[];
   dialog: any;
+  refreshNews: () => any;
 };
 
 const tagTypeText = {
@@ -17,9 +21,10 @@ const tagTypeText = {
   new_tag: '待处理标签',
 } as any;
 
-export default function Events({ title, news, dialog }: Props) {
+export default function Events({ title, news, refreshNews, dialog }: Props) {
   news = news || [];
 
+  const confirmDialog = useConfirmDialog();
   const [loading, setLoading] = useSetState<Record<string, boolean>>({});
   const [selectTagDialog, setSelectTagDialog] = useSetState<{
     open: boolean;
@@ -67,6 +72,17 @@ export default function Events({ title, news, dialog }: Props) {
     });
   };
 
+  const handleIgnoreNews = (news: any) => {
+    confirmDialog.show({
+      title: '提示',
+      content: '是否确定忽略此新闻？',
+      async onOk() {
+        await services.ignoreStockNews({ news_id: news.id });
+        refreshNews();
+      },
+    });
+  };
+
   return (
     <div className="mb-1 pb-1 ">
       <div className="text-sm font-bold opacity-85">{title}</div>
@@ -74,7 +90,7 @@ export default function Events({ title, news, dialog }: Props) {
       <ul className="list-inside list-disc  overflow-auto">
         {news.map((item: any, index: number) => (
           <li
-            className="pt-0 pl-2 mt-1 text-[12px] text-ellipsis overflow-hidden  whitespace-nowrap"
+            className="group relative pt-0 pl-2 mt-1 text-[12px] text-ellipsis overflow-hidden  whitespace-nowrap"
             key={index}
           >
             <Tooltip
@@ -85,13 +101,17 @@ export default function Events({ title, news, dialog }: Props) {
               }
               variant="solid"
             >
-              <span>
+              <span className="relative">
                 <span className="mr-1">
                   {dayjs(item.timestamp).format('YYYY-MM-DD')}
                 </span>
                 {item.news_title || ''}
               </span>
             </Tooltip>
+            <AiOutlineClose
+              onClick={() => handleIgnoreNews(item)}
+              className="invisible group-hover:visible absolute right-0 top-[2px] cursor-pointer"
+            />
             <div>
               {item.news_analysis?.tag_suggestions?.up?.map(
                 (suggestion: any, idx: number) => {
@@ -202,6 +222,7 @@ export default function Events({ title, news, dialog }: Props) {
           data={selectTagDialog.data}
         />
       )}
+      {confirmDialog.open && <Dialog.Confirm {...confirmDialog.props} />}
     </div>
   );
 }

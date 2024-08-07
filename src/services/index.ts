@@ -22,6 +22,7 @@ const apis = {
   updateStockTags: '/api/work/set_stock_tags',
   getStockEvents: 'GET /api/event/get_stock_event',
   getTagsStats: '/api/trading/query_tag_quotes',
+  ignoreStockNews: '/api/event/ignore_stock_news',
 
   getFactors: 'GET /api/factor/get_factors',
   getFactorResult: '/api/factor/query_factor_result',
