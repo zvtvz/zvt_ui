@@ -9,6 +9,7 @@ import ModalDialog from '@mui/joy/ModalDialog';
 import DeleteForever from '@mui/icons-material/DeleteForever';
 import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 import { AiFillCheckCircle } from 'react-icons/ai';
+import { ModalClose } from '@mui/joy';
 
 type Props = {
   open: boolean;
@@ -26,6 +27,7 @@ export default function Info({ open, onClose, title, content }: Props) {
         className="!text-[14px]"
         size="sm"
       >
+        <ModalClose size="sm" />
         <DialogTitle className="!text-[14px] items-center pt-1">
           <AiFillCheckCircle className="text-[20px] text-green-700" /> {title}
         </DialogTitle>

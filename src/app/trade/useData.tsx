@@ -277,10 +277,10 @@ export default function useData() {
     // }
   };
 
-  const saveSetting = async () => {
+  const saveSetting = async (tags: GlobalTag[]) => {
     setLoading({ setting: true });
     settingRef.current.stock_pool_name = pools.current?.stock_pool_name;
-    settingRef.current.main_tags = tags.data.map((x) => x.tag);
+    settingRef.current.main_tags = tags.map((x) => x.tag);
     await services.savePoolSetting({
       stock_pool_name: settingRef.current.stock_pool_name,
       main_tags: settingRef.current.main_tags,

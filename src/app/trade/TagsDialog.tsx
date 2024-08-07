@@ -7,6 +7,8 @@ import {
   FormControl,
   Button,
   Checkbox,
+  ModalClose,
+  Typography,
 } from '@mui/joy';
 
 type Props = {
@@ -26,10 +28,11 @@ export default function TagsDialog({
 }: Props) {
   return (
     <Modal open={open} onClose={onCancel}>
-      <ModalDialog className="w-[600px]">
+      <ModalDialog className="w-[600px]" size="sm">
+        <ModalClose size="sm" />
         <DialogTitle>修改标签</DialogTitle>
-        <DialogContent></DialogContent>
         <form
+          className="flex flex-col flex-grow overflow-hidden"
           onSubmit={(event) => {
             event.preventDefault();
             const formData = new FormData(event.currentTarget);
@@ -41,20 +44,23 @@ export default function TagsDialog({
             onSubmit(keys.map((key) => globalTags.find((t) => t.id === key)));
           }}
         >
-          <div className="flex flex-row flex-wrap">
+          <div className="flex flex-row flex-wrap flex-grow overflow-auto py-2 px-2">
             {globalTags.map((tag: any) => (
               <FormControl key={tag.id} className="mr-4 mb-4 w-[160px]">
                 <Checkbox
                   label={tag.tag}
                   name={tag.id}
                   defaultChecked={!!checkedTags.find((t) => t.id === tag.id)}
+                  size="sm"
                 />
               </FormControl>
             ))}
           </div>
-          <div className="text-center mt-4">
-            <Button onClick={onCancel}>取消</Button>
-            <Button type="submit" className="!ml-4">
+          <div className="text-right mt-4">
+            <Button size="sm" variant="plain" onClick={onCancel}>
+              取消
+            </Button>
+            <Button size="sm" type="submit" className="!ml-2">
               确定
             </Button>
           </div>

@@ -4,7 +4,6 @@ import News from './News';
 import { Button, Typography } from '@mui/joy';
 import TagUpdateDialog from './TagUpdateDialog';
 import { useState } from 'react';
-import CandlestickChart from './CandlestickChart';
 import StockChart from './StockChart';
 
 type Props = {
@@ -14,7 +13,7 @@ type Props = {
   refreshNews: () => any;
 };
 
-export default function StockNews({
+export default function StockDetail({
   loading,
   stocks,
   dialog,

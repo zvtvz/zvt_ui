@@ -6,6 +6,7 @@ import DialogContent from '@mui/joy/DialogContent';
 import DialogActions from '@mui/joy/DialogActions';
 import Modal from '@mui/joy/Modal';
 import ModalDialog from '@mui/joy/ModalDialog';
+import { ModalClose } from '@mui/joy';
 
 type Props = {
   open: boolean;
@@ -18,19 +19,26 @@ export default function Confirm({ open, onClose, title, content }: Props) {
   return (
     <Modal open={open} onClose={() => close}>
       <ModalDialog variant="outlined" role="alertdialog" size="sm">
+        <ModalClose size="sm" />
         <DialogTitle>
           {/* <WarningRoundedIcon /> */}
           {title}
         </DialogTitle>
-        <Divider />
-        <DialogContent>{content}</DialogContent>
+        {/* <Divider /> */}
+        <DialogContent className="mt-2">{content}</DialogContent>
         <DialogActions>
-          <Button variant="solid" color="danger" onClick={() => onClose(true)}>
+          <Button
+            size="sm"
+            variant="solid"
+            color="danger"
+            onClick={() => onClose(true)}
+          >
             确定
           </Button>
           <Button
             variant="plain"
             color="neutral"
+            size="sm"
             onClick={() => onClose(false)}
           >
             取消

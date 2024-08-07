@@ -13,6 +13,7 @@ import {
   Textarea,
   FormLabel,
   Autocomplete,
+  ModalClose,
 } from '@mui/joy';
 import { useRequest, useSetState } from 'ahooks';
 import { useEffect, useState } from 'react';
@@ -80,6 +81,7 @@ export default function TagUpdateDialog({
   return (
     <Modal open={open} onClose={onCancel}>
       <ModalDialog className="w-[500px]" size="sm">
+        <ModalClose size="sm" />
         <DialogTitle>修改标签</DialogTitle>
         <DialogContent></DialogContent>
         <form
@@ -170,13 +172,13 @@ export default function TagUpdateDialog({
             </Stack>
           </Loading>
           <div className="text-right mt-4">
-            <Button onClick={onCancel} size="sm">
+            <Button onClick={onCancel} variant="plain" size="sm">
               取消
             </Button>
             <Button
               type="submit"
               size="sm"
-              className="!ml-4"
+              className="!ml-2"
               loading={saveLoading}
             >
               确定

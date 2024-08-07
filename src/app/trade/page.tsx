@@ -17,11 +17,11 @@ import { useState } from 'react';
 import cls from 'classnames';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
 
-import NewsAnalysises from './NewsAnalysises';
-import BuyDialog from './BuyDialog';
-import SellDialog from './SellDialog';
-import Stocks from './StockList';
-import StockNews from './StockNews';
+import NewsAnalysises from './analysis/NewsAnalysises';
+import BuyDialog from './stock-list/BuyDialog';
+import SellDialog from './stock-list/SellDialog';
+import StockList from './stock-list/StockList';
+import StockDetail from './stock-detail/StockDetail';
 import Dialog from '@/components/Dialog';
 import useDialog from '@/components/Dialog/useDialog';
 
@@ -50,12 +50,6 @@ export default function Workspace() {
     buy: false,
   });
   const dialog = useDialog();
-  const confirmDialog = useDialog();
-
-  const handleSaveSetting = async () => {
-    await saveSetting();
-    dialog.show({ title: '提示', content: '修改配置成功' });
-  };
 
   const stocksProps = {
     stocks,
@@ -173,7 +167,7 @@ export default function Workspace() {
           })}
         </div>
         {!pools.ignoreSetting && (
-          <div className="h-[60px] w-[176px] flex flex-row flex-shrink-0 items-center">
+          <div className="h-[60px] w-[90px] flex flex-row flex-shrink-0 items-center">
             <Button
               className="flex-grow-0 !mx-1"
               onClick={() => {
@@ -184,14 +178,14 @@ export default function Workspace() {
             >
               修改配置
             </Button>
-            <Button
+            {/* <Button
               className="flex-grow-0"
               size="sm"
               onClick={handleSaveSetting}
               loading={loading.setting}
             >
               保存配置
-            </Button>
+            </Button> */}
           </div>
         )}
       </div>
@@ -201,7 +195,7 @@ export default function Workspace() {
           size="sm"
           variant="plain"
         >
-          <Stocks {...stocksProps} />
+          <StockList {...stocksProps} />
         </Card>
         <Card
           className="w-[500px] !sticky !top-[56px] flex-shrink-0 "
@@ -209,7 +203,7 @@ export default function Workspace() {
           variant="plain"
         >
           <CardContent>
-            <StockNews
+            <StockDetail
               loading={loading}
               stocks={stocks}
               dialog={dialog}
@@ -226,6 +220,7 @@ export default function Workspace() {
           open={open}
           onSubmit={(tags) => {
             changeTags(tags);
+            saveSetting(tags);
             setOpen({ setting: false });
           }}
           onCancel={() => setOpen({ setting: false })}

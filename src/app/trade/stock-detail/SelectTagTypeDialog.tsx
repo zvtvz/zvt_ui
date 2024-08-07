@@ -4,7 +4,14 @@ import DialogTitle from '@mui/joy/DialogTitle';
 import DialogActions from '@mui/joy/DialogActions';
 import Modal from '@mui/joy/Modal';
 import ModalDialog from '@mui/joy/ModalDialog';
-import { FormControl, FormLabel, Select, Stack, Option } from '@mui/joy';
+import {
+  FormControl,
+  FormLabel,
+  Select,
+  Stack,
+  Option,
+  ModalClose,
+} from '@mui/joy';
 import { useState } from 'react';
 import services from '@/services';
 
@@ -20,6 +27,7 @@ export default function SelectTagTypeDialog({ open, onClose, data }: Props) {
   return (
     <Modal open={open} onClose={() => close}>
       <ModalDialog variant="outlined" role="alertdialog" size="sm">
+        <ModalClose size="sm" />
         <DialogTitle></DialogTitle>
         <form
           onSubmit={async (event) => {

@@ -13,6 +13,7 @@ import {
   Divider,
   Select,
   Option,
+  ModalClose,
 } from '@mui/joy';
 import { useState } from 'react';
 
@@ -23,18 +24,15 @@ type Props = {
   onCancel: () => void;
 };
 
-export default function SellDialog({
-  open,
-  stocks,
-  onSubmit,
-  onCancel,
-}: Props) {
+export default function BuyDialog({ open, stocks, onSubmit, onCancel }: Props) {
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState('normal');
 
   return (
     <Modal open={open} onClose={onCancel}>
       <ModalDialog className="w-[510px] !text-[14px]">
+        <ModalClose size="sm" />
+        <DialogTitle>买入股票</DialogTitle>
         <form
           onSubmit={async (event) => {
             event.preventDefault();
@@ -57,19 +55,19 @@ export default function SellDialog({
               }
             });
             try {
-              await services.sellStocks(data);
+              await services.buyStocks(data);
               onSubmit();
             } finally {
               setLoading(false);
             }
           }}
         >
-          <div className="flex flex-row items-center mb-4 pb-4 border-b">
-            <div className="mr-2 w-[130px] text-right">卖出额度:</div>
+          <div className="flex flex-row items-center mb-2 pb-2 border-b">
+            <div className="mr-2 w-[80px] text-right">买入额度:</div>
             <Input
               placeholder="百分比"
               size="sm"
-              className="text-right"
+              className="text-right !text-[14px]"
               required
               name="position_pct"
               endDecorator={
@@ -81,7 +79,7 @@ export default function SellDialog({
                     value={type}
                     onChange={(_, value) => setType(value as any)}
                     size="sm"
-                    name="position_type"
+                    name="position_type !text-[14px]"
                     slotProps={{
                       listbox: {
                         variant: 'outlined',
@@ -90,6 +88,7 @@ export default function SellDialog({
                     sx={{ mr: -1, '&:hover': { bgcolor: 'transparent' } }}
                   >
                     <Option value="normal">仓位</Option>
+                    <Option value="cash">现金</Option>
                   </Select>
                 </>
               }
@@ -102,11 +101,11 @@ export default function SellDialog({
                 key={stock.entity_id}
                 className="mr-0 mb-2 flex !flex-row !items-center"
               >
-                <div className="mr-2 w-[130px] text-right opacity-75">
+                <div className="mr-2 min-w-[80px] text-right opacity-75">
                   {stock.name}:
                 </div>
                 <Input
-                  className="w-[70px] text-right"
+                  className="w-[70px] text-right !text-[14px]"
                   size="sm"
                   name={stock.entity_id}
                   required
@@ -117,7 +116,7 @@ export default function SellDialog({
             ))}
           </div>
           <div className="text-right mt-4">
-            <Button onClick={onCancel} size="sm">
+            <Button onClick={onCancel} variant="plain" size="sm">
               取消
             </Button>
             <Button type="submit" className="!ml-2" size="sm" loading={loading}>
