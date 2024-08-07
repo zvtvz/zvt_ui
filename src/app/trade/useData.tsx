@@ -272,9 +272,9 @@ export default function useData() {
         });
     }, 5000);
 
-    if (!sortedTags.find((t: any) => t.id === tags.current?.id)) {
-      changeActiveTag(sortedTags[0], pool);
-    }
+    // if (!sortedTags.find((t: any) => t.id === tags.current?.id)) {
+    changeActiveTag(sortedTags[0], pool);
+    // }
   };
 
   const saveSetting = async () => {
