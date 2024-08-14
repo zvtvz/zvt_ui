@@ -1,7 +1,7 @@
 import qs from 'qs';
 
 type InstanceOptions<T extends string> = {
-  domain: string;
+  domain?: string;
   apis: Record<T, string>;
 };
 
@@ -26,16 +26,17 @@ function parseServiceUrl(value: string) {
   return { method, url };
 }
 
-export function createInstance<T extends string>({
-  apis,
-  domain,
-}: InstanceOptions<T>) {
+export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
   const internalRequest = async (
     url: string,
     data: any,
     config?: RequestOptions
   ) => {
-    let realUrl = url;
+    let domain = process.env.NEXT_PUBLIC_SERVER as string;
+    if (typeof window !== 'undefined') {
+      domain = (window as any)?.SERVER_HOST || domain;
+    }
+    let realUrl = domain + url;
     const options: any = {
       method: config?.method || 'POST',
       mode: 'cors',
@@ -64,7 +65,7 @@ export function createInstance<T extends string>({
       config?: any
     ) {
       const { url, method } = parseServiceUrl(apis[apiName as T]);
-      return internalRequest(domain + url, data, {
+      return internalRequest(url, data, {
         method,
         ...config,
       });

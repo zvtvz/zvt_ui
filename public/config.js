@@ -1,0 +1,1 @@
+window.SERVER_HOST = '';

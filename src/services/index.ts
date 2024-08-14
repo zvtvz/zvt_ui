@@ -48,7 +48,6 @@ const apis = {
 } as const;
 
 const instance = createInstance<keyof typeof apis>({
-  domain: process.env.NEXT_PUBLIC_SERVER as string,
   apis,
 });
 

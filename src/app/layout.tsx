@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
+
 import ThemeRegistry from '@/components/ThemeRegistry/ThemeRegistry';
 
 import './globals.css';
@@ -23,6 +25,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="">
         <ThemeRegistry>
+          <Script src="/config.js" strategy="beforeInteractive" />
           <Header />
           <div className="my-4 w-container mx-auto mb-20">{children}</div>
           {/* <div className="h-[100px] bg-[#f3f3f3] mt-8">
