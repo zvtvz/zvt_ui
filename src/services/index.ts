@@ -34,6 +34,7 @@ const apis = {
   getSuggestionStats: 'GET /api/event/get_tag_suggestions_stats',
   getNewsAnalysis: 'GET /api/event/get_stock_news_analysis',
   batchUpdateStockTags: '/api/work/batch_set_stock_tags',
+  buildTagSuggestions: '/api/event/build_tag_suggestions',
 
   buyStocks: '/api/trading/buy',
   sellStocks: '/api/trading/sell',
@@ -47,7 +48,7 @@ const apis = {
 } as const;
 
 const instance = createInstance<keyof typeof apis>({
-  domain: 'http://10.1.16.108:8090',
+  domain: process.env.NEXT_PUBLIC_SERVER as string,
   apis,
 });
 

@@ -191,14 +191,14 @@ export default function Workspace() {
       </div>
       <div className="flex flex-row items-start justify-between mt-0 mb-2">
         <Card
-          className=" flex-grow overflow-auto relative min-h-[1000px] mr-4"
+          className="flex-grow overflow-auto relative min-h-[1000px] mr-4"
           size="sm"
           variant="plain"
         >
           <StockList {...stocksProps} />
         </Card>
         <Card
-          className="w-[500px] !sticky !top-[56px] flex-shrink-0 "
+          className="w-[500px] !sticky !top-[56px] flex-shrink-0"
           size="sm"
           variant="plain"
         >

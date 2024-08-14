@@ -24,7 +24,10 @@ export default function RootLayout({
       <body className="">
         <ThemeRegistry>
           <Header />
-          <div className="my-4 w-container mx-auto">{children}</div>
+          <div className="my-4 w-container mx-auto mb-20">{children}</div>
+          {/* <div className="h-[100px] bg-[#f3f3f3] mt-8">
+            <div className="w-container mx-auto pt-[40px]">@2024 zvt-ui</div>
+          </div> */}
         </ThemeRegistry>
       </body>
     </html>

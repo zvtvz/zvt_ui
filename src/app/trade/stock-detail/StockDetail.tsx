@@ -29,6 +29,7 @@ export default function StockDetail({
             <span className="mr-1">{stocks.current?.name}</span>
             <span className="ml-1 opacity-55">{stocks.current?.code}</span>
           </div>
+
           <Button
             size="sm"
             className="!text-xs !leading-4 !min-h-[24px] !px-2"
@@ -46,6 +47,7 @@ export default function StockDetail({
           <News
             title="新闻"
             news={stocks.events?.news}
+            entityId={stocks.current?.entity_id}
             dialog={dialog}
             refreshNews={refreshNews}
           />

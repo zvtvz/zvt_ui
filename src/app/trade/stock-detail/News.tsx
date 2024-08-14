@@ -12,6 +12,7 @@ type Props = {
   title: string;
   news: any[];
   dialog: any;
+  entityId: string;
   refreshNews: () => any;
 };
 
@@ -21,7 +22,13 @@ const tagTypeText = {
   new_tag: '待处理标签',
 } as any;
 
-export default function Events({ title, news, refreshNews, dialog }: Props) {
+export default function Events({
+  title,
+  news,
+  refreshNews,
+  dialog,
+  entityId,
+}: Props) {
   news = news || [];
 
   const confirmDialog = useConfirmDialog();
@@ -83,9 +90,33 @@ export default function Events({ title, news, refreshNews, dialog }: Props) {
     });
   };
 
+  const handleBuildSuggestions = async () => {
+    setLoading({ build: true });
+    try {
+      if (entityId) {
+        await services.buildTagSuggestions({ entity_id: entityId });
+        dialog.show({
+          title: 'AI分析完成',
+        });
+      }
+    } finally {
+      setLoading({ build: false });
+    }
+  };
+
   return (
     <div className="mb-1 pb-1 ">
-      <div className="text-sm font-bold opacity-85">{title}</div>
+      <div className="flex flex-row justify-between text-sm font-bold opacity-85">
+        {title}
+        <Button
+          size="sm"
+          className="!text-xs !leading-4 !min-h-[24px] !px-2"
+          loading={loading.build}
+          onClick={handleBuildSuggestions}
+        >
+          AI分析
+        </Button>
+      </div>
       {news.length == 0 && <span className="text-sm pr-4">暂无</span>}
       <ul className="list-inside list-disc  overflow-auto">
         {news.map((item: any, index: number) => (
