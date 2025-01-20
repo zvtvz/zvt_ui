@@ -1,6 +1,6 @@
 'use client';
 
-import { Table, Card, Button, Checkbox } from '@mui/joy';
+import { Table, Card, Button, Checkbox, Tooltip } from '@mui/joy';
 import { CircularProgress } from '@mui/joy';
 
 import SortCell from './SortCell';
@@ -86,12 +86,6 @@ export default function StockList({
                 {renderHeaderCell('turnover_rate', '换手率')}
               </th>
               <th className="!text-right">
-                {renderHeaderCell('ask_amount', '5挡卖单金额')}
-              </th>
-              <th className="!text-right">
-                {renderHeaderCell('bid_amount', '5挡买单金额')}
-              </th>
-              <th className="!text-right">
                 {renderHeaderCell('float_cap', '流通市值')}
               </th>
               <th className="!text-right">
@@ -99,6 +93,7 @@ export default function StockList({
               </th>
               <th>主标签</th>
               <th>次标签</th>
+              <th>隐藏标签</th>
             </tr>
           </thead>
           <tbody>
@@ -143,12 +138,6 @@ export default function StockList({
                   <Blink mkey={(stock.turnover_rate * 100).toFixed(2) + '%'} />
                 </td>
                 <td className="text-right">
-                  <Blink mkey={toMoney(stock.ask_amount)} />
-                </td>
-                <td className="text-right">
-                  <Blink mkey={toMoney(stock.bid_amount)} />
-                </td>
-                <td className="text-right">
                   <Blink mkey={toMoney(stock.float_cap)} />
                 </td>
                 <td className="text-right">
@@ -156,6 +145,20 @@ export default function StockList({
                 </td>
                 <td>{stock.main_tag}</td>
                 <td>{stock.sub_tag}</td>
+                <td>
+                  <Tooltip
+                    title={
+                      <div className="">
+                        {(stock.hidden_tags || []).join('、')}
+                      </div>
+                    }
+                    variant="solid"
+                  >
+                    <div className="relative overflow-hidden whitespace-nowrap text-ellipsis">
+                      {(stock.hidden_tags || []).join('、')}
+                    </div>
+                  </Tooltip>
+                </td>
               </tr>
             ))}
           </tbody>
