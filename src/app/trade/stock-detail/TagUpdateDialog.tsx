@@ -285,6 +285,7 @@ export default function TagUpdateDialog({
                             value={item.tag}
                             placeholder="隐藏标签名称"
                             onChange={(event, newValue) => {
+                              console.log('on change', newValue);
                               if (newValue) {
                                 const selectedTag =
                                   typeof newValue === 'string'
@@ -307,6 +308,15 @@ export default function TagUpdateDialog({
                                 : (option as any).tag;
                             }}
                             freeSolo
+                            inputValue={item.tag}
+                            onInputChange={(event, newInputValue) => {
+                              console.log('input change', newInputValue);
+                              handleHiddenTagChange(
+                                item.id,
+                                newInputValue,
+                                item.reason
+                              );
+                            }}
                           />
                           <Textarea
                             size="sm"
