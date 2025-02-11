@@ -31,6 +31,11 @@ type Props = {
   onCancel: () => void;
 };
 
+// 生成唯一ID的函数
+const generateId = () => {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
+
 export default function TagUpdateDialog({
   open,
   stock,
@@ -85,7 +90,7 @@ export default function TagUpdateDialog({
     const hiddenTagsArray = Object.entries(
       stockTagInfo.active_hidden_tags || {}
     ).map(([tag, reason]) => ({
-      id: crypto.randomUUID(),
+      id: generateId(),
       tag,
       reason: reason as string,
     }));
@@ -123,7 +128,7 @@ export default function TagUpdateDialog({
       hidden_tags: [
         ...state.hidden_tags,
         {
-          id: crypto.randomUUID(),
+          id: generateId(),
           tag: '',
           reason: '',
         },
