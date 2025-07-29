@@ -1,6 +1,7 @@
 import { createInstance } from './http';
 
 const apis = {
+  login: '/api/sso/token',
   getProviders: 'GET /api/data/providers',
   getSchemas: 'GET /api/data/schemas',
   getQueryData: 'GET /api/data/query_data',
