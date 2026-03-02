@@ -25,27 +25,6 @@ export default function Header() {
           >
             <Link href="/trade">交易</Link>
           </div>
-          <div
-            className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
-              '/workspace'
-            )}`}
-          >
-            <Link href="/workspace">工作区</Link>
-          </div>
-          <div
-            className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
-              '/data'
-            )}`}
-          >
-            <Link href="/data">数据预览</Link>
-          </div>
-          <div
-            className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
-              '/factor'
-            )}`}
-          >
-            <Link href="/factor">数据因子</Link>
-          </div>
         </div>
       </div>
     </header>

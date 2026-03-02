@@ -1,10 +1,6 @@
 import { createInstance } from './http';
 
 const apis = {
-  getProviders: 'GET /api/data/providers',
-  getSchemas: 'GET /api/data/schemas',
-  getQueryData: 'GET /api/data/query_data',
-
   getPools: 'GET /api/work/get_stock_pool_info',
   getPoolEntities: 'GET /api/work/get_stock_pools',
   getSimpleStockTags: '/api/work/query_simple_stock_tags',
@@ -23,9 +19,6 @@ const apis = {
   getStockEvents: 'GET /api/event/get_stock_event',
   getTagsStats: '/api/trading/query_tag_quotes',
   ignoreStockNews: '/api/event/ignore_stock_news',
-
-  getFactors: 'GET /api/factor/get_factors',
-  getFactorResult: '/api/factor/query_factor_result',
 
   getPoolSetting: 'GET /api/trading/get_query_stock_quote_setting',
   getPoolStocksByTag: '/api/trading/query_stock_quotes',
