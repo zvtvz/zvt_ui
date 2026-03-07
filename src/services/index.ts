@@ -1,8 +1,8 @@
 import { createInstance } from './http';
 
 const apis = {
-  getPools: 'GET /api/work/get_stock_pool_info',
-  getPoolEntities: 'GET /api/work/get_stock_pools',
+  getPools: 'GET /api/stockpool/get_stock_pool_info',
+  getPoolEntities: 'GET /api/stockpool/get_stock_pools',
   getSimpleStockTags: '/api/work/query_simple_stock_tags',
   getHistoryStockTags: '/api/work/query_stock_tags',
   getStockStats: '/api/work/query_stock_tag_stats',
