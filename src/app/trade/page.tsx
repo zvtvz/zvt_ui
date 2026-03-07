@@ -9,10 +9,12 @@ import {
   CardContent,
   Tooltip,
 } from '@mui/joy';
+import Add from '@mui/icons-material/Add';
 
 import { useRouter } from 'next/navigation';
 import useData from './useData';
 import TagsDialog from './TagsDialog';
+import CreateStockPoolDialog from './CreateStockPoolDialog';
 import { useState } from 'react';
 import cls from 'classnames';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
@@ -43,12 +45,14 @@ export default function Workspace() {
     checkAllStock,
     dailyStats,
     updateStockEvents,
+    refreshPools,
   } = useData();
   const router = useRouter();
   const [open, setOpen] = useState<any>({
     setting: false,
     buy: false,
   });
+  const [createPoolOpen, setCreatePoolOpen] = useState(false);
   const dialog = useDialog();
 
   const stocksProps = {
@@ -89,7 +93,7 @@ export default function Workspace() {
         )}
       </div>
       <div className="flex flex-row justify-between">
-        <div className="flex flex-row">
+        <div className="flex flex-row items-center">
           {pools.data?.map((pool, index) => (
             <div
               key={index}
@@ -101,11 +105,25 @@ export default function Workspace() {
               {pool.stock_pool_name}
             </div>
           ))}
+          <Tooltip title="创建股票池" variant="solid">
+            <span>
+              <Button
+                type="button"
+                variant="plain"
+                size="sm"
+                color="neutral"
+                className="!min-w-0 !px-1.5 h-6 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9]"
+                onClick={() => setCreatePoolOpen(true)}
+              >
+                <Add sx={{ fontSize: 18 }} />
+              </Button>
+            </span>
+          </Tooltip>
         </div>
       </div>
       <div className="flex flex-row justify-between my-2 mt-2 ">
         <div className="flex flex-row flex-nowrap flex-grow overflow-x-auto pt-2 py-3 h-[60px] ">
-          {tags.data.map((tag: any) => {
+          {(tags.data || []).filter((t: any) => t != null).map((tag: any) => {
             const isSelected = tag.id === tags.current?.id;
             const stats = tags.statses.find(
               (st: any) => st.main_tag === tag.tag
@@ -226,6 +244,14 @@ export default function Workspace() {
           onCancel={() => setOpen({ setting: false })}
         />
       )}
+      <CreateStockPoolDialog
+        open={createPoolOpen}
+        onSubmit={(poolName) => {
+          refreshPools(poolName);
+          setCreatePoolOpen(false);
+        }}
+        onCancel={() => setCreatePoolOpen(false)}
+      />
       {open.buy && (
         <BuyDialog
           open={open.buy}

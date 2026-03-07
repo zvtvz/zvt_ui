@@ -294,6 +294,26 @@ export default function useData() {
     await changeActiveTag(tags.current as any, pools.current);
   };
 
+  const refreshPools = async (switchToPoolName?: string) => {
+    const poolsData = await services.getPools();
+    setPools((prev) => {
+      const next = { ...prev, data: poolsData };
+      if (switchToPoolName) {
+        const newCurrent = poolsData.find(
+          (p: any) => p.stock_pool_name === switchToPoolName
+        );
+        if (newCurrent) next.current = newCurrent;
+      }
+      return next;
+    });
+    if (switchToPoolName) {
+      const newCurrent = poolsData.find(
+        (p: any) => p.stock_pool_name === switchToPoolName
+      );
+      if (newCurrent) await updatePool(newCurrent as Pool);
+    }
+  };
+
   useAsyncEffect(async () => {
     setLoading({ stocks: true });
     const [pools, setting, globalTags] = await Promise.all([
@@ -335,5 +355,6 @@ export default function useData() {
     checkAllStock,
     dailyStats,
     updateStockEvents,
+    refreshPools,
   };
 }
