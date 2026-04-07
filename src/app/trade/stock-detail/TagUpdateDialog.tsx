@@ -98,12 +98,12 @@ export default function TagUpdateDialog({
     setState({
       main_tag: stockTagInfo.main_tag,
       main_tag_reason: stockTagInfo.main_tag_options.find(
-        (x: any) => x.tag === stockTagInfo.main_tag
-      )?.tag_reason,
+        (x: any) => x.name === stockTagInfo.main_tag
+      )?.desc,
       sub_tag: stockTagInfo.sub_tag,
       sub_tag_reason: stockTagInfo.sub_tag_options.find(
-        (x: any) => x.tag === stockTagInfo.sub_tag
-      )?.tag_reason,
+        (x: any) => x.name === stockTagInfo.sub_tag
+      )?.desc,
       hidden_tags: hiddenTagsArray,
     });
   }, [stockTagInfo]);
@@ -114,8 +114,8 @@ export default function TagUpdateDialog({
     hidden_tag_options = [],
   } = stockTagInfo || {};
 
-  const mainTagOptions = main_tag_options.map((x: any) => x.tag);
-  const subTagOptions = sub_tag_options.map((x: any) => x.tag);
+  const mainTagOptions = main_tag_options.map((x: any) => x.name);
+  const subTagOptions = sub_tag_options.map((x: any) => x.name);
 
   const handleAddHiddenTag = () => {
     // 检查是否已经存在空标签
@@ -185,8 +185,8 @@ export default function TagUpdateDialog({
                       setState({
                         main_tag_reason:
                           stockTagInfo.main_tag_options.find(
-                            (x: any) => x.tag === newValue
-                          )?.tag_reason || '',
+                            (x: any) => x.name === newValue
+                          )?.desc || '',
                       });
                     }}
                     inputValue={state.main_tag}
@@ -224,8 +224,8 @@ export default function TagUpdateDialog({
                       setState({
                         sub_tag_reason:
                           stockTagInfo.sub_tag_options.find(
-                            (x: any) => x.tag === newValue
-                          )?.tag_reason || '',
+                            (x: any) => x.name === newValue
+                          )?.desc || '',
                       });
                     }}
                     inputValue={state.sub_tag}
@@ -290,11 +290,11 @@ export default function TagUpdateDialog({
                                 const selectedTag =
                                   typeof newValue === 'string'
                                     ? newValue
-                                    : (newValue as any).tag;
+                                    : (newValue as any).name;
                                 const selectedReason =
                                   typeof newValue === 'string'
                                     ? ''
-                                    : (newValue as any).tag_reason || '';
+                                    : (newValue as any).desc || '';
                                 handleHiddenTagChange(
                                   item.id,
                                   selectedTag,
@@ -305,7 +305,7 @@ export default function TagUpdateDialog({
                             getOptionLabel={(option) => {
                               return typeof option === 'string'
                                 ? option
-                                : (option as any).tag;
+                                : (option as any).name;
                             }}
                             freeSolo
                             inputValue={item.tag}

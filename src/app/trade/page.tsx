@@ -126,7 +126,7 @@ export default function Workspace() {
           {(tags.data || []).filter((t: any) => t != null).map((tag: any) => {
             const isSelected = tag.id === tags.current?.id;
             const stats = tags.statses.find(
-              (st: any) => st.main_tag === tag.tag
+              (st: any) => st.main_tag === tag.name
             );
             return (
               <Tooltip
@@ -160,7 +160,7 @@ export default function Workspace() {
                 >
                   <div className="flex items-center py-2">
                     <div className="text-center mr-2 text-[14px]">
-                      {tag.tag}
+                      {tag.name}
                     </div>
                     <div className="text-[12px] leading-none">
                       <div>{toMoney(stats?.turnover)}</div>

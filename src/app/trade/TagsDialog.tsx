@@ -48,7 +48,7 @@ export default function TagsDialog({
             {globalTags.map((tag: any) => (
               <FormControl key={tag.id} className="mr-4 mb-4 w-[160px]">
                 <Checkbox
-                  label={tag.tag}
+                  label={tag.name}
                   name={tag.id}
                   defaultChecked={!!checkedTags.find((t) => t.id === tag.id)}
                   size="sm"

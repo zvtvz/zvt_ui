@@ -53,9 +53,9 @@ export default function Events({
     try {
       await services.batchUpdateStockTags({
         entity_ids: suggestion.stocks.map((s: any) => s.entity_id),
-        tag: suggestion.tag,
+        name: suggestion.tag,
         tag_type: suggestion.tag_type,
-        tag_reason: analysis.news_title,
+        desc: analysis.news_title,
       });
       dialog.show({
         title: '更新标签成功',
@@ -72,9 +72,9 @@ export default function Events({
       open: true,
       data: {
         entity_ids: suggestion.stocks.map((s: any) => s.entity_id),
-        tag: suggestion.tag,
+        name: suggestion.tag,
         tag_type: suggestion.tag_type,
-        tag_reason: analysis.news_title,
+        desc: analysis.news_title,
       },
     });
   };

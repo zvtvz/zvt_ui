@@ -33,9 +33,9 @@ export default function NewsAnalysisesStats({ dialog }: { dialog: any }) {
     try {
       await services.batchUpdateStockTags({
         entity_ids: suggestion.entity_ids,
-        tag: suggestion.tag,
+        name: suggestion.tag,
         tag_type: suggestion.tag_type,
-        tag_reason: suggestion.tag + '_消息刺激',
+        desc: suggestion.tag + '_消息刺激',
       });
       dialog.show({
         title: '更新标签成功',

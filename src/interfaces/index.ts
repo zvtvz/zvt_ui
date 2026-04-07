@@ -13,8 +13,8 @@ export type StockHistoryTag = {
 
 export type GlobalTag = {
   id: string;
-  tag: string;
-  tag_reason: string;
+  name: string;
+  desc: string;
 };
 
 export type TagState = {

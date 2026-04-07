@@ -81,7 +81,7 @@ export default function useData() {
     });
     const poolTags = poolTagStats
       .map((stats: any) =>
-        global_tags.find((tag: any) => tag.tag === stats.main_tag)
+        global_tags.find((tag: any) => tag.name === stats.main_tag)
       )
       .filter((x: any) => !!x);
     let displayTags = []; // global_tags.slice(0, 1);
@@ -91,7 +91,7 @@ export default function useData() {
       displayTags = poolTags;
     } else if (main_tags.length) {
       displayTags = main_tags.map((name: string) =>
-        global_tags.find((tag: any) => tag.tag === name)
+        global_tags.find((tag: any) => tag.name === name)
       );
     } else {
       displayTags = global_tags.slice(0, 1);
@@ -128,7 +128,7 @@ export default function useData() {
 
     const params: any = {
       stock_pool_name: pool?.stock_pool_name,
-      main_tag: tag?.tag || undefined,
+      main_tag: tag?.name || undefined,
     };
     if (sortRef.current.field) {
       params.order_by_field = sortRef.current.field;
@@ -241,11 +241,11 @@ export default function useData() {
 
     const statses = await services.getTagsStats({
       stock_pool_name: pool?.stock_pool_name,
-      main_tags: newTags.map((t) => t.tag),
+      main_tags: newTags.map((t) => t.name),
     });
 
     const sortedTags = statses.map((stats: any) =>
-      newTags.find((tag) => tag.tag === stats.main_tag)
+      newTags.find((tag) => tag.name === stats.main_tag)
     );
 
     // tags 根据 status进行排序
@@ -263,7 +263,7 @@ export default function useData() {
       services
         .getTagsStats({
           stock_pool_name: pool?.stock_pool_name,
-          main_tags: newTags.map((t) => t.tag),
+          main_tags: newTags.map((t) => t.name),
         })
         .then((statses) => {
           setTags({
@@ -280,7 +280,7 @@ export default function useData() {
   const saveSetting = async (tags: GlobalTag[]) => {
     setLoading({ setting: true });
     settingRef.current.stock_pool_name = pools.current?.stock_pool_name;
-    settingRef.current.main_tags = tags.map((x) => x.tag);
+    settingRef.current.main_tags = tags.map((x) => x.name);
     await services.savePoolSetting({
       stock_pool_name: settingRef.current.stock_pool_name,
       main_tags: settingRef.current.main_tags,
