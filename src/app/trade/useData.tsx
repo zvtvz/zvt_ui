@@ -4,16 +4,14 @@ import {
   useSetState,
   useUnmountedRef,
 } from 'ahooks';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import services from '@/services';
 import { getDate } from '@/utils';
 import { GlobalTag, Pool, Stock } from '@/interfaces';
-import { unescape } from 'querystring';
 
 type PoolState = {
   data: Pool[];
   current?: Pool;
-  ignoreSetting: boolean;
 };
 
 type TagState = {
@@ -31,7 +29,6 @@ export default function useData() {
   const [pools, setPools] = useSetState<PoolState>({
     data: [],
     current: undefined,
-    ignoreSetting: true,
   });
   const [tags, setTags] = useSetState<TagState>({
     data: [],
@@ -49,11 +46,7 @@ export default function useData() {
     current: undefined,
     events: undefined,
   });
-  const settingRef = useRef<any>({
-    stock_pool_name: '',
-    main_tags: [],
-    global_tags: [],
-  });
+  const globalTagsRef = useRef<GlobalTag[]>([]);
   const sortRef = useRef<any>({
     field: '',
     type: '',
@@ -72,42 +65,8 @@ export default function useData() {
   });
 
   const updatePool = async (pool: Pool) => {
-    const { stock_pool_name, main_tags, global_tags } = settingRef.current;
-
-    const poolTagStats = await services.getStockStats({
-      stock_pool_name: pool.stock_pool_name,
-      target_date: getDate(),
-      query_type: 'simple',
-    });
-    const poolTags = poolTagStats
-      .map((stats: any) =>
-        global_tags.find((tag: any) => tag.name === stats.main_tag)
-      )
-      .filter((x: any) => !!x);
-    let displayTags = []; // global_tags.slice(0, 1);
-
-    // 优先使用pool stats中的tags
-    if (poolTags.length > 0) {
-      displayTags = poolTags;
-    } else if (main_tags.length) {
-      displayTags = main_tags.map((name: string) =>
-        global_tags.find((tag: any) => tag.name === name)
-      );
-    } else {
-      displayTags = global_tags.slice(0, 1);
-    }
-
-    setPools({
-      current: pool,
-      ignoreSetting: poolTags.length > 0, // 查询pool stats中有对应的tag，则不需要进行配置
-    });
-
-    changeTags(displayTags, pool);
-
-    // setTags({
-    //   data: displayTags,
-    // });
-    // changeActiveTag(displayTags[0], pool);
+    setPools({ current: pool });
+    await changeTags(globalTagsRef.current, pool);
   };
 
   const changePool = async (value: string) => {
@@ -115,6 +74,9 @@ export default function useData() {
     try {
       const current = pools.data.find((pool) => pool.id === value);
       await updatePool(current as Pool);
+      await services.savePoolSetting({
+        stock_pool_name: current?.stock_pool_name,
+      });
     } finally {
       setLoading({ stocks: false });
     }
@@ -142,7 +104,6 @@ export default function useData() {
 
       clearInterval(intervalId.current.id);
       intervalId.current.id = setInterval(() => {
-        // TODO: 接口返回时间不可控，可能导致前序请求的结果覆盖后序请求的结果
         if (unmountedRef.current) {
           clearInterval(intervalId.current.id);
         }
@@ -224,16 +185,6 @@ export default function useData() {
     }
   };
 
-  const deleteTag = async (tag: GlobalTag) => {
-    const newTags = tags.data.filter((t) => t.id !== tag.id);
-    setTags({
-      data: newTags,
-    });
-    if (tags.current?.id === tag.id) {
-      changeActiveTag(newTags[0]);
-    }
-  };
-
   const changeTags = async (newTags: GlobalTag[], pool?: Pool) => {
     pool = pool || pools.current;
 
@@ -241,21 +192,18 @@ export default function useData() {
 
     const statses = await services.getTagsStats({
       stock_pool_name: pool?.stock_pool_name,
-      main_tags: newTags.map((t) => t.name),
     });
 
-    const sortedTags = statses.map((stats: any) =>
-      newTags.find((tag) => tag.name === stats.main_tag)
-    );
+    const sortedTags = statses
+      .map((stats: any) => newTags.find((tag) => tag.name === stats.main_tag))
+      .filter((t: any) => !!t);
 
-    // tags 根据 status进行排序
     setTags({
       data: sortedTags,
       statses,
     });
 
     clearInterval(tagsStatusIntervalId.current.id);
-    // 5秒轮询 查询tag stats
     tagsStatusIntervalId.current.id = setInterval(() => {
       if (unmountedRef.current) {
         clearInterval(tagsStatusIntervalId.current.id);
@@ -263,7 +211,6 @@ export default function useData() {
       services
         .getTagsStats({
           stock_pool_name: pool?.stock_pool_name,
-          main_tags: newTags.map((t) => t.name),
         })
         .then((statses) => {
           setTags({
@@ -272,20 +219,7 @@ export default function useData() {
         });
     }, 5000);
 
-    // if (!sortedTags.find((t: any) => t.id === tags.current?.id)) {
     changeActiveTag(sortedTags[0], pool);
-    // }
-  };
-
-  const saveSetting = async (tags: GlobalTag[]) => {
-    setLoading({ setting: true });
-    settingRef.current.stock_pool_name = pools.current?.stock_pool_name;
-    settingRef.current.main_tags = tags.map((x) => x.name);
-    await services.savePoolSetting({
-      stock_pool_name: settingRef.current.stock_pool_name,
-      main_tags: settingRef.current.main_tags,
-    });
-    setLoading({ setting: false });
   };
 
   const changeSort = async (field: string, type: string) => {
@@ -316,23 +250,22 @@ export default function useData() {
 
   useAsyncEffect(async () => {
     setLoading({ stocks: true });
-    const [pools, setting, globalTags] = await Promise.all([
+    const [poolsData, setting, globalTags] = await Promise.all([
       services.getPools(),
       services.getPoolSetting(),
       services.getMainTagInfo(),
     ]);
 
-    const defaultPool = pools.find(
+    globalTagsRef.current = globalTags;
+
+    const defaultPool = poolsData.find(
       (p: any) => p.stock_pool_name === setting.stock_pool_name
     );
 
     setPools({
-      data: pools,
+      data: poolsData,
       current: defaultPool,
     });
-    settingRef.current.stock_pool_name = setting.stock_pool_name;
-    settingRef.current.main_tags = setting.main_tags;
-    settingRef.current.global_tags = globalTags;
 
     await updatePool(defaultPool);
     setLoading({ stocks: false });
@@ -342,12 +275,10 @@ export default function useData() {
     pools,
     tags,
     stocks,
-    setting: settingRef.current,
     loading,
     changePool,
     changeTags,
     changeActiveTag,
-    saveSetting,
     sortState: sortRef.current,
     changeSort,
     selectStock,

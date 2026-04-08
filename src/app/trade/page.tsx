@@ -2,8 +2,6 @@
 
 import {
   Card,
-  Select,
-  Option,
   Button,
   Chip,
   CardContent,
@@ -11,15 +9,11 @@ import {
 } from '@mui/joy';
 import Add from '@mui/icons-material/Add';
 
-import { useRouter } from 'next/navigation';
 import useData from './useData';
-import TagsDialog from './TagsDialog';
 import CreateStockPoolDialog from './CreateStockPoolDialog';
 import { useState } from 'react';
-import cls from 'classnames';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
 
-import NewsAnalysises from './analysis/NewsAnalysises';
 import BuyDialog from './stock-list/BuyDialog';
 import SellDialog from './stock-list/SellDialog';
 import StockList from './stock-list/StockList';
@@ -32,12 +26,9 @@ export default function Workspace() {
     pools,
     tags,
     stocks,
-    setting,
     loading,
     changePool,
     changeActiveTag,
-    changeTags,
-    saveSetting,
     sortState,
     changeSort,
     selectStock,
@@ -47,9 +38,7 @@ export default function Workspace() {
     updateStockEvents,
     refreshPools,
   } = useData();
-  const router = useRouter();
   const [open, setOpen] = useState<any>({
-    setting: false,
     buy: false,
   });
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
@@ -184,28 +173,6 @@ export default function Workspace() {
             );
           })}
         </div>
-        {!pools.ignoreSetting && (
-          <div className="h-[60px] w-[90px] flex flex-row flex-shrink-0 items-center">
-            <Button
-              className="flex-grow-0 !mx-1"
-              onClick={() => {
-                setOpen({ setting: true });
-              }}
-              variant="plain"
-              size="sm"
-            >
-              修改配置
-            </Button>
-            {/* <Button
-              className="flex-grow-0"
-              size="sm"
-              onClick={handleSaveSetting}
-              loading={loading.setting}
-            >
-              保存配置
-            </Button> */}
-          </div>
-        )}
       </div>
       <div className="flex flex-row items-start justify-between mt-0 mb-2">
         <Card
@@ -230,20 +197,6 @@ export default function Workspace() {
           </CardContent>
         </Card>
       </div>
-      {/* <NewsAnalysises dialog={dialog} /> */}
-      {open.setting && (
-        <TagsDialog
-          globalTags={setting.global_tags}
-          checkedTags={tags.data}
-          open={open}
-          onSubmit={(tags) => {
-            changeTags(tags);
-            saveSetting(tags);
-            setOpen({ setting: false });
-          }}
-          onCancel={() => setOpen({ setting: false })}
-        />
-      )}
       <CreateStockPoolDialog
         open={createPoolOpen}
         onSubmit={(poolName) => {
