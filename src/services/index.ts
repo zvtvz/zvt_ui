@@ -4,9 +4,6 @@ const apis = {
   getPools: 'GET /api/stockpool/get_stock_pool_info',
   getPoolEntities: 'GET /api/stockpool/get_stock_pools',
   createStockPoolInfo: '/api/stockpool/create_stock_pool_info',
-  getSimpleStockTags: '/api/work/query_simple_stock_tags',
-  getHistoryStockTags: '/api/work/query_stock_tags',
-  getStockStats: '/api/work/query_stock_tag_stats',
 
   createMainTagInfo: '/api/work/create_main_tag_info',
   createSubTagInfo: '/api/work/create_sub_tag_info',
@@ -18,12 +15,12 @@ const apis = {
 
   updateStockTags: '/api/work/set_stock_tags',
   getStockEvents: 'GET /api/event/get_stock_event',
-  getTagsStats: '/api/trading/query_tag_quotes',
   ignoreStockNews: '/api/event/ignore_stock_news',
 
   getPoolSetting: 'GET /api/trading/get_query_stock_quote_setting',
-  getPoolStocksByTag: '/api/trading/query_stock_quotes',
   savePoolSetting: '/api/trading/build_query_stock_quote_setting',
+  getPoolStocksByTag: '/api/trading/query_stock_quotes',
+  getTagsStats: '/api/trading/query_tag_quotes',
 
   getSuggestionStats: 'GET /api/event/get_tag_suggestions_stats',
   getNewsAnalysis: 'GET /api/event/get_stock_news_analysis',
