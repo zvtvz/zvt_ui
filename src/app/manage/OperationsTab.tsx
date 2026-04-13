@@ -13,12 +13,17 @@ import {
 import FactoryIcon from '@mui/icons-material/Factory';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
-import BuildIcon from '@mui/icons-material/Build';
+import LabelIcon from '@mui/icons-material/Label';
+
+type BuildType =
+  | 'main_industry' | 'main_concept' | 'main_sub_tag'
+  | 'sub_industry' | 'sub_concept' | 'sub_area'
+  | 'hidden_industry' | 'hidden_concept' | 'hidden_area';
 
 interface Props {
   opLog: string[];
-  onInit: (type: 'industry' | 'concept' | 'area') => Promise<void>;
-  onBuild: () => Promise<void>;
+  onInit: (type: 'industry' | 'concept' | 'area' | 'sub_tag') => Promise<void>;
+  onBuild: (type: BuildType) => Promise<void>;
 }
 
 export default function OperationsTab({ opLog, onInit, onBuild }: Props) {
@@ -72,32 +77,82 @@ export default function OperationsTab({ opLog, onInit, onBuild }: Props) {
             >
               初始化地域数据
             </Button>
+            <Button
+              startDecorator={<LabelIcon />}
+              variant="soft"
+              color="neutral"
+              loading={busy === 'sub_tag'}
+              onClick={() => handle('sub_tag', () => onInit('sub_tag'))}
+            >
+              初始化次标签（概念映射）
+            </Button>
           </Box>
         </CardContent>
       </Card>
 
-      {/* 重建 */}
+      {/* 重建主标签 */}
       <Card variant="outlined">
         <CardContent>
-          <Typography level="title-sm" sx={{ mb: 2 }}>
-            重建股票标签
-          </Typography>
+          <Typography level="title-sm" sx={{ mb: 1 }}>重建主标签</Typography>
           <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
-            根据当前标签目录中配置的行业/概念/地域关系，自动为全市场股票推导
-            <Chip size="sm" variant="soft" sx={{ mx: 0.5 }}>主标签</Chip>
-            <Chip size="sm" variant="soft" color="success" sx={{ mx: 0.5 }}>次标签</Chip>
-            <Chip size="sm" variant="soft" color="warning" sx={{ mx: 0.5 }}>隐藏标签</Chip>。
-            已由用户手动设定的股票（set_by_user=true）跳过。
+            已手动设定（set_by_user=true）的股票跳过。执行顺序由用户决定。
           </Typography>
-          <Button
-            startDecorator={<BuildIcon />}
-            color="danger"
-            variant="soft"
-            loading={busy === 'build'}
-            onClick={() => handle('build', onBuild)}
-          >
-            重建股票标签
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Button variant="soft" color="primary" startDecorator={<FactoryIcon />}
+              loading={busy === 'main_industry'} onClick={() => handle('main_industry', () => onBuild('main_industry'))}>
+              行业 → 主标签
+            </Button>
+            <Button variant="soft" color="success" startDecorator={<LightbulbIcon />}
+              loading={busy === 'main_concept'} onClick={() => handle('main_concept', () => onBuild('main_concept'))}>
+              概念 → 主标签
+            </Button>
+            <Button variant="soft" color="neutral" startDecorator={<LabelIcon />}
+              loading={busy === 'main_sub_tag'} onClick={() => handle('main_sub_tag', () => onBuild('main_sub_tag'))}>
+              次标签 → 主标签
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* 重建次标签 */}
+      <Card variant="outlined">
+        <CardContent>
+          <Typography level="title-sm" sx={{ mb: 1 }}>重建次标签</Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Button variant="soft" color="primary" startDecorator={<FactoryIcon />}
+              loading={busy === 'sub_industry'} onClick={() => handle('sub_industry', () => onBuild('sub_industry'))}>
+              行业 → 次标签
+            </Button>
+            <Button variant="soft" color="success" startDecorator={<LightbulbIcon />}
+              loading={busy === 'sub_concept'} onClick={() => handle('sub_concept', () => onBuild('sub_concept'))}>
+              概念 → 次标签
+            </Button>
+            <Button variant="soft" color="warning" startDecorator={<LocationCityIcon />}
+              loading={busy === 'sub_area'} onClick={() => handle('sub_area', () => onBuild('sub_area'))}>
+              地域 → 次标签
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* 重建隐藏标签 */}
+      <Card variant="outlined">
+        <CardContent>
+          <Typography level="title-sm" sx={{ mb: 1 }}>重建隐藏标签</Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Button variant="soft" color="primary" startDecorator={<FactoryIcon />}
+              loading={busy === 'hidden_industry'} onClick={() => handle('hidden_industry', () => onBuild('hidden_industry'))}>
+              行业 → 隐藏标签
+            </Button>
+            <Button variant="soft" color="success" startDecorator={<LightbulbIcon />}
+              loading={busy === 'hidden_concept'} onClick={() => handle('hidden_concept', () => onBuild('hidden_concept'))}>
+              概念 → 隐藏标签
+            </Button>
+            <Button variant="soft" color="warning" startDecorator={<LocationCityIcon />}
+              loading={busy === 'hidden_area'} onClick={() => handle('hidden_area', () => onBuild('hidden_area'))}>
+              地域 → 隐藏标签
+            </Button>
+          </Box>
         </CardContent>
       </Card>
 

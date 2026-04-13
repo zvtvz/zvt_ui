@@ -69,32 +69,32 @@ export type CreateHiddenTagInfo = {
   areas?: string[] | null;
 };
 
-/** 更新主标签请求体（含次标签列表替换；None 字段不修改，[] 清空）*/
+/** 更新主标签请求体（全量更新，调用方须传入所有字段的期望值）*/
 export type UpdateMainTagInfo = {
   tag_name: string;
   desc?: string | null;
-  priority?: number | null;
+  priority: number;
   sub_tags?: string[] | null;
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
 };
 
-/** 更新次标签请求体（不含所属主标签，归属由主标签侧管理）*/
+/** 更新次标签请求体（全量更新，归属由主标签侧管理）*/
 export type UpdateSubTagInfo = {
   tag_name: string;
   desc?: string | null;
-  priority?: number | null;
+  priority: number;
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
 };
 
-/** 更新隐藏标签请求体 */
+/** 更新隐藏标签请求体（全量更新）*/
 export type UpdateHiddenTagInfo = {
   tag_name: string;
   desc?: string | null;
-  priority?: number | null;
+  priority: number;
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;

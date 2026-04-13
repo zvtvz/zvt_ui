@@ -85,8 +85,8 @@ export default function TagSection(props: TagSectionProps) {
   async function handleSubmit(data: {
     name: string;
     desc: string;
-    main_tag?: string;
     priority: number;
+    sub_tags: string[];
     industries: string[];
     concepts: string[];
     areas: string[];

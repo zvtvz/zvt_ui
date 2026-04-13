@@ -32,9 +32,18 @@ const apis = {
   initIndustryInfo: '/api/work/init_industry_info',
   initConceptInfo: '/api/work/init_concept_info',
   initAreaInfo: '/api/work/init_area_info',
+  initSubTagInfo: '/api/work/init_sub_tag_info',
 
   // 根据关系重建 stock_tags
-  buildStockTagsFromRelations: '/api/work/build_stock_tags_from_relations',
+  buildStockMainTagByIndustry: '/api/work/build_stock_main_tag_by_industry',
+  buildStockMainTagByConcept: '/api/work/build_stock_main_tag_by_concept',
+  buildStockMainTagBySubTag: '/api/work/build_stock_main_tag_by_sub_tag',
+  buildStockSubTagByIndustry: '/api/work/build_stock_sub_tag_by_industry',
+  buildStockSubTagByConcept: '/api/work/build_stock_sub_tag_by_concept',
+  buildStockSubTagByArea: '/api/work/build_stock_sub_tag_by_area',
+  buildStockHiddenTagByIndustry: '/api/work/build_stock_hidden_tag_by_industry',
+  buildStockHiddenTagByConcept: '/api/work/build_stock_hidden_tag_by_concept',
+  buildStockHiddenTagByArea: '/api/work/build_stock_hidden_tag_by_area',
 
   // 手动打标（保留）
   getStockTagOptions: 'GET /api/work/get_stock_tag_options',
