@@ -25,6 +25,13 @@ export default function Header() {
           >
             <Link href="/trade">交易</Link>
           </div>
+          <div
+            className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
+              '/manage'
+            )}`}
+          >
+            <Link href="/manage">管理</Link>
+          </div>
         </div>
       </div>
     </header>

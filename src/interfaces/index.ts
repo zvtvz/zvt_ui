@@ -1,3 +1,24 @@
+export type TagInfo = {
+  id: string;
+  entity_id: string;
+  timestamp: string;
+  name: string;
+  desc: string | null;
+  main_tag: string | null;
+  priority: number;
+  industries: string[] | null;
+  concepts: string[] | null;
+  areas: string[] | null;
+};
+
+export type BlockInfo = {
+  name: string;
+  desc: string | null;
+  level?: number;
+};
+
+export type TagType = 'main_tag' | 'sub_tag' | 'hidden_tag';
+
 export type StockHistoryTag = {
   id: string;
   entity_id: string;
