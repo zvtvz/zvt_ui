@@ -20,15 +20,17 @@ import {
   Stack,
 } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
-import { TagInfo, BlockInfo, TagType } from '@/interfaces';
+import { MainTagInfo, SubTagInfo, HiddenTagInfo, BlockInfo, TagType } from '@/interfaces';
 import BlockSelectorDialog from './BlockSelectorDialog';
+
+type AnyTagInfo = MainTagInfo | SubTagInfo | HiddenTagInfo;
 
 interface Props {
   open: boolean;
   mode: 'create' | 'edit';
   tagType: TagType;
-  initial?: TagInfo | null;
-  mainTagOptions?: TagInfo[];
+  initial?: AnyTagInfo | null;
+  mainTagOptions?: MainTagInfo[];
   industries: BlockInfo[];
   concepts: BlockInfo[];
   areas: BlockInfo[];
@@ -72,7 +74,7 @@ export default function TagEditDialog({
     if (mode === 'edit' && initial) {
       setName(initial.name);
       setDesc(initial.desc ?? '');
-      setMainTag(initial.main_tag ?? '');
+      setMainTag((initial as SubTagInfo).main_tag ?? '');
       setPriority(initial.priority ?? 0);
       setSelIndustries(initial.industries ?? []);
       setSelConcepts(initial.concepts ?? []);

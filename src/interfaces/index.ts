@@ -1,10 +1,38 @@
-export type TagInfo = {
+/** 主标签：题材/主线，含关联的次标签名称列表 */
+export type MainTagInfo = {
+  id: string;
+  entity_id: string;
+  timestamp: string;
+  name: string;
+  desc: string | null;
+  priority: number;
+  industries: string[] | null;
+  concepts: string[] | null;
+  areas: string[] | null;
+  sub_tags: string[];
+};
+
+/** 次标签：归属某个主标签的细分方向 */
+export type SubTagInfo = {
   id: string;
   entity_id: string;
   timestamp: string;
   name: string;
   desc: string | null;
   main_tag: string | null;
+  priority: number;
+  industries: string[] | null;
+  concepts: string[] | null;
+  areas: string[] | null;
+};
+
+/** 隐藏标签：暗线特征，与主/次标签共同起作用 */
+export type HiddenTagInfo = {
+  id: string;
+  entity_id: string;
+  timestamp: string;
+  name: string;
+  desc: string | null;
   priority: number;
   industries: string[] | null;
   concepts: string[] | null;

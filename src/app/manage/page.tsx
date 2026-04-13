@@ -33,14 +33,15 @@ export default function ManagePage() {
 
       <Tabs value={tab} onChange={(_, v) => setTab(v as number)}>
         <TabList>
-          <Tab>标签目录</Tab>
+          <Tab>主标签</Tab>
+          <Tab>次标签</Tab>
+          <Tab>隐藏标签</Tab>
           <Tab>操作</Tab>
         </TabList>
 
-        {/* 标签目录 */}
+        {/* 主标签 */}
         <TabPanel value={0} sx={{ pt: 3 }}>
           <TagSection
-            title="主标签"
             tagType="main_tag"
             tags={mainTags}
             loading={loading.main}
@@ -48,9 +49,11 @@ export default function ManagePage() {
             onUpdateRelations={(tagName, patch) => updateRelations('main_tag', tagName, patch)}
             {...blockProps}
           />
+        </TabPanel>
 
+        {/* 次标签 */}
+        <TabPanel value={1} sx={{ pt: 3 }}>
           <TagSection
-            title="次标签"
             tagType="sub_tag"
             tags={subTags}
             mainTagOptions={mainTags}
@@ -59,9 +62,11 @@ export default function ManagePage() {
             onUpdateRelations={(tagName, patch) => updateRelations('sub_tag', tagName, patch)}
             {...blockProps}
           />
+        </TabPanel>
 
+        {/* 隐藏标签 */}
+        <TabPanel value={2} sx={{ pt: 3 }}>
           <TagSection
-            title="隐藏标签"
             tagType="hidden_tag"
             tags={hiddenTags}
             loading={loading.hidden}
@@ -72,7 +77,7 @@ export default function ManagePage() {
         </TabPanel>
 
         {/* 操作 */}
-        <TabPanel value={1} sx={{ pt: 3 }}>
+        <TabPanel value={3} sx={{ pt: 3 }}>
           <OperationsTab
             opLog={opLog}
             onInit={initBlocks}

@@ -3,7 +3,7 @@
 import { useRequest } from 'ahooks';
 import { useState } from 'react';
 import services from '@/services';
-import { TagInfo, BlockInfo, TagType } from '@/interfaces';
+import { MainTagInfo, SubTagInfo, HiddenTagInfo, BlockInfo, TagType } from '@/interfaces';
 
 export function useManageData() {
   const mainTags = useRequest(services.getMainTagInfo, { refreshDeps: [] });
@@ -27,7 +27,7 @@ export function useManageData() {
         ? services.createSubTagInfo
         : services.createHiddenTagInfo;
     await api({ name, desc });
-    addLog(`创建${tagType} [${name}] 成功`);
+    addLog(`创建 ${tagType} [${name}] 成功`);
     refreshByType(tagType);
   }
 
@@ -57,17 +57,17 @@ export function useManageData() {
   }
 
   async function initBlocks(type: 'industry' | 'concept' | 'area') {
-    addLog(`正在初始化${type}数据...`);
+    addLog(`正在初始化 ${type} 数据...`);
     try {
       if (type === 'industry') await services.initIndustryInfo();
       else if (type === 'concept') await services.initConceptInfo();
       else await services.initAreaInfo();
-      addLog(`初始化${type}数据完成`);
+      addLog(`初始化 ${type} 数据完成`);
       if (type === 'industry') industries.refresh();
       else if (type === 'concept') concepts.refresh();
       else areas.refresh();
     } catch {
-      addLog(`初始化${type}数据失败`);
+      addLog(`初始化 ${type} 数据失败`);
     }
   }
 
@@ -84,9 +84,9 @@ export function useManageData() {
   }
 
   return {
-    mainTags: (mainTags.data ?? []) as TagInfo[],
-    subTags: (subTags.data ?? []) as TagInfo[],
-    hiddenTags: (hiddenTags.data ?? []) as TagInfo[],
+    mainTags: (mainTags.data ?? []) as MainTagInfo[],
+    subTags: (subTags.data ?? []) as SubTagInfo[],
+    hiddenTags: (hiddenTags.data ?? []) as HiddenTagInfo[],
     industries: (industries.data ?? []) as BlockInfo[],
     concepts: (concepts.data ?? []) as BlockInfo[],
     areas: (areas.data ?? []) as BlockInfo[],
