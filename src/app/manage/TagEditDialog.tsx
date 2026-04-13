@@ -13,8 +13,6 @@ import {
   FormLabel,
   Chip,
   ChipDelete,
-  Select,
-  Option,
   Divider,
   Box,
   Stack,
@@ -30,15 +28,16 @@ interface Props {
   mode: 'create' | 'edit';
   tagType: TagType;
   initial?: AnyTagInfo | null;
-  mainTagOptions?: MainTagInfo[];
+  /** 用于主标签表单选择关联次标签 */
+  subTagOptions?: SubTagInfo[];
   industries: BlockInfo[];
   concepts: BlockInfo[];
   areas: BlockInfo[];
   onSubmit: (data: {
     name: string;
     desc: string;
-    main_tag?: string;
     priority: number;
+    sub_tags: string[];
     industries: string[];
     concepts: string[];
     areas: string[];
@@ -46,14 +45,14 @@ interface Props {
   onClose: () => void;
 }
 
-type SelectorState = 'industries' | 'concepts' | 'areas' | null;
+type SelectorState = 'sub_tags' | 'industries' | 'concepts' | 'areas' | null;
 
 export default function TagEditDialog({
   open,
   mode,
   tagType,
   initial,
-  mainTagOptions = [],
+  subTagOptions = [],
   industries,
   concepts,
   areas,
@@ -62,8 +61,8 @@ export default function TagEditDialog({
 }: Props) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
-  const [mainTag, setMainTag] = useState('');
   const [priority, setPriority] = useState(0);
+  const [selSubTags, setSelSubTags] = useState<string[]>([]);
   const [selIndustries, setSelIndustries] = useState<string[]>([]);
   const [selConcepts, setSelConcepts] = useState<string[]>([]);
   const [selAreas, setSelAreas] = useState<string[]>([]);
@@ -74,39 +73,42 @@ export default function TagEditDialog({
     if (mode === 'edit' && initial) {
       setName(initial.name);
       setDesc(initial.desc ?? '');
-      setMainTag((initial as SubTagInfo).main_tag ?? '');
       setPriority(initial.priority ?? 0);
+      setSelSubTags((initial as MainTagInfo).sub_tags ?? []);
       setSelIndustries(initial.industries ?? []);
       setSelConcepts(initial.concepts ?? []);
       setSelAreas(initial.areas ?? []);
     } else {
       setName('');
       setDesc('');
-      setMainTag(mainTagOptions[0]?.name ?? '');
       setPriority(0);
+      setSelSubTags([]);
       setSelIndustries([]);
       setSelConcepts([]);
       setSelAreas([]);
     }
-  }, [open, mode, initial, mainTagOptions]);
+  }, [open, mode, initial]);
 
   function handleSubmit() {
     if (!name.trim()) return;
     onSubmit({
       name: name.trim(),
       desc: desc.trim(),
-      ...(tagType === 'sub_tag' ? { main_tag: mainTag } : {}),
       priority,
+      sub_tags: selSubTags,
       industries: selIndustries,
       concepts: selConcepts,
       areas: selAreas,
     });
   }
 
+  const subTagItems: BlockInfo[] = subTagOptions.map((t) => ({ name: t.name, desc: t.desc }));
+
   const selectorConfig: Record<
     NonNullable<SelectorState>,
     { title: string; items: BlockInfo[]; selected: string[]; onConfirm: (v: string[]) => void }
   > = {
+    sub_tags: { title: '选择次标签', items: subTagItems, selected: selSubTags, onConfirm: setSelSubTags },
     industries: { title: '选择行业', items: industries, selected: selIndustries, onConfirm: setSelIndustries },
     concepts: { title: '选择概念', items: concepts, selected: selConcepts, onConfirm: setSelConcepts },
     areas: { title: '选择地域', items: areas, selected: selAreas, onConfirm: setSelAreas },
@@ -148,17 +150,6 @@ export default function TagEditDialog({
               />
             </FormControl>
 
-            {tagType === 'sub_tag' && (
-              <FormControl>
-                <FormLabel>所属主标签</FormLabel>
-                <Select value={mainTag} onChange={(_, v) => v && setMainTag(v)}>
-                  {mainTagOptions.map((t) => (
-                    <Option key={t.name} value={t.name}>{t.name}</Option>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
-
             <FormControl>
               <FormLabel>优先级（值越小越优先，默认 0）</FormLabel>
               <Input
@@ -169,6 +160,38 @@ export default function TagEditDialog({
             </FormControl>
 
             <Divider />
+
+            {/* 次标签（仅主标签表单显示） */}
+            {tagType === 'main_tag' && (
+              <FormControl>
+                <FormLabel>关联次标签</FormLabel>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
+                  {selSubTags.map((n) => (
+                    <Chip
+                      key={n}
+                      size="sm"
+                      variant="soft"
+                      color="neutral"
+                      endDecorator={
+                        <ChipDelete onDelete={() => setSelSubTags((p) => p.filter((x) => x !== n))} />
+                      }
+                    >
+                      {n}
+                    </Chip>
+                  ))}
+                  <Chip
+                    size="sm"
+                    variant="outlined"
+                    color="neutral"
+                    startDecorator={<AddIcon fontSize="small" />}
+                    onClick={() => setSelector('sub_tags')}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    添加次标签
+                  </Chip>
+                </Box>
+              </FormControl>
+            )}
 
             {/* 行业 */}
             <FormControl>

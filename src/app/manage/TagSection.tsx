@@ -13,7 +13,19 @@ import {
 } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
-import { MainTagInfo, SubTagInfo, HiddenTagInfo, BlockInfo, TagType } from '@/interfaces';
+import {
+  MainTagInfo,
+  SubTagInfo,
+  HiddenTagInfo,
+  BlockInfo,
+  TagType,
+  CreateMainTagInfo,
+  CreateSubTagInfo,
+  CreateHiddenTagInfo,
+  UpdateMainTagInfo,
+  UpdateSubTagInfo,
+  UpdateHiddenTagInfo,
+} from '@/interfaces';
 import TagEditDialog from './TagEditDialog';
 
 // ─── 泛型行数据 ────────────────────────────────────────────────────────────────
@@ -26,11 +38,8 @@ interface BaseProps {
   concepts: BlockInfo[];
   areas: BlockInfo[];
   loading?: boolean;
-  onCreate: (name: string, desc: string) => Promise<void>;
-  onUpdateRelations: (
-    tagName: string,
-    patch: { industries?: string[]; concepts?: string[]; areas?: string[]; priority?: number }
-  ) => Promise<void>;
+  onCreate: (payload: CreateMainTagInfo | CreateSubTagInfo | CreateHiddenTagInfo) => Promise<void>;
+  onUpdate: (payload: UpdateMainTagInfo | UpdateSubTagInfo | UpdateHiddenTagInfo) => Promise<void>;
 }
 
 // ─── 主标签 Section ────────────────────────────────────────────────────────────
@@ -38,6 +47,8 @@ interface BaseProps {
 interface MainTagSectionProps extends BaseProps {
   tagType: 'main_tag';
   tags: MainTagInfo[];
+  /** 用于在编辑/创建主标签时选择关联的次标签 */
+  subTagOptions: SubTagInfo[];
 }
 
 // ─── 次标签 Section ────────────────────────────────────────────────────────────
@@ -45,7 +56,6 @@ interface MainTagSectionProps extends BaseProps {
 interface SubTagSectionProps extends BaseProps {
   tagType: 'sub_tag';
   tags: SubTagInfo[];
-  mainTagOptions: MainTagInfo[];
 }
 
 // ─── 隐藏标签 Section ──────────────────────────────────────────────────────────
@@ -60,9 +70,9 @@ type TagSectionProps = MainTagSectionProps | SubTagSectionProps | HiddenTagSecti
 // ─── 组件 ─────────────────────────────────────────────────────────────────────
 
 export default function TagSection(props: TagSectionProps) {
-  const { tagType, industries, concepts, areas, loading, onCreate, onUpdateRelations } = props;
+  const { tagType, industries, concepts, areas, loading, onCreate, onUpdate } = props;
   const tags = props.tags as AnyTagInfo[];
-  const mainTagOptions = tagType === 'sub_tag' ? (props as SubTagSectionProps).mainTagOptions : [];
+  const subTagOptions = tagType === 'main_tag' ? (props as MainTagSectionProps).subTagOptions : [];
 
   const [dialog, setDialog] = useState<{ mode: 'create' | 'edit'; tag?: AnyTagInfo } | null>(null);
 
@@ -81,23 +91,19 @@ export default function TagSection(props: TagSectionProps) {
     concepts: string[];
     areas: string[];
   }) {
+    const baseFields = {
+      desc: data.desc || null,
+      priority: data.priority,
+      industries: data.industries.length ? data.industries : null,
+      concepts: data.concepts.length ? data.concepts : null,
+      areas: data.areas.length ? data.areas : null,
+      ...(tagType === 'main_tag' ? { sub_tags: data.sub_tags.length ? data.sub_tags : null } : {}),
+    };
+
     if (dialog?.mode === 'create') {
-      await onCreate(data.name, data.desc);
-      if (data.industries.length || data.concepts.length || data.areas.length || data.priority !== 0) {
-        await onUpdateRelations(data.name, {
-          industries: data.industries,
-          concepts: data.concepts,
-          areas: data.areas,
-          priority: data.priority,
-        });
-      }
+      await onCreate({ name: data.name, ...baseFields });
     } else if (dialog?.mode === 'edit' && dialog.tag) {
-      await onUpdateRelations(dialog.tag.name, {
-        industries: data.industries,
-        concepts: data.concepts,
-        areas: data.areas,
-        priority: data.priority,
-      });
+      await onUpdate({ tag_name: dialog.tag.name, ...baseFields });
     }
     setDialog(null);
   }
@@ -123,7 +129,6 @@ export default function TagSection(props: TagSectionProps) {
           <thead>
             <tr>
               <th style={{ width: 120 }}>名称</th>
-              {tagType === 'sub_tag' && <th style={{ width: 100 }}>所属主标签</th>}
               {tagType === 'main_tag' && <th>关联次标签</th>}
               <th style={{ width: 48, textAlign: 'center' }}>优先级</th>
               <th>关联行业</th>
@@ -157,14 +162,6 @@ export default function TagSection(props: TagSectionProps) {
                       <Typography level="body-sm" fontWeight="md">{tag.name}</Typography>
                     </Tooltip>
                   </td>
-
-                  {tagType === 'sub_tag' && (
-                    <td>
-                      <Typography level="body-xs" textColor="primary.500">
-                        {(tag as SubTagInfo).main_tag ?? '-'}
-                      </Typography>
-                    </td>
-                  )}
 
                   {tagType === 'main_tag' && (
                     <td>
@@ -208,7 +205,7 @@ export default function TagSection(props: TagSectionProps) {
           mode={dialog.mode}
           tagType={tagType}
           initial={dialog.tag ?? null}
-          mainTagOptions={mainTagOptions}
+          subTagOptions={subTagOptions}
           industries={industries}
           concepts={concepts}
           areas={areas}

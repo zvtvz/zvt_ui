@@ -3,7 +3,19 @@
 import { useRequest } from 'ahooks';
 import { useState } from 'react';
 import services from '@/services';
-import { MainTagInfo, SubTagInfo, HiddenTagInfo, BlockInfo, TagType } from '@/interfaces';
+import {
+  MainTagInfo,
+  SubTagInfo,
+  HiddenTagInfo,
+  BlockInfo,
+  TagType,
+  CreateMainTagInfo,
+  CreateSubTagInfo,
+  CreateHiddenTagInfo,
+  UpdateMainTagInfo,
+  UpdateSubTagInfo,
+  UpdateHiddenTagInfo,
+} from '@/interfaces';
 
 export function useManageData() {
   const mainTags = useRequest(services.getMainTagInfo, { refreshDeps: [] });
@@ -19,34 +31,48 @@ export function useManageData() {
     setOpLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 49)]);
   }
 
-  async function createTag(tagType: TagType, name: string, desc: string) {
-    const api =
-      tagType === 'main_tag'
-        ? services.createMainTagInfo
-        : tagType === 'sub_tag'
-        ? services.createSubTagInfo
-        : services.createHiddenTagInfo;
-    await api({ name, desc });
-    addLog(`创建 ${tagType} [${name}] 成功`);
+  async function createTag(
+    tagType: 'main_tag',
+    payload: CreateMainTagInfo
+  ): Promise<void>;
+  async function createTag(
+    tagType: 'sub_tag',
+    payload: CreateSubTagInfo
+  ): Promise<void>;
+  async function createTag(
+    tagType: 'hidden_tag',
+    payload: CreateHiddenTagInfo
+  ): Promise<void>;
+  async function createTag(
+    tagType: TagType,
+    payload: CreateMainTagInfo | CreateSubTagInfo | CreateHiddenTagInfo
+  ) {
+    if (tagType === 'main_tag') {
+      await services.createMainTagInfo(payload as CreateMainTagInfo);
+    } else if (tagType === 'sub_tag') {
+      await services.createSubTagInfo(payload as CreateSubTagInfo);
+    } else {
+      await services.createHiddenTagInfo(payload as CreateHiddenTagInfo);
+    }
+    addLog(`创建 ${tagType} [${payload.name}] 成功`);
     refreshByType(tagType);
   }
 
-  async function updateRelations(
+  async function updateTag(tagType: 'main_tag', payload: UpdateMainTagInfo): Promise<void>;
+  async function updateTag(tagType: 'sub_tag', payload: UpdateSubTagInfo): Promise<void>;
+  async function updateTag(tagType: 'hidden_tag', payload: UpdateHiddenTagInfo): Promise<void>;
+  async function updateTag(
     tagType: TagType,
-    tagName: string,
-    patch: {
-      industries?: string[] | null;
-      concepts?: string[] | null;
-      areas?: string[] | null;
-      priority?: number | null;
-    }
+    payload: UpdateMainTagInfo | UpdateSubTagInfo | UpdateHiddenTagInfo
   ) {
-    await services.updateTagInfoRelations({
-      tag_type: tagType,
-      tag_name: tagName,
-      ...patch,
-    });
-    addLog(`更新 [${tagName}] 关系成功`);
+    if (tagType === 'main_tag') {
+      await services.updateMainTagInfo(payload as UpdateMainTagInfo);
+    } else if (tagType === 'sub_tag') {
+      await services.updateSubTagInfo(payload as UpdateSubTagInfo);
+    } else {
+      await services.updateHiddenTagInfo(payload as UpdateHiddenTagInfo);
+    }
+    addLog(`更新 [${payload.tag_name}] 成功`);
     refreshByType(tagType);
   }
 
@@ -97,7 +123,7 @@ export function useManageData() {
     },
     opLog,
     createTag,
-    updateRelations,
+    updateTag,
     initBlocks,
     buildStockTags,
     refreshByType,

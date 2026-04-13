@@ -12,14 +12,13 @@ export type MainTagInfo = {
   sub_tags: string[];
 };
 
-/** 次标签：归属某个主标签的细分方向 */
+/** 次标签：细分方向，归属由 MainTagInfo.sub_tags 管理 */
 export type SubTagInfo = {
   id: string;
   entity_id: string;
   timestamp: string;
   name: string;
   desc: string | null;
-  main_tag: string | null;
   priority: number;
   industries: string[] | null;
   concepts: string[] | null;
@@ -37,6 +36,68 @@ export type HiddenTagInfo = {
   industries: string[] | null;
   concepts: string[] | null;
   areas: string[] | null;
+};
+
+/** 创建主标签请求体（含直接关联的次标签名称列表） */
+export type CreateMainTagInfo = {
+  name: string;
+  desc?: string | null;
+  priority?: number;
+  sub_tags?: string[] | null;
+  industries?: string[] | null;
+  concepts?: string[] | null;
+  areas?: string[] | null;
+};
+
+/** 创建次标签请求体（独立创建，不指定所属主标签；归属由主标签侧管理） */
+export type CreateSubTagInfo = {
+  name: string;
+  desc?: string | null;
+  priority?: number;
+  industries?: string[] | null;
+  concepts?: string[] | null;
+  areas?: string[] | null;
+};
+
+/** 创建隐藏标签请求体 */
+export type CreateHiddenTagInfo = {
+  name: string;
+  desc?: string | null;
+  priority?: number;
+  industries?: string[] | null;
+  concepts?: string[] | null;
+  areas?: string[] | null;
+};
+
+/** 更新主标签请求体（含次标签列表替换；None 字段不修改，[] 清空）*/
+export type UpdateMainTagInfo = {
+  tag_name: string;
+  desc?: string | null;
+  priority?: number | null;
+  sub_tags?: string[] | null;
+  industries?: string[] | null;
+  concepts?: string[] | null;
+  areas?: string[] | null;
+};
+
+/** 更新次标签请求体（不含所属主标签，归属由主标签侧管理）*/
+export type UpdateSubTagInfo = {
+  tag_name: string;
+  desc?: string | null;
+  priority?: number | null;
+  industries?: string[] | null;
+  concepts?: string[] | null;
+  areas?: string[] | null;
+};
+
+/** 更新隐藏标签请求体 */
+export type UpdateHiddenTagInfo = {
+  tag_name: string;
+  desc?: string | null;
+  priority?: number | null;
+  industries?: string[] | null;
+  concepts?: string[] | null;
+  areas?: string[] | null;
 };
 
 export type BlockInfo = {

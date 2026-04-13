@@ -5,16 +5,23 @@ const apis = {
   getPoolEntities: 'GET /api/stockpool/get_stock_pools',
   createStockPoolInfo: '/api/stockpool/create_stock_pool_info',
 
-  // tag_info 目录管理
+  // 主标签 CRUD
   createMainTagInfo: '/api/work/create_main_tag_info',
-  createSubTagInfo: '/api/work/create_sub_tag_info',
-  createHiddenTagInfo: '/api/work/create_hidden_tag_info',
   getMainTagInfo: 'GET /api/work/get_main_tag_info',
-  getSubTagInfo: 'GET /api/work/get_sub_tag_info',
-  getHiddenTagInfo: 'GET /api/work/get_hidden_tag_info',
+  updateMainTagInfo: '/api/work/update_main_tag_info',
+  deleteMainTagInfo: 'DELETE /api/work/delete_main_tag_info',
 
-  // 关系配置（从 tag_info 侧维护 industries/concepts/areas）
-  updateTagInfoRelations: '/api/work/update_tag_info_relations',
+  // 次标签 CRUD
+  createSubTagInfo: '/api/work/create_sub_tag_info',
+  getSubTagInfo: 'GET /api/work/get_sub_tag_info',
+  updateSubTagInfo: '/api/work/update_sub_tag_info',
+  deleteSubTagInfo: 'DELETE /api/work/delete_sub_tag_info',
+
+  // 隐藏标签 CRUD
+  createHiddenTagInfo: '/api/work/create_hidden_tag_info',
+  getHiddenTagInfo: 'GET /api/work/get_hidden_tag_info',
+  updateHiddenTagInfo: '/api/work/update_hidden_tag_info',
+  deleteHiddenTagInfo: 'DELETE /api/work/delete_hidden_tag_info',
 
   // 行业/概念/地域参考数据（前端管理界面搜索用）
   getIndustryInfo: 'GET /api/work/get_industry_info',

@@ -18,7 +18,7 @@ export default function ManagePage() {
     loading,
     opLog,
     createTag,
-    updateRelations,
+    updateTag,
     initBlocks,
     buildStockTags,
   } = useManageData();
@@ -44,9 +44,10 @@ export default function ManagePage() {
           <TagSection
             tagType="main_tag"
             tags={mainTags}
+            subTagOptions={subTags}
             loading={loading.main}
-            onCreate={(name, desc) => createTag('main_tag', name, desc)}
-            onUpdateRelations={(tagName, patch) => updateRelations('main_tag', tagName, patch)}
+            onCreate={(payload) => createTag('main_tag', payload)}
+            onUpdate={(payload) => updateTag('main_tag', payload)}
             {...blockProps}
           />
         </TabPanel>
@@ -56,10 +57,9 @@ export default function ManagePage() {
           <TagSection
             tagType="sub_tag"
             tags={subTags}
-            mainTagOptions={mainTags}
             loading={loading.sub}
-            onCreate={(name, desc) => createTag('sub_tag', name, desc)}
-            onUpdateRelations={(tagName, patch) => updateRelations('sub_tag', tagName, patch)}
+            onCreate={(payload) => createTag('sub_tag', payload)}
+            onUpdate={(payload) => updateTag('sub_tag', payload)}
             {...blockProps}
           />
         </TabPanel>
@@ -70,8 +70,8 @@ export default function ManagePage() {
             tagType="hidden_tag"
             tags={hiddenTags}
             loading={loading.hidden}
-            onCreate={(name, desc) => createTag('hidden_tag', name, desc)}
-            onUpdateRelations={(tagName, patch) => updateRelations('hidden_tag', tagName, patch)}
+            onCreate={(payload) => createTag('hidden_tag', payload)}
+            onUpdate={(payload) => updateTag('hidden_tag', payload)}
             {...blockProps}
           />
         </TabPanel>
