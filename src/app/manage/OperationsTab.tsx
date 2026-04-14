@@ -8,7 +8,7 @@ import {
   CardContent,
   Box,
   Divider,
-  Chip,
+  Checkbox,
 } from '@mui/joy';
 import FactoryIcon from '@mui/icons-material/Factory';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
@@ -23,11 +23,12 @@ type BuildType =
 interface Props {
   opLog: string[];
   onInit: (type: 'industry' | 'concept' | 'area' | 'sub_tag') => Promise<void>;
-  onBuild: (type: BuildType) => Promise<void>;
+  onBuild: (type: BuildType, options?: { setByUser?: boolean }) => Promise<void>;
 }
 
 export default function OperationsTab({ opLog, onInit, onBuild }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [overwriteUserTags, setOverwriteUserTags] = useState(false);
 
   async function handle(key: string, fn: () => Promise<void>) {
     setBusy(key);
@@ -90,24 +91,40 @@ export default function OperationsTab({ opLog, onInit, onBuild }: Props) {
         </CardContent>
       </Card>
 
+      <Card variant="soft" color="neutral">
+        <CardContent>
+          <Typography level="title-sm" sx={{ mb: 1 }}>
+            关系重建选项
+          </Typography>
+          <Checkbox
+            label="同时覆盖用户手打的股票（set_by_user=true）"
+            checked={overwriteUserTags}
+            onChange={(e) => setOverwriteUserTags(e.target.checked)}
+          />
+          <Typography level="body-xs" textColor="neutral.500" sx={{ mt: 1 }}>
+            不勾选时与原先一致：用户手打记录不参与推导。勾选后会对这些股票写入推导结果并清除手打标记。
+          </Typography>
+        </CardContent>
+      </Card>
+
       {/* 重建主标签 */}
       <Card variant="outlined">
         <CardContent>
           <Typography level="title-sm" sx={{ mb: 1 }}>重建主标签</Typography>
           <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
-            已手动设定（set_by_user=true）的股票跳过。执行顺序由用户决定。
+            默认跳过已手动设定（set_by_user=true）的股票；勾选上方「覆盖用户手打」后会对这些股票一并重建。执行顺序由用户决定。
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Button variant="soft" color="primary" startDecorator={<FactoryIcon />}
-              loading={busy === 'main_industry'} onClick={() => handle('main_industry', () => onBuild('main_industry'))}>
+              loading={busy === 'main_industry'} onClick={() => handle('main_industry', () => onBuild('main_industry', { setByUser: overwriteUserTags }))}>
               行业 → 主标签
             </Button>
             <Button variant="soft" color="success" startDecorator={<LightbulbIcon />}
-              loading={busy === 'main_concept'} onClick={() => handle('main_concept', () => onBuild('main_concept'))}>
+              loading={busy === 'main_concept'} onClick={() => handle('main_concept', () => onBuild('main_concept', { setByUser: overwriteUserTags }))}>
               概念 → 主标签
             </Button>
             <Button variant="soft" color="neutral" startDecorator={<LabelIcon />}
-              loading={busy === 'main_sub_tag'} onClick={() => handle('main_sub_tag', () => onBuild('main_sub_tag'))}>
+              loading={busy === 'main_sub_tag'} onClick={() => handle('main_sub_tag', () => onBuild('main_sub_tag', { setByUser: overwriteUserTags }))}>
               次标签 → 主标签
             </Button>
           </Box>
@@ -120,15 +137,15 @@ export default function OperationsTab({ opLog, onInit, onBuild }: Props) {
           <Typography level="title-sm" sx={{ mb: 1 }}>重建次标签</Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Button variant="soft" color="primary" startDecorator={<FactoryIcon />}
-              loading={busy === 'sub_industry'} onClick={() => handle('sub_industry', () => onBuild('sub_industry'))}>
+              loading={busy === 'sub_industry'} onClick={() => handle('sub_industry', () => onBuild('sub_industry', { setByUser: overwriteUserTags }))}>
               行业 → 次标签
             </Button>
             <Button variant="soft" color="success" startDecorator={<LightbulbIcon />}
-              loading={busy === 'sub_concept'} onClick={() => handle('sub_concept', () => onBuild('sub_concept'))}>
+              loading={busy === 'sub_concept'} onClick={() => handle('sub_concept', () => onBuild('sub_concept', { setByUser: overwriteUserTags }))}>
               概念 → 次标签
             </Button>
             <Button variant="soft" color="warning" startDecorator={<LocationCityIcon />}
-              loading={busy === 'sub_area'} onClick={() => handle('sub_area', () => onBuild('sub_area'))}>
+              loading={busy === 'sub_area'} onClick={() => handle('sub_area', () => onBuild('sub_area', { setByUser: overwriteUserTags }))}>
               地域 → 次标签
             </Button>
           </Box>
@@ -141,15 +158,15 @@ export default function OperationsTab({ opLog, onInit, onBuild }: Props) {
           <Typography level="title-sm" sx={{ mb: 1 }}>重建隐藏标签</Typography>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Button variant="soft" color="primary" startDecorator={<FactoryIcon />}
-              loading={busy === 'hidden_industry'} onClick={() => handle('hidden_industry', () => onBuild('hidden_industry'))}>
+              loading={busy === 'hidden_industry'} onClick={() => handle('hidden_industry', () => onBuild('hidden_industry', { setByUser: overwriteUserTags }))}>
               行业 → 隐藏标签
             </Button>
             <Button variant="soft" color="success" startDecorator={<LightbulbIcon />}
-              loading={busy === 'hidden_concept'} onClick={() => handle('hidden_concept', () => onBuild('hidden_concept'))}>
+              loading={busy === 'hidden_concept'} onClick={() => handle('hidden_concept', () => onBuild('hidden_concept', { setByUser: overwriteUserTags }))}>
               概念 → 隐藏标签
             </Button>
             <Button variant="soft" color="warning" startDecorator={<LocationCityIcon />}
-              loading={busy === 'hidden_area'} onClick={() => handle('hidden_area', () => onBuild('hidden_area'))}>
+              loading={busy === 'hidden_area'} onClick={() => handle('hidden_area', () => onBuild('hidden_area', { setByUser: overwriteUserTags }))}>
               地域 → 隐藏标签
             </Button>
           </Box>

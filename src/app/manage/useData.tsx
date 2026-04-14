@@ -128,11 +128,20 @@ export function useManageData() {
     hidden_area: (b) => services.buildStockHiddenTagByArea(b),
   };
 
-  async function buildStockTags(type: BuildType, entityIds?: string[]) {
+  async function buildStockTags(
+    type: BuildType,
+    options?: { entityIds?: string[]; setByUser?: boolean }
+  ) {
     const label = buildLabelMap[type];
-    addLog(`正在重建股票标签（${label}）...`);
+    const overwrite = Boolean(options?.setByUser);
+    addLog(
+      `正在重建股票标签（${label}）${overwrite ? '，覆盖用户手打记录' : ''}...`
+    );
     try {
-      const res = await buildApiMap[type]({ entity_ids: entityIds ?? null });
+      const res = await buildApiMap[type]({
+        entity_ids: options?.entityIds ?? null,
+        set_by_user: overwrite,
+      });
       addLog(`重建完成（${label}）：处理 ${res?.processed ?? '?'} 条，跳过 ${res?.skipped ?? '?'} 条`);
     } catch {
       addLog(`重建股票标签（${label}）失败`);
