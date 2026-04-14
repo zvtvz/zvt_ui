@@ -17,6 +17,53 @@ import {
   UpdateHiddenTagInfo,
 } from '@/interfaces';
 
+export type StockTagBuildType =
+  | 'main_industry'
+  | 'main_concept'
+  | 'main_sub_tag'
+  | 'sub_industry'
+  | 'sub_concept'
+  | 'sub_area'
+  | 'hidden_industry'
+  | 'hidden_concept'
+  | 'hidden_area';
+
+/** 与后端 BuildStockTagsFromRelationsModel 对应；sources 按本次重建维度取其一传入接口 */
+export type BuildStockTagsOptions = {
+  entityIds?: string[];
+  setByUser?: boolean;
+  /** 目标 tag_info.name，仅匹配/写入该标签定义 */
+  tagName?: string;
+  /** 行业类重建：仅这些行业名称参与关联 */
+  industrySources?: string[];
+  /** 概念类重建 */
+  conceptSources?: string[];
+  /** 地域类重建 */
+  areaSources?: string[];
+  /** 仅「次标签→主标签」：当前 sub_tag 须在此列表内才参与推导 */
+  subTagSources?: string[];
+};
+
+function relationSourcesForBuildType(
+  type: StockTagBuildType,
+  options: BuildStockTagsOptions | undefined
+): string[] | undefined {
+  if (!options) return undefined;
+  if (type === 'main_sub_tag') {
+    return options.subTagSources?.length ? options.subTagSources : undefined;
+  }
+  if (type.endsWith('_industry')) {
+    return options.industrySources?.length ? options.industrySources : undefined;
+  }
+  if (type.endsWith('_concept')) {
+    return options.conceptSources?.length ? options.conceptSources : undefined;
+  }
+  if (type.endsWith('_area')) {
+    return options.areaSources?.length ? options.areaSources : undefined;
+  }
+  return undefined;
+}
+
 export function useManageData() {
   const mainTags = useRequest(services.getMainTagInfo, { refreshDeps: [] });
   const subTags = useRequest(services.getSubTagInfo, { refreshDeps: [] });
@@ -99,12 +146,7 @@ export function useManageData() {
     }
   }
 
-  type BuildType =
-    | 'main_industry' | 'main_concept' | 'main_sub_tag'
-    | 'sub_industry' | 'sub_concept' | 'sub_area'
-    | 'hidden_industry' | 'hidden_concept' | 'hidden_area';
-
-  const buildLabelMap: Record<BuildType, string> = {
+  const buildLabelMap: Record<StockTagBuildType, string> = {
     main_industry: '行业→主标签',
     main_concept: '概念→主标签',
     main_sub_tag: '次标签→主标签',
@@ -116,7 +158,10 @@ export function useManageData() {
     hidden_area: '地域→隐藏标签',
   };
 
-  const buildApiMap: Record<BuildType, (body: object) => Promise<{ processed?: number; skipped?: number }>> = {
+  const buildApiMap: Record<
+    StockTagBuildType,
+    (body: object) => Promise<{ processed?: number; skipped?: number }>
+  > = {
     main_industry: (b) => services.buildStockMainTagByIndustry(b),
     main_concept: (b) => services.buildStockMainTagByConcept(b),
     main_sub_tag: (b) => services.buildStockMainTagBySubTag(b),
@@ -128,20 +173,24 @@ export function useManageData() {
     hidden_area: (b) => services.buildStockHiddenTagByArea(b),
   };
 
-  async function buildStockTags(
-    type: BuildType,
-    options?: { entityIds?: string[]; setByUser?: boolean }
-  ) {
+  async function buildStockTags(type: StockTagBuildType, options?: BuildStockTagsOptions) {
     const label = buildLabelMap[type];
     const overwrite = Boolean(options?.setByUser);
-    addLog(
-      `正在重建股票标签（${label}）${overwrite ? '，覆盖用户手打记录' : ''}...`
-    );
+    const tagNameTrimmed = options?.tagName?.trim();
+    const sources = relationSourcesForBuildType(type, options);
+    const extras: string[] = [];
+    if (tagNameTrimmed) extras.push(`目标标签=${tagNameTrimmed}`);
+    if (sources?.length) extras.push(`关联属性=${sources.join('、')}`);
+    const extraLog = extras.length ? `（${extras.join('；')}）` : '';
+    addLog(`正在重建股票标签（${label}）${overwrite ? '，覆盖手动设置' : ''}${extraLog}...`);
     try {
-      const res = await buildApiMap[type]({
+      const body: Record<string, unknown> = {
         entity_ids: options?.entityIds ?? null,
         set_by_user: overwrite,
-      });
+      };
+      if (tagNameTrimmed) body.tag_name = tagNameTrimmed;
+      if (sources?.length) body.sources = sources;
+      const res = await buildApiMap[type](body);
       addLog(`重建完成（${label}）：处理 ${res?.processed ?? '?'} 条，跳过 ${res?.skipped ?? '?'} 条`);
     } catch {
       addLog(`重建股票标签（${label}）失败`);

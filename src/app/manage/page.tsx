@@ -31,8 +31,36 @@ export default function ManagePage() {
         标签管理
       </Typography>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v as number)}>
-        <TabList>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v as number)}
+        sx={{ mb: 0.5 }}
+      >
+        <TabList
+          variant="plain"
+          sx={{
+            gap: 0.5,
+            py: 0.5,
+            px: 0.5,
+            borderRadius: 'sm',
+            bgcolor: 'background.surface',
+            boxShadow: 'sm',
+            border: '1px solid',
+            borderColor: 'divider',
+            '& [role="tab"]': {
+              fontSize: 'md',
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              py: 1.25,
+              px: 2,
+              borderRadius: 'sm',
+            },
+            '& [role="tab"][aria-selected="true"]': {
+              bgcolor: 'primary.softBg',
+              color: 'primary.plainColor',
+            },
+          }}
+        >
           <Tab>主标签</Tab>
           <Tab>次标签</Tab>
           <Tab>隐藏标签</Tab>
@@ -80,6 +108,12 @@ export default function ManagePage() {
         <TabPanel value={3} sx={{ pt: 3 }}>
           <OperationsTab
             opLog={opLog}
+            mainTags={mainTags}
+            subTags={subTags}
+            hiddenTags={hiddenTags}
+            industries={industries}
+            concepts={concepts}
+            areas={areas}
             onInit={initBlocks}
             onBuild={buildStockTags}
           />
