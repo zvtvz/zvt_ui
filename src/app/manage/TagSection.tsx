@@ -150,7 +150,7 @@ export default function TagSection(props: TagSectionProps) {
               <tr>
                 <td colSpan={8}>
                   <Typography level="body-sm" textColor="neutral.400" sx={{ p: 1.5 }}>
-                    暂无数据，点击"新增"创建
+                    暂无数据，点击「新增」创建
                   </Typography>
                 </td>
               </tr>

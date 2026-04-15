@@ -106,7 +106,7 @@ export default function TagUpdateDialog({
       )?.desc,
       hidden_tags: hiddenTagsArray,
     });
-  }, [stockTagInfo]);
+  }, [stockTagInfo, setState]);
 
   const {
     main_tag_options = [],

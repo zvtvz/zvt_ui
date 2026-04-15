@@ -72,7 +72,7 @@ export default function NewsAnalysises({ dialog }: { dialog: any }) {
     };
 
     poolLoadNews();
-  }, []);
+  }, [unmountedRef]);
 
   return (
     <div className="h-[700px] overflow-auto text-[12px]">
