@@ -31,7 +31,7 @@ export type StockTagBuildType =
 /** 与后端 BuildStockTagsFromRelationsModel 对应；sources 按本次重建维度取其一传入接口 */
 export type BuildStockTagsOptions = {
   entityIds?: string[];
-  setByUser?: boolean;
+  overwriteSetByUser?: boolean;
   /** 目标 tag_info.name，仅匹配/写入该标签定义 */
   tagName?: string;
   /** 行业类重建：仅这些行业名称参与关联 */
@@ -175,7 +175,7 @@ export function useManageData() {
 
   async function buildStockTags(type: StockTagBuildType, options?: BuildStockTagsOptions) {
     const label = buildLabelMap[type];
-    const overwrite = Boolean(options?.setByUser);
+    const overwrite = Boolean(options?.overwriteSetByUser);
     const tagNameTrimmed = options?.tagName?.trim();
     const sources = relationSourcesForBuildType(type, options);
     const extras: string[] = [];
@@ -186,7 +186,7 @@ export function useManageData() {
     try {
       const body: Record<string, unknown> = {
         entity_ids: options?.entityIds ?? null,
-        set_by_user: overwrite,
+        overwrite_set_by_user: overwrite,
       };
       if (tagNameTrimmed) body.tag_name = tagNameTrimmed;
       if (sources?.length) body.sources = sources;

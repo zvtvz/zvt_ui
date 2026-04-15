@@ -96,7 +96,7 @@ export default function OperationsTab({
 
   function optionsForBuildType(type: StockTagBuildType): BuildStockTagsOptions {
     const trimmed = targetTagName.trim();
-    const options: BuildStockTagsOptions = { setByUser: overwriteUserTags };
+    const options: BuildStockTagsOptions = { overwriteSetByUser: overwriteUserTags };
     if (trimmed) options.tagName = trimmed;
     if (type === 'main_sub_tag' && subTagSources.length) options.subTagSources = [...subTagSources];
     if (type.endsWith('_industry') && industrySources.length) options.industrySources = [...industrySources];
