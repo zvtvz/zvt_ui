@@ -45,8 +45,10 @@ const apis = {
   buildStockHiddenTagByConcept: '/api/work/build_stock_hidden_tag_by_concept',
   buildStockHiddenTagByArea: '/api/work/build_stock_hidden_tag_by_area',
 
-  // 手动打标（保留）
-  getStockTagOptions: 'GET /api/work/get_stock_tag_options',
+  // 手动打标
+  getStockTags: 'GET /api/work/get_stock_tags',
+  getStockTagCatalogOptions: 'GET /api/work/get_stock_tag_catalog_options',
+  removeStockTag: '/api/work/remove_stock_tag',
   updateStockTags: '/api/work/set_stock_tags',
   batchUpdateStockTags: '/api/work/batch_set_stock_tags',
 

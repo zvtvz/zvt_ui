@@ -56,7 +56,6 @@ export default function StockDetail({
       {open && (
         <TagUpdateDialog
           open={open}
-          onSubmit={() => setOpen(false)}
           stock={stocks.current}
           onCancel={() => setOpen(false)}
         />
