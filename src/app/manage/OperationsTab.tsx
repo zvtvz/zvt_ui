@@ -12,13 +12,13 @@ import {
   Checkbox,
   Select,
   Option,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanel,
   Radio,
   RadioGroup,
 } from '@mui/joy';
+import {
+  tradePoolTabClass,
+  tradePoolTabActiveClass,
+} from './tradeStyleClasses';
 import FactoryIcon from '@mui/icons-material/Factory';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
@@ -37,6 +37,13 @@ type MainBuildAxis = 'industry' | 'concept' | 'sub_tag';
 type SourceAxis = 'industry' | 'concept' | 'area' | 'sub_tag';
 
 const TARGET_TAG_NONE = '__none__';
+
+const OPERATION_SECTION_LABELS = [
+  '数据初始化',
+  '维护主标签',
+  '维护次标签',
+  '维护隐藏标签',
+] as const;
 
 interface Props {
   opLog: string[];
@@ -135,7 +142,14 @@ export default function OperationsTab({
           py: 1,
         }}
       >
-        <Button variant="solid" color="primary" loading={busy === buildType} onClick={() => runBuild(buildType)}>
+        <Button
+          variant="solid"
+          color="primary"
+          size="sm"
+          className="!text-[12px]"
+          loading={busy === buildType}
+          onClick={() => runBuild(buildType)}
+        >
           构建标签
         </Button>
         <Checkbox
@@ -185,11 +199,13 @@ export default function OperationsTab({
     };
 
     return (
-      <Card variant="outlined">
+      <Card variant="plain" size="sm">
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
             <FilterListIcon fontSize="small" />
-            <Typography level="title-sm">重建限定（可选）</Typography>
+            <Typography level="title-sm" className="!text-sm !font-bold">
+              重建限定（可选）
+            </Typography>
           </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box>
@@ -218,7 +234,13 @@ export default function OperationsTab({
               </Select>
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-              <Button size="sm" variant="outlined" color={pickerColor} onClick={openPicker}>
+              <Button
+                size="sm"
+                variant="outlined"
+                color={pickerColor}
+                className="!text-[12px]"
+                onClick={openPicker}
+              >
                 选择{axisLabel}名称
               </Button>
             </Box>
@@ -321,49 +343,30 @@ export default function OperationsTab({
       />
 
       <Box sx={{ pt: 0.5 }}>
-        <Tabs
-          value={operationSectionTab}
-          onChange={(_, value) => setOperationSectionTab(value as number)}
-          size="sm"
-        >
-          <TabList
-            size="sm"
-            variant="soft"
-            color="neutral"
-            sx={{
-              gap: 0.25,
-              p: 0.5,
-              borderRadius: 'sm',
-              minHeight: 36,
-              boxShadow: 'none',
-              bgcolor: 'neutral.softBg',
-              border: '1px solid',
-              borderColor: 'neutral.outlinedBorder',
-              '& [role="tab"]': {
-                fontSize: 'sm',
-                fontWeight: 500,
-                minHeight: '1.75rem',
-                py: 0.5,
-                px: 1.25,
-                borderRadius: 'sm',
-              },
-              '& [role="tab"][aria-selected="true"]': {
-                bgcolor: 'background.surface',
-                boxShadow: 'xs',
-                color: 'text.primary',
-              },
-            }}
-          >
-            <Tab>数据初始化</Tab>
-            <Tab>维护主标签</Tab>
-            <Tab>维护次标签</Tab>
-            <Tab>维护隐藏标签</Tab>
-          </TabList>
+        <div className="flex flex-row items-center flex-wrap gap-y-1 border-b border-neutral-200 pb-2 mb-3">
+          {OPERATION_SECTION_LABELS.map((label, index) => (
+            <div
+              key={label}
+              role="button"
+              tabIndex={0}
+              className={`${tradePoolTabClass} ${operationSectionTab === index ? tradePoolTabActiveClass : ''}`}
+              onClick={() => setOperationSectionTab(index)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setOperationSectionTab(index);
+                }
+              }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
 
-        <TabPanel value={0} sx={{ pt: 2 }}>
-          <Card variant="outlined">
+        {operationSectionTab === 0 && (
+          <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
-              <Typography level="title-sm" sx={{ mb: 2 }}>
+              <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
                 数据初始化
               </Typography>
               <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
@@ -371,6 +374,8 @@ export default function OperationsTab({
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <Button
+                  size="sm"
+                  className="!text-[12px]"
                   startDecorator={<FactoryIcon />}
                   variant="soft"
                   color="primary"
@@ -380,6 +385,8 @@ export default function OperationsTab({
                   初始化行业数据
                 </Button>
                 <Button
+                  size="sm"
+                  className="!text-[12px]"
                   startDecorator={<LightbulbIcon />}
                   variant="soft"
                   color="success"
@@ -389,6 +396,8 @@ export default function OperationsTab({
                   初始化概念数据
                 </Button>
                 <Button
+                  size="sm"
+                  className="!text-[12px]"
                   startDecorator={<LocationCityIcon />}
                   variant="soft"
                   color="warning"
@@ -398,6 +407,8 @@ export default function OperationsTab({
                   初始化地域数据
                 </Button>
                 <Button
+                  size="sm"
+                  className="!text-[12px]"
                   startDecorator={<LabelIcon />}
                   variant="soft"
                   color="neutral"
@@ -409,12 +420,15 @@ export default function OperationsTab({
               </Box>
             </CardContent>
           </Card>
-        </TabPanel>
+        )}
 
-        <TabPanel value={1} sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Card variant="outlined">
+        {operationSectionTab === 1 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Card variant="plain" size="sm">
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography level="title-sm">来自属性</Typography>
+              <Typography level="title-sm" className="!text-sm !font-bold">
+                来自属性
+              </Typography>
               <RadioGroup
                 orientation="horizontal"
                 value={mainBuildAxis}
@@ -439,12 +453,16 @@ export default function OperationsTab({
                 ? 'main_concept'
                 : 'main_sub_tag'
           )}
-        </TabPanel>
+          </Box>
+        )}
 
-        <TabPanel value={2} sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Card variant="outlined">
+        {operationSectionTab === 2 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Card variant="plain" size="sm">
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography level="title-sm">来自属性</Typography>
+              <Typography level="title-sm" className="!text-sm !font-bold">
+                来自属性
+              </Typography>
               <RadioGroup
                 orientation="horizontal"
                 value={subBuildAxis}
@@ -469,12 +487,16 @@ export default function OperationsTab({
                 ? 'sub_concept'
                 : 'sub_area'
           )}
-        </TabPanel>
+          </Box>
+        )}
 
-        <TabPanel value={3} sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Card variant="outlined">
+        {operationSectionTab === 3 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Card variant="plain" size="sm">
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography level="title-sm">来自属性</Typography>
+              <Typography level="title-sm" className="!text-sm !font-bold">
+                来自属性
+              </Typography>
               <RadioGroup
                 orientation="horizontal"
                 value={hiddenBuildAxis}
@@ -499,14 +521,14 @@ export default function OperationsTab({
                 ? 'hidden_concept'
                 : 'hidden_area'
           )}
-        </TabPanel>
-        </Tabs>
+          </Box>
+        )}
       </Box>
 
       {/* 操作日志 */}
-      <Card variant="outlined">
+      <Card variant="plain" size="sm" sx={{ mt: 2 }}>
         <CardContent>
-          <Typography level="title-sm" sx={{ mb: 1 }}>
+          <Typography level="title-sm" sx={{ mb: 1 }} className="!text-sm !font-bold">
             操作日志
           </Typography>
           <Divider sx={{ mb: 1 }} />

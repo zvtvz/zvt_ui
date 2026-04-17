@@ -123,6 +123,18 @@ export function useManageData() {
     refreshByType(tagType);
   }
 
+  async function deleteTag(tagType: TagType, tagName: string) {
+    if (tagType === 'main_tag') {
+      await services.deleteMainTagInfo({ name: tagName });
+    } else if (tagType === 'sub_tag') {
+      await services.deleteSubTagInfo({ name: tagName });
+    } else {
+      await services.deleteHiddenTagInfo({ name: tagName });
+    }
+    addLog(`删除 [${tagName}] 成功`);
+    refreshByType(tagType);
+  }
+
   function refreshByType(tagType: TagType) {
     if (tagType === 'main_tag') mainTags.refresh();
     else if (tagType === 'sub_tag') subTags.refresh();
@@ -212,6 +224,7 @@ export function useManageData() {
     opLog,
     createTag,
     updateTag,
+    deleteTag,
     initBlocks,
     buildStockTags,
     refreshByType,

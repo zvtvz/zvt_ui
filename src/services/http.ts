@@ -14,16 +14,14 @@ interface IServiceRequestFn<T = any> {
 }
 
 function parseServiceUrl(value: string) {
-  let method;
-  let url;
-  if (value.startsWith('GET')) {
-    method = 'GET';
-    url = value.replace('GET', '').trim();
-  } else {
-    method = 'POST';
-    url = value.trim();
+  const trimmed = value.trim();
+  if (trimmed.startsWith('GET ')) {
+    return { method: 'GET', url: trimmed.slice(4).trim() };
   }
-  return { method, url };
+  if (trimmed.startsWith('DELETE ')) {
+    return { method: 'DELETE', url: trimmed.slice(7).trim() };
+  }
+  return { method: 'POST', url: trimmed };
 }
 
 export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
@@ -48,6 +46,14 @@ export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
     if (data) {
       if (options.method === 'GET') {
         realUrl = realUrl + '?' + qs.stringify(data);
+      } else if (
+        options.method === 'DELETE' &&
+        typeof data === 'object' &&
+        data !== null &&
+        'name' in data &&
+        (data as { name: unknown }).name != null
+      ) {
+        realUrl = `${realUrl}/${encodeURIComponent(String((data as { name: string }).name))}`;
       } else {
         options.body = JSON.stringify(data);
       }

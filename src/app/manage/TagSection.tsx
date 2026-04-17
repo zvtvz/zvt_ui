@@ -6,13 +6,12 @@ import {
   Button,
   Chip,
   Table,
-  Sheet,
   Box,
   Tooltip,
-  IconButton,
 } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
+import useConfirmDialog from '@/components/Dialog/useConfirmDialog';
+import Dialog from '@/components/Dialog';
 import {
   MainTagInfo,
   SubTagInfo,
@@ -40,6 +39,7 @@ interface BaseProps {
   loading?: boolean;
   onCreate: (payload: CreateMainTagInfo | CreateSubTagInfo | CreateHiddenTagInfo) => Promise<void>;
   onUpdate: (payload: UpdateMainTagInfo | UpdateSubTagInfo | UpdateHiddenTagInfo) => Promise<void>;
+  onDelete: (tagName: string) => Promise<void>;
 }
 
 // ─── 主标签 Section ────────────────────────────────────────────────────────────
@@ -70,11 +70,13 @@ type TagSectionProps = MainTagSectionProps | SubTagSectionProps | HiddenTagSecti
 // ─── 组件 ─────────────────────────────────────────────────────────────────────
 
 export default function TagSection(props: TagSectionProps) {
-  const { tagType, industries, concepts, areas, loading, onCreate, onUpdate } = props;
+  const { tagType, industries, concepts, areas, loading, onCreate, onUpdate, onDelete } = props;
   const tags = props.tags as AnyTagInfo[];
   const subTagOptions = tagType === 'main_tag' ? (props as MainTagSectionProps).subTagOptions : [];
 
   const [dialog, setDialog] = useState<{ mode: 'create' | 'edit'; tag?: AnyTagInfo } | null>(null);
+  const confirmDialog = useConfirmDialog();
+  const columnCount = tagType === 'main_tag' ? 7 : 6;
 
   const tagTypeLabel: Record<TagType, string> = {
     main_tag: '主标签',
@@ -108,25 +110,34 @@ export default function TagSection(props: TagSectionProps) {
     setDialog(null);
   }
 
+  function confirmDeleteTag(tag: AnyTagInfo) {
+    confirmDialog.show({
+      title: '删除标签',
+      content: `确定删除${tagTypeLabel[tagType]}「${tag.name}」？相关股票上的该标签将被清除。`,
+      async onOk() {
+        await onDelete(tag.name);
+      },
+    });
+  }
+
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography level="body-xs" textColor="neutral.400">
-          共 {tags.length} 个
-        </Typography>
+      <div className="flex flex-row justify-between items-center mb-2">
+        <span className="opacity-85 text-sm">共 {tags.length} 个</span>
         <Button
           size="sm"
           variant="soft"
           startDecorator={<AddIcon />}
+          className="!text-[12px] !py-1"
           onClick={() => setDialog({ mode: 'create' })}
         >
           新增{tagTypeLabel[tagType]}
         </Button>
-      </Box>
+      </div>
 
-      <Sheet variant="outlined" sx={{ borderRadius: 'sm', overflow: 'auto' }}>
-        <Table size="sm" stripe="even" hoverRow>
-          <thead>
+      <div className="overflow-auto">
+        <Table borderAxis="xBetween" size="sm" hoverRow stickyHeader>
+          <thead className="font-bold">
             <tr>
               <th style={{ width: 120 }}>名称</th>
               {tagType === 'main_tag' && <th>关联次标签</th>}
@@ -134,13 +145,13 @@ export default function TagSection(props: TagSectionProps) {
               <th>关联行业</th>
               <th>关联概念</th>
               <th>关联地域</th>
-              <th style={{ width: 48 }} />
+              <th style={{ width: 140, whiteSpace: 'nowrap' }}>操作</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={columnCount}>
                   <Typography level="body-sm" textColor="neutral.400" sx={{ p: 1.5 }}>
                     加载中...
                   </Typography>
@@ -148,7 +159,7 @@ export default function TagSection(props: TagSectionProps) {
               </tr>
             ) : tags.length === 0 ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={columnCount}>
                   <Typography level="body-sm" textColor="neutral.400" sx={{ p: 1.5 }}>
                     暂无数据，点击「新增」创建
                   </Typography>
@@ -183,21 +194,33 @@ export default function TagSection(props: TagSectionProps) {
                   <td><ChipList items={tag.areas} color="warning" /></td>
 
                   <td>
-                    <IconButton
-                      size="sm"
-                      variant="plain"
-                      color="neutral"
-                      onClick={() => setDialog({ mode: 'edit', tag })}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0.75 }}>
+                      <Button
+                        size="sm"
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => setDialog({ mode: 'edit', tag })}
+                        sx={{ minWidth: 0, fontSize: 12, px: 1.25, py: 0.25 }}
+                      >
+                        编辑
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outlined"
+                        color="danger"
+                        onClick={() => confirmDeleteTag(tag)}
+                        sx={{ minWidth: 0, fontSize: 12, px: 1.25, py: 0.25 }}
+                      >
+                        删除
+                      </Button>
+                    </Box>
                   </td>
                 </tr>
               ))
             )}
           </tbody>
         </Table>
-      </Sheet>
+      </div>
 
       {dialog && (
         <TagEditDialog
@@ -213,6 +236,7 @@ export default function TagSection(props: TagSectionProps) {
           onClose={() => setDialog(null)}
         />
       )}
+      {confirmDialog.open && <Dialog.Confirm {...confirmDialog.props} />}
     </Box>
   );
 }
