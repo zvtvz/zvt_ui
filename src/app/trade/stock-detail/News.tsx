@@ -79,12 +79,19 @@ export default function Events({
     });
   };
 
-  const handleIgnoreNews = (news: any) => {
+  const handleIgnoreNews = (newsItem: any) => {
     confirmDialog.show({
       title: '提示',
       content: '是否确定忽略此新闻？',
       async onOk() {
-        await services.ignoreStockNews({ news_id: news.id });
+        if (!entityId) {
+          dialog.show({ title: '无法忽略', content: '缺少当前股票 entity_id' });
+          return;
+        }
+        await services.ignoreStockNews({
+          news_id: newsItem.id,
+          entity_id: entityId,
+        });
         refreshNews();
       },
     });
