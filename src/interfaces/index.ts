@@ -154,6 +154,30 @@ export type Stock = {
   }[];
 };
 
+/** ``GET /api/work/list_stocks`` 单行；可选 ``key``：含中文至少 2 字、否则至少 4 字符，按 code/name 子串匹配 */
+export type StockListItem = {
+  entity_id: string;
+  code: string;
+  name: string;
+};
+
+/** 热点题材 / 能量侧列表（与后端 ``StockHotTopic`` 一致） */
+export type StockHotTopicItem = {
+  id: string;
+  entity_id: string;
+  timestamp: string;
+  created_timestamp?: string | null;
+  rank?: number | null;
+  entity_ids?: string[] | null;
+  news_code?: string | null;
+  news_title?: string | null;
+  news_content?: string | null;
+  news_analysis?: Record<string, unknown> | null;
+  related_stocks?: string[] | null;
+  main_tags?: string[] | null;
+  sub_tags?: string[] | null;
+};
+
 export type StockItemStats = {
   id: string;
   entity_id: string;

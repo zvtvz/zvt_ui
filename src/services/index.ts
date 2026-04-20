@@ -47,12 +47,21 @@ const apis = {
 
   // 手动打标
   getStockTags: 'GET /api/work/get_stock_tags',
+  listStocks: 'GET /api/work/list_stocks',
   getStockTagCatalogOptions: 'GET /api/work/get_stock_tag_catalog_options',
   removeStockTag: '/api/work/remove_stock_tag',
   updateStockTags: '/api/work/set_stock_tags',
   batchUpdateStockTags: '/api/work/batch_set_stock_tags',
 
   getStockEvents: 'GET /api/event/get_stock_event',
+  listStockHotTopic: 'GET /api/event/list_stock_hot_topic',
+  updateStockHotTopic: '/api/event/update_stock_hot_topic',
+  addStockHotTopicRelatedStock: '/api/event/stock_hot_topic/add_related_stock',
+  removeStockHotTopicRelatedStock: '/api/event/stock_hot_topic/remove_related_stock',
+  addStockHotTopicMainTag: '/api/event/stock_hot_topic/add_main_tag',
+  removeStockHotTopicMainTag: '/api/event/stock_hot_topic/remove_main_tag',
+  addStockHotTopicSubTag: '/api/event/stock_hot_topic/add_sub_tag',
+  removeStockHotTopicSubTag: '/api/event/stock_hot_topic/remove_sub_tag',
   ignoreStockNews: '/api/event/ignore_stock_news',
   getSuggestionStats: 'GET /api/event/get_tag_suggestions_stats',
   getNewsAnalysis: 'GET /api/event/get_stock_news_analysis',
