@@ -1,7 +1,6 @@
 'use client';
 
 import services from '@/services';
-import { toMoney, toTradePercent } from '@/utils';
 import { useRequest } from 'ahooks';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,7 +22,14 @@ export default function Header() {
               '/trade'
             )}`}
           >
-            <Link href="/trade">交易</Link>
+            <Link href="/trade">结构</Link>
+          </div>
+          <div
+            className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
+              '/energy'
+            )}`}
+          >
+            <Link href="/energy">能量</Link>
           </div>
           <div
             className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
