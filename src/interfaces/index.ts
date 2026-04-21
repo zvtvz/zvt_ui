@@ -173,9 +173,10 @@ export type StockHotTopicItem = {
   news_title?: string | null;
   news_content?: string | null;
   news_analysis?: Record<string, unknown> | null;
-  related_stocks?: string[] | null;
-  main_tags?: string[] | null;
-  sub_tags?: string[] | null;
+  /** 利好主标签名称列表 */
+  positive_main_tags?: string[] | null;
+  /** 利空主标签名称列表 */
+  negative_main_tags?: string[] | null;
 };
 
 export type StockItemStats = {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useDebounce, useRequest } from 'ahooks';
+import { useCallback, useMemo, useState } from 'react';
+import { useRequest } from 'ahooks';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import {
   Box,
@@ -10,10 +10,7 @@ import {
   CardContent,
   Chip,
   Divider,
-  FormControl,
-  FormLabel,
   IconButton,
-  Input,
   List,
   ListItem,
   ListItemButton,
@@ -71,25 +68,11 @@ function RemovablePill(props: {
 }
 
 import services from '@/services';
-import type { MainTagInfo, StockHotTopicItem, StockListItem, SubTagInfo } from '@/interfaces';
+import type { MainTagInfo, StockHotTopicItem } from '@/interfaces';
 
-type RelKind = 'related' | 'main' | 'sub';
-
-/** 含汉字时至少 2 字触发搜索，否则至少 4 个字符（如股票代码）。 */
-function listStocksSearchMinLength(keyword: string): number {
-  return /[\u4e00-\u9fff\u3400-\u4dbf]/.test(keyword) ? 2 : 4;
-}
+type HotMainTagKind = 'positive_main' | 'negative_main';
 
 function sortMainTagsByPriorityThenName(tags: MainTagInfo[]) {
-  return [...tags].sort((left, right) => {
-    if (left.priority !== right.priority) {
-      return left.priority - right.priority;
-    }
-    return left.name.localeCompare(right.name, 'zh-Hans-CN');
-  });
-}
-
-function sortSubTagsByPriorityThenName(tags: SubTagInfo[]) {
   return [...tags].sort((left, right) => {
     if (left.priority !== right.priority) {
       return left.priority - right.priority;
@@ -102,14 +85,9 @@ export default function EnergyPage() {
   const { data: mainTagList = [], loading: mainTagsLoading } = useRequest(
     services.getMainTagInfo
   );
-  const { data: subTagList = [] } = useRequest(services.getSubTagInfo);
   const sortedMainTags = useMemo(
     () => sortMainTagsByPriorityThenName(mainTagList as MainTagInfo[]),
     [mainTagList]
-  );
-  const sortedSubTags = useMemo(
-    () => sortSubTagsByPriorityThenName(subTagList as SubTagInfo[]),
-    [subTagList]
   );
 
   const [selectedMainTagName, setSelectedMainTagName] = useState<
@@ -132,59 +110,9 @@ export default function EnergyPage() {
   );
 
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addKind, setAddKind] = useState<RelKind | null>(null);
+  const [addKind, setAddKind] = useState<HotMainTagKind | null>(null);
   const [addTopicId, setAddTopicId] = useState<string | null>(null);
-  const [stockFilter, setStockFilter] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-
-  const debouncedStockFilter = useDebounce(stockFilter, { wait: 300 });
-  const trimmedStockKey = debouncedStockFilter.trim();
-  const stockSearchMinLength = listStocksSearchMinLength(trimmedStockKey);
-  const stockSearchReady =
-    trimmedStockKey.length >= stockSearchMinLength;
-  const shouldListStocksByKey =
-    addModalOpen && addKind === 'related' && stockSearchReady;
-
-  const { data: stocksByKey = [], loading: stocksKeyLoading } = useRequest(
-    () =>
-      services.listStocks({ key: trimmedStockKey }) as Promise<StockListItem[]>,
-    {
-      refreshDeps: [trimmedStockKey],
-      ready: shouldListStocksByKey,
-    }
-  );
-
-  const [stockLabelMap, setStockLabelMap] = useState(
-    () => new Map<string, string>()
-  );
-
-  useEffect(() => {
-    const rows = stocksByKey as StockListItem[];
-    if (rows.length === 0) {
-      return;
-    }
-    setStockLabelMap((previous) => {
-      const next = new Map(previous);
-      rows.forEach((row) => {
-        const label = [row.name, row.code].filter(Boolean).join(' ');
-        next.set(row.entity_id, label || row.entity_id);
-      });
-      return next;
-    });
-  }, [stocksByKey]);
-
-  const relatedStockPickerRows = useMemo(() => {
-    if (!addModalOpen || addKind !== 'related' || !stockSearchReady) {
-      return [];
-    }
-    return stocksByKey as StockListItem[];
-  }, [addModalOpen, addKind, stockSearchReady, stocksByKey]);
-
-  const relatedStockPickerLoading =
-    addModalOpen &&
-    addKind === 'related' &&
-    stockSearchReady &&
-    stocksKeyLoading;
 
   const addTopic = useMemo(
     () =>
@@ -193,10 +121,9 @@ export default function EnergyPage() {
     [hotTopicRows, addTopicId]
   );
 
-  const openAddModal = useCallback((topicId: string, kind: RelKind) => {
+  const openAddModal = useCallback((topicId: string, kind: HotMainTagKind) => {
     setAddTopicId(topicId);
     setAddKind(kind);
-    setStockFilter('');
     setAddModalOpen(true);
   }, []);
 
@@ -204,50 +131,17 @@ export default function EnergyPage() {
     setAddModalOpen(false);
     setAddKind(null);
     setAddTopicId(null);
-    setStockFilter('');
   }, []);
 
   const runRefresh = useCallback(async () => {
     await refreshHotTopics();
   }, [refreshHotTopics]);
 
-  const handleRemoveRelated = useCallback(
-    async (topicId: string, entityId: string) => {
-      setActionLoading(true);
-      try {
-        await services.removeStockHotTopicRelatedStock({
-          id: topicId,
-          entity_id: entityId,
-        });
-        await runRefresh();
-      } finally {
-        setActionLoading(false);
-      }
-    },
-    [runRefresh]
-  );
-
-  const handleAddRelated = useCallback(
-    async (topicId: string, entityId: string) => {
-      setActionLoading(true);
-      try {
-        await services.addStockHotTopicRelatedStock({
-          id: topicId,
-          entity_id: entityId,
-        });
-        await runRefresh();
-      } finally {
-        setActionLoading(false);
-      }
-    },
-    [runRefresh]
-  );
-
-  const handleRemoveMainTag = useCallback(
+  const handleRemovePositiveMainTag = useCallback(
     async (topicId: string, tagName: string) => {
       setActionLoading(true);
       try {
-        await services.removeStockHotTopicMainTag({
+        await services.removeStockHotTopicPositiveMainTag({
           id: topicId,
           tag_name: tagName,
         });
@@ -259,11 +153,11 @@ export default function EnergyPage() {
     [runRefresh]
   );
 
-  const handleAddMainTag = useCallback(
+  const handleAddPositiveMainTag = useCallback(
     async (topicId: string, tagName: string) => {
       setActionLoading(true);
       try {
-        await services.addStockHotTopicMainTag({
+        await services.addStockHotTopicPositiveMainTag({
           id: topicId,
           tag_name: tagName,
         });
@@ -276,11 +170,11 @@ export default function EnergyPage() {
     [runRefresh, closeAddModal]
   );
 
-  const handleRemoveSubTag = useCallback(
+  const handleRemoveNegativeMainTag = useCallback(
     async (topicId: string, tagName: string) => {
       setActionLoading(true);
       try {
-        await services.removeStockHotTopicSubTag({
+        await services.removeStockHotTopicNegativeMainTag({
           id: topicId,
           tag_name: tagName,
         });
@@ -292,11 +186,11 @@ export default function EnergyPage() {
     [runRefresh]
   );
 
-  const handleAddSubTag = useCallback(
+  const handleAddNegativeMainTag = useCallback(
     async (topicId: string, tagName: string) => {
       setActionLoading(true);
       try {
-        await services.addStockHotTopicSubTag({
+        await services.addStockHotTopicNegativeMainTag({
           id: topicId,
           tag_name: tagName,
         });
@@ -310,95 +204,21 @@ export default function EnergyPage() {
   );
 
   const addModalTitle =
-    addKind === 'related'
-      ? '添加相关个股'
-      : addKind === 'main'
-        ? '添加主标签'
-        : addKind === 'sub'
-          ? '添加次标签'
-          : '';
+    addKind === 'positive_main'
+      ? '添加利好主标签'
+      : addKind === 'negative_main'
+        ? '添加利空主标签'
+        : '';
 
   const renderAddModalBody = () => {
     if (!addKind || !addTopicId || !addTopic) {
       return null;
     }
-    if (addKind === 'related') {
-      const current = new Set(addTopic.related_stocks || []);
-      const candidates = relatedStockPickerRows.filter(
-        (row) => !current.has(row.entity_id)
-      );
-      return (
-        <>
-          <FormControl sx={{ mb: 2 }}>
-            <FormLabel>按代码 / 名称筛选</FormLabel>
-            <Input
-              value={stockFilter}
-              onChange={(event) => setStockFilter(event.target.value)}
-              placeholder="中文至少 2 字；代码等至少 4 位"
-            />
-          </FormControl>
-          {!stockSearchReady ? (
-            <Typography level="body-sm" color="neutral">
-              含中文时至少输入 2 个字；不含中文时至少 4 个字符（如股票代码）后再搜索
-            </Typography>
-          ) : relatedStockPickerLoading ? (
-            <Typography level="body-sm">加载中…</Typography>
-          ) : candidates.length === 0 ? (
-            <Typography level="body-sm" color="neutral">
-              暂无可添加
-            </Typography>
-          ) : (
-            <List
-              variant="outlined"
-              sx={{ maxHeight: 360, overflow: 'auto', borderRadius: 'sm' }}
-            >
-              {candidates.map((row) => (
-                <ListItem key={row.entity_id}>
-                  <ListItemButton
-                    disabled={actionLoading}
-                    onClick={() => void handleAddRelated(addTopicId, row.entity_id)}
-                  >
-                    <Typography level="body-sm">
-                      {[row.name, row.code].filter(Boolean).join(' ')}
-                    </Typography>
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </>
-      );
-    }
-    if (addKind === 'main') {
-      const current = new Set(addTopic.main_tags || []);
-      const candidates = sortedMainTags.filter((tag) => !current.has(tag.name));
-      if (candidates.length === 0) {
-        return (
-          <Typography level="body-sm" color="neutral">
-            暂无可添加
-          </Typography>
-        );
-      }
-      return (
-        <List
-          variant="outlined"
-          sx={{ maxHeight: 360, overflow: 'auto', borderRadius: 'sm' }}
-        >
-          {candidates.map((tag) => (
-            <ListItem key={tag.id}>
-              <ListItemButton
-                disabled={actionLoading}
-                onClick={() => void handleAddMainTag(addTopicId, tag.name)}
-              >
-                <Typography level="body-sm">{tag.name}</Typography>
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      );
-    }
-    const current = new Set(addTopic.sub_tags || []);
-    const candidates = sortedSubTags.filter((tag) => !current.has(tag.name));
+    const currentPositive = new Set(addTopic.positive_main_tags || []);
+    const currentNegative = new Set(addTopic.negative_main_tags || []);
+    const current =
+      addKind === 'positive_main' ? currentPositive : currentNegative;
+    const candidates = sortedMainTags.filter((tag) => !current.has(tag.name));
     if (candidates.length === 0) {
       return (
         <Typography level="body-sm" color="neutral">
@@ -415,7 +235,11 @@ export default function EnergyPage() {
           <ListItem key={tag.id}>
             <ListItemButton
               disabled={actionLoading}
-              onClick={() => void handleAddSubTag(addTopicId, tag.name)}
+              onClick={() =>
+                void (addKind === 'positive_main'
+                  ? handleAddPositiveMainTag(addTopicId, tag.name)
+                  : handleAddNegativeMainTag(addTopicId, tag.name))
+              }
             >
               <Typography level="body-sm">{tag.name}</Typography>
             </ListItemButton>
@@ -430,33 +254,37 @@ export default function EnergyPage() {
       <Typography level="title-md" className="mb-3">
         能量
       </Typography>
-      <Typography level="body-sm" color="neutral" className="mb-2">
-        主标签筛选热点列表；不选为全部，最多 50 条，按 rank 排序
-      </Typography>
-      <div className="flex flex-row flex-wrap items-center gap-2 mb-6 min-h-[40px]">
-        {mainTagsLoading && (
-          <Typography level="body-sm" color="neutral">
-            加载中…
-          </Typography>
-        )}
-        {!mainTagsLoading &&
-          sortedMainTags.map((tag) => {
-            const isSelected = tag.name === selectedMainTagName;
-            return (
-              <Chip
-                key={tag.id}
-                color="primary"
-                variant={isSelected ? 'solid' : 'soft'}
-                className="cursor-pointer"
-                size="md"
-                onClick={() =>
-                  setSelectedMainTagName(isSelected ? undefined : tag.name)
-                }
-              >
-                {tag.name}
-              </Chip>
-            );
-          })}
+      <div className="flex flex-row justify-between my-2 mt-2 mb-6">
+        <div className="flex flex-row flex-nowrap flex-grow overflow-x-auto pt-2 py-3 h-[60px] ">
+          {mainTagsLoading && (
+            <span className="inline-flex items-center text-[14px] text-neutral-500 pl-1">
+              加载中…
+            </span>
+          )}
+          {!mainTagsLoading &&
+            sortedMainTags.map((tag) => {
+              const isSelected = tag.name === selectedMainTagName;
+              return (
+                <Chip
+                  key={tag.id}
+                  color="primary"
+                  variant={isSelected ? 'solid' : 'soft'}
+                  className="cursor-pointer mr-2 my-0 !px-4 flex-shrink-0"
+                  size="sm"
+                  sx={{
+                    borderRadius: 8,
+                  }}
+                  onClick={() =>
+                    setSelectedMainTagName(isSelected ? undefined : tag.name)
+                  }
+                >
+                  <div className="flex items-center py-2">
+                    <div className="text-center text-[14px]">{tag.name}</div>
+                  </div>
+                </Chip>
+              );
+            })}
+        </div>
       </div>
 
       {hotTopicsLoading && (
@@ -494,28 +322,30 @@ export default function EnergyPage() {
                       mb: 1,
                     }}
                   >
-                    <Typography level="title-sm">相关个股</Typography>
+                    <Typography level="title-sm">利好主标签</Typography>
                     <Button
                       size="sm"
                       variant="soft"
                       loading={actionLoading}
-                      onClick={() => openAddModal(topic.id, 'related')}
+                      onClick={() => openAddModal(topic.id, 'positive_main')}
                     >
                       添加
                     </Button>
                   </Box>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {(topic.related_stocks || []).length === 0 && (
+                    {(topic.positive_main_tags || []).length === 0 && (
                       <Typography level="body-sm" color="neutral">
                         暂无
                       </Typography>
                     )}
-                    {(topic.related_stocks as string[] | undefined)?.map((entityId) => (
+                    {(topic.positive_main_tags as string[] | undefined)?.map((tagName) => (
                       <RemovablePill
-                        key={entityId}
-                        label={stockLabelMap.get(entityId) || entityId}
+                        key={tagName}
+                        label={tagName}
                         disabled={actionLoading}
-                        onRemove={() => void handleRemoveRelated(topic.id, entityId)}
+                        onRemove={() =>
+                          void handleRemovePositiveMainTag(topic.id, tagName)
+                        }
                       />
                     ))}
                   </Box>
@@ -530,64 +360,30 @@ export default function EnergyPage() {
                       mb: 1,
                     }}
                   >
-                    <Typography level="title-sm">主标签</Typography>
+                    <Typography level="title-sm">利空主标签</Typography>
                     <Button
                       size="sm"
                       variant="soft"
                       loading={actionLoading}
-                      onClick={() => openAddModal(topic.id, 'main')}
+                      onClick={() => openAddModal(topic.id, 'negative_main')}
                     >
                       添加
                     </Button>
                   </Box>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {(topic.main_tags || []).length === 0 && (
+                    {(topic.negative_main_tags || []).length === 0 && (
                       <Typography level="body-sm" color="neutral">
                         暂无
                       </Typography>
                     )}
-                    {(topic.main_tags as string[] | undefined)?.map((tagName) => (
+                    {(topic.negative_main_tags as string[] | undefined)?.map((tagName) => (
                       <RemovablePill
                         key={tagName}
                         label={tagName}
                         disabled={actionLoading}
-                        onRemove={() => void handleRemoveMainTag(topic.id, tagName)}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-
-                <Box>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      mb: 1,
-                    }}
-                  >
-                    <Typography level="title-sm">次标签</Typography>
-                    <Button
-                      size="sm"
-                      variant="soft"
-                      loading={actionLoading}
-                      onClick={() => openAddModal(topic.id, 'sub')}
-                    >
-                      添加
-                    </Button>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {(topic.sub_tags || []).length === 0 && (
-                      <Typography level="body-sm" color="neutral">
-                        暂无
-                      </Typography>
-                    )}
-                    {(topic.sub_tags as string[] | undefined)?.map((tagName) => (
-                      <RemovablePill
-                        key={tagName}
-                        label={tagName}
-                        disabled={actionLoading}
-                        onRemove={() => void handleRemoveSubTag(topic.id, tagName)}
+                        onRemove={() =>
+                          void handleRemoveNegativeMainTag(topic.id, tagName)
+                        }
                       />
                     ))}
                   </Box>
