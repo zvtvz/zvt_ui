@@ -21,6 +21,12 @@ import {
   Typography,
 } from '@mui/joy';
 
+import services from '@/services';
+import type { MainTagInfo, StockHotTopicItem } from '@/interfaces';
+
+import { useEnergyMainTagContext } from './EnergyShell';
+import { RankCircleTitle } from './RankCircleTitle';
+
 /** Joy ``Chip`` 的 ``endDecorator`` 里嵌 ``IconButton`` 时，点击常被父级吞掉；用 flex 条保证可点。 */
 function RemovablePill(props: {
   label: string;
@@ -67,9 +73,6 @@ function RemovablePill(props: {
   );
 }
 
-import services from '@/services';
-import type { MainTagInfo, StockHotTopicItem } from '@/interfaces';
-
 type HotMainTagKind = 'positive_main' | 'negative_main';
 
 function sortMainTagsByPriorityThenName(tags: MainTagInfo[]) {
@@ -81,18 +84,14 @@ function sortMainTagsByPriorityThenName(tags: MainTagInfo[]) {
   });
 }
 
-export default function EnergyPage() {
-  const { data: mainTagList = [], loading: mainTagsLoading } = useRequest(
-    services.getMainTagInfo
-  );
+export default function EnergyHotPage() {
+  const { selectedMainTagName } = useEnergyMainTagContext();
+
+  const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
   const sortedMainTags = useMemo(
     () => sortMainTagsByPriorityThenName(mainTagList as MainTagInfo[]),
     [mainTagList]
   );
-
-  const [selectedMainTagName, setSelectedMainTagName] = useState<
-    string | undefined
-  >();
 
   const {
     data: hotTopicRows = [],
@@ -250,43 +249,7 @@ export default function EnergyPage() {
   };
 
   return (
-    <div className="pl-2 pr-2">
-      <Typography level="title-md" className="mb-3">
-        能量
-      </Typography>
-      <div className="flex flex-row justify-between my-2 mt-2 mb-6">
-        <div className="flex flex-row flex-nowrap flex-grow overflow-x-auto pt-2 py-3 h-[60px] ">
-          {mainTagsLoading && (
-            <span className="inline-flex items-center text-[14px] text-neutral-500 pl-1">
-              加载中…
-            </span>
-          )}
-          {!mainTagsLoading &&
-            sortedMainTags.map((tag) => {
-              const isSelected = tag.name === selectedMainTagName;
-              return (
-                <Chip
-                  key={tag.id}
-                  color="primary"
-                  variant={isSelected ? 'solid' : 'soft'}
-                  className="cursor-pointer mr-2 my-0 !px-4 flex-shrink-0"
-                  size="sm"
-                  sx={{
-                    borderRadius: 8,
-                  }}
-                  onClick={() =>
-                    setSelectedMainTagName(isSelected ? undefined : tag.name)
-                  }
-                >
-                  <div className="flex items-center py-2">
-                    <div className="text-center text-[14px]">{tag.name}</div>
-                  </div>
-                </Chip>
-              );
-            })}
-        </div>
-      </div>
-
+    <>
       {hotTopicsLoading && (
         <Typography level="body-sm" sx={{ mb: 2 }}>
           热点加载中…
@@ -301,9 +264,10 @@ export default function EnergyPage() {
         {(hotTopicRows as StockHotTopicItem[]).map((topic) => (
           <Card key={topic.id} variant="outlined">
             <CardContent>
-              <Typography level="title-md" sx={{ mb: 1 }}>
-                {topic.news_title || '无标题'}
-              </Typography>
+              <RankCircleTitle
+                rank={topic.rank}
+                title={topic.news_title || '无标题'}
+              />
               <Divider sx={{ my: 1 }} />
               <Typography
                 level="body-sm"
@@ -412,6 +376,6 @@ export default function EnergyPage() {
           </Box>
         </ModalDialog>
       </Modal>
-    </div>
+    </>
   );
 }

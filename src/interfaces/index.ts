@@ -179,6 +179,44 @@ export type StockHotTopicItem = {
   negative_main_tags?: string[] | null;
 };
 
+/** 跟踪事件（与后端 ``FutureEvent`` 一致） */
+export type FutureEventItem = {
+  id: string;
+  entity_id: string;
+  timestamp: string;
+  name: string;
+  content?: string | null;
+  created_timestamp?: string | null;
+  trigger_date?: string | null;
+  due_date?: string | null;
+  rank?: number | null;
+  related_stocks?: string[] | null;
+  main_tags?: string[] | null;
+};
+
+export type CreateFutureEventPayload = {
+  name: string;
+  content?: string | null;
+  created_timestamp?: string | null;
+  trigger_date?: string | null;
+  due_date?: string | null;
+  rank?: number | null;
+  related_stocks?: string[] | null;
+  main_tags?: string[] | null;
+};
+
+export type UpdateFutureEventPayload = {
+  id: string;
+  name?: string | null;
+  content?: string | null;
+  created_timestamp?: string | null;
+  trigger_date?: string | null;
+  due_date?: string | null;
+  rank?: number | null;
+  related_stocks?: string[] | null;
+  main_tags?: string[] | null;
+};
+
 export type StockItemStats = {
   id: string;
   entity_id: string;
