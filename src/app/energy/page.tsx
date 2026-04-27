@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Divider,
   IconButton,
   List,
@@ -226,25 +225,53 @@ export default function EnergyHotPage() {
       );
     }
     return (
-      <List
-        variant="outlined"
-        sx={{ maxHeight: 360, overflow: 'auto', borderRadius: 'sm' }}
-      >
-        {candidates.map((tag) => (
-          <ListItem key={tag.id}>
-            <ListItemButton
-              disabled={actionLoading}
-              onClick={() =>
-                void (addKind === 'positive_main'
-                  ? handleAddPositiveMainTag(addTopicId, tag.name)
-                  : handleAddNegativeMainTag(addTopicId, tag.name))
-              }
-            >
-              <Typography level="body-sm">{tag.name}</Typography>
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
+      <Box sx={{ maxHeight: 320, overflowY: 'auto', width: '100%' }}>
+        <List
+          variant="outlined"
+          size="sm"
+          sx={{
+            borderRadius: 'sm',
+            width: '100%',
+            boxSizing: 'border-box',
+            py: 0.25,
+          }}
+        >
+          {candidates.map((tag) => (
+            <ListItem key={tag.id} sx={{ p: 0 }}>
+              <ListItemButton
+                disabled={actionLoading}
+                sx={{
+                  py: 0.5,
+                  px: 1,
+                  minHeight: 'unset',
+                  justifyContent: 'flex-start',
+                  width: '100%',
+                  borderRadius: 'sm',
+                }}
+                onClick={() =>
+                  void (addKind === 'positive_main'
+                    ? handleAddPositiveMainTag(addTopicId, tag.name)
+                    : handleAddNegativeMainTag(addTopicId, tag.name))
+                }
+              >
+                <Typography
+                  level="body-sm"
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    minWidth: 0,
+                    width: '100%',
+                  }}
+                  title={tag.name}
+                >
+                  {tag.name}
+                </Typography>
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
     );
   };
 
@@ -360,17 +387,37 @@ export default function EnergyHotPage() {
 
       <Modal open={addModalOpen} onClose={closeAddModal}>
         <ModalDialog
-          className="w-[min(96vw,520px)]"
-          size="lg"
-          sx={{ maxHeight: '90vh', overflow: 'auto' }}
+          layout="center"
+          size="sm"
+          sx={{
+            /** 主标签多为短词，收窄宽度避免列表右侧大块留白 */
+            width: 'min(92vw, 248px)',
+            maxWidth: '248px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            p: 2,
+            boxSizing: 'border-box',
+          }}
         >
           <ModalClose />
-          <Typography level="title-lg" sx={{ mb: 1 }}>
+          <Typography
+            level="title-sm"
+            sx={{ mb: 1, pr: 2.5, lineHeight: 1.35 }}
+          >
             {addModalTitle}
           </Typography>
           {renderAddModalBody()}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-            <Button variant="plain" color="neutral" onClick={closeAddModal}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              mt: 1.5,
+              pt: 1.5,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Button variant="plain" color="neutral" size="sm" onClick={closeAddModal}>
               关闭
             </Button>
           </Box>
