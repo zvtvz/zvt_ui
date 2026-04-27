@@ -1,6 +1,6 @@
 'use client';
 
-import { Table, Card, Button, Checkbox, Tooltip } from '@mui/joy';
+import { Table, Tooltip } from '@mui/joy';
 import { CircularProgress } from '@mui/joy';
 
 import SortCell from './SortCell';
@@ -11,10 +11,7 @@ type Props = any;
 
 export default function StockList({
   stocks,
-  setOpen,
-  checkAllStock,
   selectStock,
-  checkStock,
   loading,
   sortState,
   changeSort,
@@ -29,49 +26,10 @@ export default function StockList({
 
   return (
     <>
-      <div className="flex flex-row justify-between items-center">
-        <span className="opacity-85 text-">
-          已选中 {stocks.checked.length} 只股票{' '}
-        </span>
-        <div>
-          <Button
-            size="sm"
-            onClick={() => setOpen({ buy: true })}
-            disabled={stocks.checked.length === 0}
-            className="!text-[12px] !py-1"
-          >
-            买入
-          </Button>{' '}
-          <Button
-            size="sm"
-            onClick={() => setOpen({ sell: true })}
-            disabled={stocks.checked.length === 0}
-            className="!text-[12px]"
-          >
-            卖出
-          </Button>
-        </div>
-      </div>
       <div className="overflow-auto">
         <Table borderAxis="xBetween" size="sm" hoverRow stickyHeader>
           <thead className="font-bold ">
             <tr>
-              <th className="w-[50px]">
-                <Checkbox
-                  size="sm"
-                  indeterminate={
-                    stocks.checked.length > 0 &&
-                    stocks.checked.length < stocks.data.length
-                  }
-                  checked={
-                    stocks.data.length === stocks.checked.length &&
-                    stocks.checked.length > 0
-                  }
-                  onChange={(event) => {
-                    checkAllStock(event.target.checked);
-                  }}
-                />
-              </th>
               <th className="w-[140px]">股票名称</th>
               <th className="!text-right">
                 {renderHeaderCell('price', '最新价')}
@@ -105,16 +63,6 @@ export default function StockList({
                   stock.id === (stocks.current as any)?.id && 'bg-[#E3FBE3]'
                 }`}
               >
-                <td>
-                  <Checkbox
-                    size="sm"
-                    checked={stocks.checked.includes(stock.entity_id)}
-                    onClick={(e: any) => e.stopPropagation()}
-                    onChange={(event) => {
-                      checkStock(stock, event.target.checked);
-                    }}
-                  />
-                </td>
                 <td>
                   {stock.name}|<span className="opacity-90">{stock.code}</span>
                 </td>

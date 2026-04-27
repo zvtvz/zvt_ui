@@ -5,21 +5,28 @@ import {
   Button,
   Chip,
   CardContent,
+  CircularProgress,
+  IconButton,
   Tooltip,
 } from '@mui/joy';
 import Add from '@mui/icons-material/Add';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import EditOutlined from '@mui/icons-material/EditOutlined';
 
 import useData from './useData';
 import CreateStockPoolDialog from './CreateStockPoolDialog';
-import { useState } from 'react';
+import UpdateStockPoolDialog from './UpdateStockPoolDialog';
+import { useCallback, useEffect, useState } from 'react';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
 
-import BuyDialog from './stock-list/BuyDialog';
-import SellDialog from './stock-list/SellDialog';
 import StockList from './stock-list/StockList';
 import StockDetail from './stock-detail/StockDetail';
+import TradeHotTopicsPanel from './TradeHotTopicsPanel';
 import Dialog from '@/components/Dialog';
 import useDialog from '@/components/Dialog/useDialog';
+
+const HOT_TOPICS_SIDEBAR_STORAGE_KEY = 'zvt_trade_hot_topics_sidebar_open';
 
 export default function Workspace() {
   const {
@@ -32,28 +39,45 @@ export default function Workspace() {
     sortState,
     changeSort,
     selectStock,
-    checkStock,
-    checkAllStock,
     dailyStats,
     updateStockEvents,
     refreshPools,
   } = useData();
-  const [open, setOpen] = useState<any>({
-    buy: false,
-  });
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
+  const [updatePoolOpen, setUpdatePoolOpen] = useState(false);
+  const [hotTopicsSidebarOpen, setHotTopicsSidebarOpen] = useState(true);
   const dialog = useDialog();
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(HOT_TOPICS_SIDEBAR_STORAGE_KEY);
+      if (raw === '0') {
+        setHotTopicsSidebarOpen(false);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setHotTopicsSidebarOpenPersisted = useCallback((open: boolean) => {
+    setHotTopicsSidebarOpen(open);
+    try {
+      localStorage.setItem(HOT_TOPICS_SIDEBAR_STORAGE_KEY, open ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const stocksProps = {
     stocks,
-    setOpen,
-    checkAllStock,
     selectStock,
-    checkStock,
     loading,
     sortState,
     changeSort,
   } as any;
+
+  const hasListRows = (stocks.data?.length ?? 0) > 0;
+  const showTradeMain = Boolean(pools.current);
 
   return (
     <>
@@ -94,6 +118,22 @@ export default function Workspace() {
               {pool.stock_pool_name}
             </div>
           ))}
+          {pools.current?.stock_pool_type === 'custom' && (
+            <Tooltip title="更新股票池标的" variant="solid">
+              <span>
+                <Button
+                  type="button"
+                  variant="plain"
+                  size="sm"
+                  color="neutral"
+                  className="!min-w-0 !px-1.5 h-6 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9]"
+                  onClick={() => setUpdatePoolOpen(true)}
+                >
+                  <EditOutlined sx={{ fontSize: 18 }} />
+                </Button>
+              </span>
+            </Tooltip>
+          )}
           <Tooltip title="创建股票池" variant="solid">
             <span>
               <Button
@@ -112,91 +152,160 @@ export default function Workspace() {
       </div>
       <div className="flex flex-row justify-between my-2 mt-2 ">
         <div className="flex flex-row flex-nowrap flex-grow overflow-x-auto pt-2 py-3 h-[60px] ">
-          {(tags.data || []).filter((t: any) => t != null).map((tag: any) => {
-            const isSelected = tag.id === tags.current?.id;
-            const stats = tags.statses.find(
-              (st: any) => st.main_tag === tag.name
-            );
-            return (
-              <Tooltip
-                key={tag.id}
-                title={
-                  <div className="w-[160px]">
-                    <p>涨停数：{stats?.limit_up_count}</p>
-                    <p>跌停数：{stats?.limit_down_count}</p>
-                    <p>上涨数：{stats?.up_count}</p>
-                    <p>下跌数：{stats?.down_count}</p>
-                    <p>涨幅：{toPercent(stats?.change_pct)}</p>
-                    <p>成交额：{toMoney(stats?.turnover)}</p>
-                  </div>
-                }
-                variant="solid"
-              >
-                <Chip
-                  color="primary"
-                  onClick={() => {
-                    changeActiveTag(
-                      tag.id === tags.current?.id ? undefined : tag,
-                      pools.current
-                    );
-                  }}
-                  variant={isSelected ? 'solid' : 'soft'}
-                  className="cursor-pointer mr-2 my-0 !px-4"
-                  size="sm"
-                  sx={{
-                    borderRadius: 8,
-                  }}
-                >
-                  <div className="flex items-center py-2">
-                    <div className="text-center mr-2 text-[14px]">
-                      {tag.name}
+          {tags.data?.length ? (
+            (tags.data || []).filter((t: any) => t != null).map((tag: any) => {
+              const isSelected = tag.id === tags.current?.id;
+              const stats = tags.statses.find(
+                (st: any) => st.main_tag === tag.name
+              );
+              return (
+                <Tooltip
+                  key={tag.id}
+                  title={
+                    <div className="w-[160px]">
+                      <p>涨停数：{stats?.limit_up_count}</p>
+                      <p>跌停数：{stats?.limit_down_count}</p>
+                      <p>上涨数：{stats?.up_count}</p>
+                      <p>下跌数：{stats?.down_count}</p>
+                      <p>涨幅：{toPercent(stats?.change_pct)}</p>
+                      <p>成交额：{toMoney(stats?.turnover)}</p>
                     </div>
-                    <div className="text-[12px] leading-none">
-                      <div>{toMoney(stats?.turnover)}</div>
-                      <div>
-                        <span
-                          className={
-                            isSelected
-                              ? 'text-white'
-                              : stats?.change_pct > 0
-                              ? 'text-red-800'
-                              : 'text-green-800'
-                          }
-                        >
-                          {toTradePercent(stats?.change_pct)}
-                        </span>
+                  }
+                  variant="solid"
+                >
+                  <Chip
+                    color="primary"
+                    onClick={() => {
+                      changeActiveTag(
+                        tag.id === tags.current?.id ? undefined : tag,
+                        pools.current
+                      );
+                    }}
+                    variant={isSelected ? 'solid' : 'soft'}
+                    className="cursor-pointer mr-2 my-0 !px-4"
+                    size="sm"
+                    sx={{
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div className="flex items-center py-2">
+                      <div className="text-center mr-2 text-[14px]">
+                        {tag.name}
+                      </div>
+                      <div className="text-[12px] leading-none">
+                        <div>{toMoney(stats?.turnover)}</div>
+                        <div>
+                          <span
+                            className={
+                              isSelected
+                                ? 'text-white'
+                                : stats?.change_pct > 0
+                                ? 'text-red-800'
+                                : 'text-green-800'
+                            }
+                          >
+                            {toTradePercent(stats?.change_pct)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Chip>
-              </Tooltip>
-            );
-          })}
+                  </Chip>
+                </Tooltip>
+              );
+            })
+          ) : !loading.stocks &&
+            pools.current &&
+            pools.current.stock_pool_name !== 'A股' &&
+            tags.statses.length === 0 ? (
+            <div className="text-neutral-500 text-sm pl-1 self-center">
+              当前股票池还未添加标的
+            </div>
+          ) : null}
         </div>
       </div>
-      <div className="flex flex-row items-start justify-between mt-0 mb-2">
-        <Card
-          className="flex-grow overflow-auto relative min-h-[1000px] mr-4"
-          size="sm"
-          variant="plain"
-        >
-          <StockList {...stocksProps} />
-        </Card>
-        <Card
-          className="w-[500px] !sticky !top-[56px] flex-shrink-0"
-          size="sm"
-          variant="plain"
-        >
-          <CardContent>
-            <StockDetail
-              loading={loading}
-              stocks={stocks}
-              dialog={dialog}
-              refreshNews={updateStockEvents}
-            />
-          </CardContent>
-        </Card>
-      </div>
+      {showTradeMain ? (
+        <div className="flex flex-row items-stretch gap-2 mt-0 mb-2 min-w-0">
+          {hotTopicsSidebarOpen ? (
+            <Card
+              className="w-[min(100%,300px)] flex-shrink-0 overflow-hidden flex flex-col min-h-0"
+              size="sm"
+              variant="plain"
+            >
+              <TradeHotTopicsPanel
+                mainTagName={tags.current?.name}
+                titleEndAction={
+                  <Tooltip title="收起侧栏" placement="bottom" variant="solid">
+                    <IconButton
+                      size="sm"
+                      variant="plain"
+                      color="neutral"
+                      aria-label="收起相关热点侧栏"
+                      onClick={() => setHotTopicsSidebarOpenPersisted(false)}
+                    >
+                      <ChevronLeft sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </Tooltip>
+                }
+              />
+            </Card>
+          ) : (
+            <Card
+              className="w-10 flex-shrink-0 flex flex-col items-center py-2 min-h-0 self-stretch"
+              size="sm"
+              variant="plain"
+            >
+              <Tooltip title="展开相关热点" placement="right" variant="solid">
+                <IconButton
+                  size="sm"
+                  variant="soft"
+                  color="neutral"
+                  aria-label="展开相关热点侧栏"
+                  onClick={() => setHotTopicsSidebarOpenPersisted(true)}
+                >
+                  <ChevronRight sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Tooltip>
+            </Card>
+          )}
+          <Card
+            className={`flex-1 min-w-0 overflow-hidden flex flex-col relative ${
+              hasListRows ? 'min-h-[1000px]' : 'min-h-[400px]'
+            }`}
+            size="sm"
+            variant="plain"
+          >
+            <div className="p-2 flex-1 min-h-0 overflow-auto relative">
+              {hasListRows ? (
+                <StockList {...stocksProps} />
+              ) : loading.stocks ? (
+                <div className="flex w-full min-h-[360px] items-center justify-center">
+                  <CircularProgress color="primary" size="md" variant="soft" />
+                </div>
+              ) : (
+                <div className="flex w-full min-h-[200px] items-center justify-center text-neutral-500 text-sm">
+                  暂无个股数据
+                </div>
+              )}
+            </div>
+          </Card>
+          {hasListRows && (
+            <Card
+              className="w-[500px] !sticky !top-[56px] flex-shrink-0 min-h-0"
+              size="sm"
+              variant="plain"
+            >
+              <CardContent>
+                <StockDetail
+                  loading={loading}
+                  stocks={stocks}
+                  dialog={dialog}
+                  refreshNews={updateStockEvents}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : null}
       <CreateStockPoolDialog
         open={createPoolOpen}
         onSubmit={(poolName) => {
@@ -205,26 +314,17 @@ export default function Workspace() {
         }}
         onCancel={() => setCreatePoolOpen(false)}
       />
-      {open.buy && (
-        <BuyDialog
-          open={open.buy}
-          stocks={stocks.checked.map((i) =>
-            stocks.data.find((s) => s.entity_id === i)
-          )}
-          onSubmit={() => setOpen({ buy: false })}
-          onCancel={() => setOpen({ buy: false })}
-        />
-      )}
-      {open.sell && (
-        <SellDialog
-          open={open.sell}
-          stocks={stocks.checked.map((i) =>
-            stocks.data.find((s) => s.entity_id === i)
-          )}
-          onSubmit={() => setOpen({ sell: false })}
-          onCancel={() => setOpen({ sell: false })}
-        />
-      )}
+      <UpdateStockPoolDialog
+        open={updatePoolOpen}
+        pool={pools.current?.stock_pool_type === 'custom' ? pools.current : null}
+        onSaved={async () => {
+          setUpdatePoolOpen(false);
+          if (pools.current?.stock_pool_name) {
+            await refreshPools(pools.current.stock_pool_name);
+          }
+        }}
+        onCancel={() => setUpdatePoolOpen(false)}
+      />
       {dialog.open && <Dialog.Info {...dialog.props} />}
     </>
   );

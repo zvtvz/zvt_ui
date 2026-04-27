@@ -7,7 +7,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Divider,
   FormControl,
   FormLabel,
@@ -21,19 +20,20 @@ import {
 } from '@mui/joy';
 
 import services from '@/services';
-import type { FutureEventItem, MainTagInfo } from '@/interfaces';
+import type { FutureEventItem, MainTagInfo, Pool } from '@/interfaces';
+
+import { RankCircleTitle } from '@/components/energy/RankCircleTitle';
+import {
+  buildMainTagDescriptionMap,
+  poolNamesFromPools,
+  sortMainTagsByPriorityThenName,
+  TagAndPoolFourBlocks,
+  type TagPoolBlockKind,
+  titleForAddModal,
+} from '@/components/energy/TagAndPoolFourBlocks';
+import TagPoolRelationAddDialog from '@/components/energy/TagPoolRelationAddDialog';
 
 import { useEnergyMainTagContext } from '../EnergyShell';
-import { RankCircleTitle } from '../RankCircleTitle';
-
-function sortMainTagsByPriorityThenName(tags: MainTagInfo[]) {
-  return [...tags].sort((left, right) => {
-    if (left.priority !== right.priority) {
-      return left.priority - right.priority;
-    }
-    return left.name.localeCompare(right.name, 'zh-Hans-CN');
-  });
-}
 
 function toDatetimeLocalValue(iso: string | null | undefined): string {
   if (!iso) {
@@ -59,13 +59,6 @@ function fromDatetimeLocalValue(value: string): string | undefined {
   return date.toISOString();
 }
 
-function parseRelatedStockLines(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
 function formatShortDate(value: string | null | undefined): string {
   if (!value) {
     return '—';
@@ -89,9 +82,18 @@ export default function FutureEventsPage() {
   const { selectedMainTagName } = useEnergyMainTagContext();
 
   const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
+  const { data: poolList = [] } = useRequest(services.getPools);
   const sortedMainTags = useMemo(
     () => sortMainTagsByPriorityThenName(mainTagList as MainTagInfo[]),
     [mainTagList]
+  );
+  const mainTagDescriptionByName = useMemo(
+    () => buildMainTagDescriptionMap(mainTagList as MainTagInfo[]),
+    [mainTagList]
+  );
+  const poolNameCandidates = useMemo(
+    () => poolNamesFromPools(poolList as Pool[]),
+    [poolList]
   );
 
   const {
@@ -121,11 +123,46 @@ export default function FutureEventsPage() {
   const [createdLocal, setCreatedLocal] = useState('');
   const [triggerLocal, setTriggerLocal] = useState('');
   const [dueLocal, setDueLocal] = useState('');
-  const [relatedLines, setRelatedLines] = useState('');
   const [rankInput, setRankInput] = useState('');
-  const [selectedMainTagNames, setSelectedMainTagNames] = useState<string[]>(
-    []
+
+  const [addLinkModalOpen, setAddLinkModalOpen] = useState(false);
+  const [addKind, setAddKind] = useState<TagPoolBlockKind | null>(null);
+  const [addEventId, setAddEventId] = useState<string | null>(null);
+  const [linkActionLoading, setLinkActionLoading] = useState(false);
+
+  const addEvent = useMemo(
+    () =>
+      (eventRows as FutureEventItem[]).find((row) => row.id === addEventId) || null,
+    [eventRows, addEventId]
   );
+
+  const addTagCandidates = useMemo(() => {
+    if (!addKind || !addEvent) {
+      return [];
+    }
+    if (addKind !== 'positive_main' && addKind !== 'negative_main') {
+      return [];
+    }
+    const current =
+      addKind === 'positive_main'
+        ? new Set(addEvent.positive_main_tags || [])
+        : new Set(addEvent.negative_main_tags || []);
+    return sortedMainTags.filter((tag) => !current.has(tag.name));
+  }, [addKind, addEvent, sortedMainTags]);
+
+  const addPoolNameCandidates = useMemo(() => {
+    if (!addKind || !addEvent) {
+      return [];
+    }
+    if (addKind !== 'positive_pool' && addKind !== 'negative_pool') {
+      return [];
+    }
+    const current =
+      addKind === 'positive_pool'
+        ? new Set(addEvent.positive_stock_pools || [])
+        : new Set(addEvent.negative_stock_pools || []);
+    return poolNameCandidates.filter((poolName) => !current.has(poolName));
+  }, [addKind, addEvent, poolNameCandidates]);
 
   const openCreate = useCallback(() => {
     setEditorMode('create');
@@ -135,9 +172,7 @@ export default function FutureEventsPage() {
     setCreatedLocal('');
     setTriggerLocal('');
     setDueLocal('');
-    setRelatedLines('');
     setRankInput('');
-    setSelectedMainTagNames([]);
     setModalOpen(true);
   }, []);
 
@@ -149,11 +184,9 @@ export default function FutureEventsPage() {
     setCreatedLocal(toDatetimeLocalValue(row.created_timestamp));
     setTriggerLocal(toDatetimeLocalValue(row.trigger_date));
     setDueLocal(toDatetimeLocalValue(row.due_date));
-    setRelatedLines((row.related_stocks || []).join('\n'));
     setRankInput(
       row.rank !== null && row.rank !== undefined ? String(row.rank) : ''
     );
-    setSelectedMainTagNames([...(row.main_tags || [])]);
     setModalOpen(true);
   }, []);
 
@@ -162,20 +195,48 @@ export default function FutureEventsPage() {
     setEditingId(null);
   }, []);
 
-  const toggleCatalogTag = useCallback((tagName: string) => {
-    setSelectedMainTagNames((previous) => {
-      if (previous.includes(tagName)) {
-        return previous.filter((item) => item !== tagName);
-      }
-      return [...previous, tagName];
-    });
+  const closeAddLinkModal = useCallback(() => {
+    setAddLinkModalOpen(false);
+    setAddKind(null);
+    setAddEventId(null);
   }, []);
+
+  const runRefresh = useCallback(async () => {
+    await refresh();
+  }, [refresh]);
+
+  const handleAddBatch = useCallback(
+    async (names: string[]) => {
+      if (!addKind || !addEventId || names.length === 0) {
+        return;
+      }
+      setLinkActionLoading(true);
+      try {
+        const id = addEventId;
+        for (const name of names) {
+          if (addKind === 'positive_main') {
+            await services.addFutureEventPositiveMainTag({ id, tag_name: name });
+          } else if (addKind === 'negative_main') {
+            await services.addFutureEventNegativeMainTag({ id, tag_name: name });
+          } else if (addKind === 'positive_pool') {
+            await services.addFutureEventPositiveStockPool({ id, pool_name: name });
+          } else {
+            await services.addFutureEventNegativeStockPool({ id, pool_name: name });
+          }
+        }
+        await runRefresh();
+        closeAddLinkModal();
+      } finally {
+        setLinkActionLoading(false);
+      }
+    },
+    [addKind, addEventId, runRefresh, closeAddLinkModal]
+  );
 
   const handleSave = useCallback(async () => {
     if (editorMode === 'create' && !nameInput.trim()) {
       return;
     }
-    const relatedStocks = parseRelatedStockLines(relatedLines);
     const createdTimestamp = fromDatetimeLocalValue(createdLocal);
     const triggerDate = fromDatetimeLocalValue(triggerLocal);
     const dueDate = fromDatetimeLocalValue(dueLocal);
@@ -198,12 +259,6 @@ export default function FutureEventsPage() {
           trigger_date: triggerDate,
           due_date: dueDate,
           rank: rankPayload,
-          related_stocks:
-            relatedStocks.length > 0 ? relatedStocks : undefined,
-          main_tags:
-            selectedMainTagNames.length > 0
-              ? selectedMainTagNames
-              : undefined,
         });
       } else if (editingId) {
         await services.updateFutureEvent({
@@ -213,8 +268,6 @@ export default function FutureEventsPage() {
           trigger_date: triggerDate,
           due_date: dueDate,
           rank: rankPayload,
-          related_stocks: relatedStocks,
-          main_tags: selectedMainTagNames,
         });
       }
       await refresh();
@@ -232,8 +285,6 @@ export default function FutureEventsPage() {
     nameInput,
     rankInput,
     refresh,
-    relatedLines,
-    selectedMainTagNames,
     triggerLocal,
   ]);
 
@@ -323,23 +374,54 @@ export default function FutureEventsPage() {
                 {row.content?.trim() ? row.content : '—'}
               </Typography>
               <Divider sx={{ my: 1 }} />
-              <Typography level="body-xs" color="neutral" sx={{ mb: 0.5 }}>
+              <Typography level="body-xs" color="neutral" sx={{ mb: 1.5 }}>
                 公布 {formatShortDate(row.created_timestamp)} · 触发{' '}
                 {formatShortDate(row.trigger_date)} · 兑现{' '}
                 {formatShortDate(row.due_date)}
               </Typography>
-              <Typography level="body-xs" color="neutral" sx={{ mb: 0.5 }}>
-                主标签：
-                {(row.main_tags || []).length === 0
-                  ? '—'
-                  : (row.main_tags as string[]).join('、')}
-              </Typography>
-              <Typography level="body-xs" color="neutral">
-                相关个股 entity_id：
-                {(row.related_stocks || []).length === 0
-                  ? '—'
-                  : (row.related_stocks as string[]).join('、')}
-              </Typography>
+
+              <TagAndPoolFourBlocks
+                actionLoading={linkActionLoading}
+                positiveMainTags={row.positive_main_tags ?? []}
+                negativeMainTags={row.negative_main_tags ?? []}
+                positiveStockPools={row.positive_stock_pools ?? []}
+                negativeStockPools={row.negative_stock_pools ?? []}
+                mainTagDescriptionByName={mainTagDescriptionByName}
+                onOpenAdd={(kind) => {
+                  setAddEventId(row.id);
+                  setAddKind(kind);
+                  setAddLinkModalOpen(true);
+                }}
+                onRemove={async (kind, name) => {
+                  setLinkActionLoading(true);
+                  try {
+                    if (kind === 'positive_main') {
+                      await services.removeFutureEventPositiveMainTag({
+                        id: row.id,
+                        tag_name: name,
+                      });
+                    } else if (kind === 'negative_main') {
+                      await services.removeFutureEventNegativeMainTag({
+                        id: row.id,
+                        tag_name: name,
+                      });
+                    } else if (kind === 'positive_pool') {
+                      await services.removeFutureEventPositiveStockPool({
+                        id: row.id,
+                        pool_name: name,
+                      });
+                    } else {
+                      await services.removeFutureEventNegativeStockPool({
+                        id: row.id,
+                        pool_name: name,
+                      });
+                    }
+                    await runRefresh();
+                  } finally {
+                    setLinkActionLoading(false);
+                  }
+                }}
+              />
             </CardContent>
           </Card>
         ))}
@@ -408,35 +490,6 @@ export default function FutureEventsPage() {
                 placeholder="可选"
               />
             </FormControl>
-            <FormControl>
-              <FormLabel>主标签（可多选）</FormLabel>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.5 }}>
-                {sortedMainTags.map((tag) => {
-                  const selected = selectedMainTagNames.includes(tag.name);
-                  return (
-                    <Chip
-                      key={tag.id}
-                      size="sm"
-                      variant={selected ? 'solid' : 'outlined'}
-                      color={selected ? 'primary' : 'neutral'}
-                      className="cursor-pointer"
-                      onClick={() => toggleCatalogTag(tag.name)}
-                    >
-                      {tag.name}
-                    </Chip>
-                  );
-                })}
-              </Box>
-            </FormControl>
-            <FormControl>
-              <FormLabel>相关个股（每行一个 entity_id）</FormLabel>
-              <Textarea
-                minRows={3}
-                value={relatedLines}
-                onChange={(event) => setRelatedLines(event.target.value)}
-                placeholder={'例如：\nstock_sh_600000'}
-              />
-            </FormControl>
           </Stack>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
@@ -449,6 +502,17 @@ export default function FutureEventsPage() {
           </Box>
         </ModalDialog>
       </Modal>
+
+      <TagPoolRelationAddDialog
+        open={addLinkModalOpen}
+        title={titleForAddModal(addKind)}
+        kind={addKind}
+        tagCandidates={addTagCandidates}
+        poolNameCandidates={addPoolNameCandidates}
+        actionLoading={linkActionLoading}
+        onClose={closeAddLinkModal}
+        onConfirmBatch={(names) => void handleAddBatch(names)}
+      />
     </>
   );
 }

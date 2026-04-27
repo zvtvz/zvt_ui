@@ -6,8 +6,7 @@ import {
 } from 'ahooks';
 import { useRef } from 'react';
 import services from '@/services';
-import { getDate } from '@/utils';
-import { GlobalTag, Pool, Stock } from '@/interfaces';
+import { GlobalTag, Pool } from '@/interfaces';
 
 type PoolState = {
   data: Pool[];
@@ -37,12 +36,10 @@ export default function useData() {
   });
   const [stocks, setStocks] = useSetState<{
     data: any[];
-    checked: string[];
     current: any;
     events: any;
   }>({
     data: [],
-    checked: [],
     current: undefined,
     events: undefined,
   });
@@ -101,6 +98,7 @@ export default function useData() {
 
     try {
       const stocks = await services.getPoolStocksByTag(params);
+      const quoteRows = stocks?.quotes ?? [];
 
       clearInterval(intervalId.current.id);
       intervalId.current.id = setInterval(() => {
@@ -108,11 +106,11 @@ export default function useData() {
           clearInterval(intervalId.current.id);
         }
         services.getPoolStocksByTag(params).then((data) => {
-          updateStocks(data.quotes, true);
+          updateStocks(data?.quotes ?? [], true);
         });
       }, 3000);
 
-      updateStocks(stocks.quotes);
+      updateStocks(quoteRows);
     } finally {
       setLoading({ stocks: false });
     }
@@ -150,38 +148,29 @@ export default function useData() {
     }
   };
 
-  const checkStock = (stock: any, isChecked: boolean) => {
-    if (isChecked) {
-      setStocks({
-        checked: [...stocks.checked, stock.entity_id],
-      });
+  const updateStocks = (rows: any, onlyUpdateData = false) => {
+    const list = Array.isArray(rows) ? rows : [];
+    const first = list[0];
+    if (onlyUpdateData) {
+      setStocks({ data: list });
+      if (!first) {
+        setStocks({
+          current: undefined,
+          events: undefined,
+        });
+      }
+      return;
+    }
+    setStocks({
+      data: list,
+    });
+    if (first) {
+      selectStock(first);
     } else {
       setStocks({
-        checked: stocks.checked.filter((c) => c !== stock.entity_id),
+        current: undefined,
+        events: undefined,
       });
-    }
-  };
-
-  const checkAllStock = (isChecked: boolean) => {
-    setStocks({
-      checked: isChecked ? stocks.data.map((x) => x.entity_id) : [],
-    });
-  };
-
-  const updateStocks = (stocks: any, onlyUpdateData = false) => {
-    const current = stocks[0];
-    setStocks({
-      data: stocks,
-    });
-
-    if (!onlyUpdateData) {
-      setStocks({
-        checked: [],
-      });
-    }
-
-    if (!onlyUpdateData && current) {
-      selectStock(current);
     }
   };
 
@@ -282,8 +271,6 @@ export default function useData() {
     sortState: sortRef.current,
     changeSort,
     selectStock,
-    checkStock,
-    checkAllStock,
     dailyStats,
     updateStockEvents,
     refreshPools,

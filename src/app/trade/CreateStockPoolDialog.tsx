@@ -12,7 +12,10 @@ import {
   Option,
   ModalClose,
 } from '@mui/joy';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import StockPoolEntityEditor, {
+  type StockPoolEntityRow,
+} from './StockPoolEntityEditor';
 
 type Props = {
   open: boolean;
@@ -34,10 +37,18 @@ export default function CreateStockPoolDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [stockPoolType, setStockPoolType] = useState<string>('custom');
+  const [entityRows, setEntityRows] = useState<StockPoolEntityRow[]>([]);
+
+  useEffect(() => {
+    if (!open) {
+      setEntityRows([]);
+      setError('');
+    }
+  }, [open]);
 
   return (
     <Modal open={open} onClose={onCancel}>
-      <ModalDialog className="w-[400px] !text-[14px]" size="sm">
+      <ModalDialog className="w-[480px] !text-[14px]" size="sm">
         <ModalClose size="sm" />
         <DialogTitle>创建股票池</DialogTitle>
         <form
@@ -64,6 +75,22 @@ export default function CreateStockPoolDialog({
                 );
                 return;
               }
+              if (stockPoolType === 'custom') {
+                const entity_ids = entityRows.map((r) => r.entity_id);
+                const buildRes = await services.buildStockPool({
+                  stock_pool_name,
+                  entity_ids,
+                  insert_mode: 'overwrite',
+                });
+                if (buildRes && (buildRes as any).detail) {
+                  const d = (buildRes as any).detail;
+                  setError(
+                    Array.isArray(d) ? d[0]?.msg || String(d[0]) : String(d)
+                  );
+                  return;
+                }
+              }
+              setEntityRows([]);
               onSubmit(stock_pool_name);
             } catch (err: any) {
               setError(err?.message || err?.response?.data?.detail || '创建失败');
@@ -82,12 +109,14 @@ export default function CreateStockPoolDialog({
                 autoFocus
               />
             </FormControl>
-            <FormControl>
+            <FormControl className="mb-4">
               <FormLabel>类型</FormLabel>
               <Select
                 size="sm"
                 value={stockPoolType}
-                onChange={(_, value) => setStockPoolType((value as string) || 'custom')}
+                onChange={(_, value) =>
+                  setStockPoolType((value as string) || 'custom')
+                }
                 slotProps={{
                   listbox: { variant: 'outlined' },
                 }}
@@ -99,6 +128,9 @@ export default function CreateStockPoolDialog({
                 ))}
               </Select>
             </FormControl>
+            {stockPoolType === 'custom' && (
+              <StockPoolEntityEditor rows={entityRows} onChange={setEntityRows} />
+            )}
             {error && (
               <div className="mt-2 text-sm text-red-600">{error}</div>
             )}

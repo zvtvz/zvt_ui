@@ -177,7 +177,22 @@ export type StockHotTopicItem = {
   positive_main_tags?: string[] | null;
   /** 利空主标签名称列表 */
   negative_main_tags?: string[] | null;
+  /** 利好侧股票池名称（与 `stock_pool_name` 一致） */
+  positive_stock_pools?: string[] | null;
+  /** 利空侧股票池名称 */
+  negative_stock_pools?: string[] | null;
+  /**
+   * 仅列表接口带 `main_tag` 查询时由后端填写：该标签在利多/利空侧命中情况，便于分色
+   *（未带参数或非列表响应时通常为空）
+   */
+  main_tag_polarity?: 'positive' | 'negative' | 'both' | null;
 };
+
+/** 热点 / 跟踪事件 主标签增删请求体 */
+export type TagNameMutationPayload = { id: string; tag_name: string };
+
+/** 热点 / 跟踪事件 股票池增删请求体 */
+export type PoolNameMutationPayload = { id: string; pool_name: string };
 
 /** 跟踪事件（与后端 ``FutureEvent`` 一致） */
 export type FutureEventItem = {
@@ -190,8 +205,10 @@ export type FutureEventItem = {
   trigger_date?: string | null;
   due_date?: string | null;
   rank?: number | null;
-  related_stocks?: string[] | null;
-  main_tags?: string[] | null;
+  positive_main_tags?: string[] | null;
+  negative_main_tags?: string[] | null;
+  positive_stock_pools?: string[] | null;
+  negative_stock_pools?: string[] | null;
 };
 
 export type CreateFutureEventPayload = {
@@ -201,8 +218,10 @@ export type CreateFutureEventPayload = {
   trigger_date?: string | null;
   due_date?: string | null;
   rank?: number | null;
-  related_stocks?: string[] | null;
-  main_tags?: string[] | null;
+  positive_main_tags?: string[] | null;
+  negative_main_tags?: string[] | null;
+  positive_stock_pools?: string[] | null;
+  negative_stock_pools?: string[] | null;
 };
 
 export type UpdateFutureEventPayload = {
@@ -213,8 +232,10 @@ export type UpdateFutureEventPayload = {
   trigger_date?: string | null;
   due_date?: string | null;
   rank?: number | null;
-  related_stocks?: string[] | null;
-  main_tags?: string[] | null;
+  positive_main_tags?: string[] | null;
+  negative_main_tags?: string[] | null;
+  positive_stock_pools?: string[] | null;
+  negative_stock_pools?: string[] | null;
 };
 
 export type StockItemStats = {

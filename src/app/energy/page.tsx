@@ -2,94 +2,40 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useRequest } from 'ahooks';
-import CloseRounded from '@mui/icons-material/CloseRounded';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Divider,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  Modal,
-  ModalClose,
-  ModalDialog,
-  Stack,
-  Typography,
-} from '@mui/joy';
+import { Card, CardContent, Divider, Stack, Typography } from '@mui/joy';
 
 import services from '@/services';
-import type { MainTagInfo, StockHotTopicItem } from '@/interfaces';
+import type { MainTagInfo, Pool, StockHotTopicItem } from '@/interfaces';
+import { hotTopicTitleRowSx } from '@/utils/hotTopicTitleRowSx';
+import { RankCircleTitle } from '@/components/energy/RankCircleTitle';
+import {
+  buildMainTagDescriptionMap,
+  poolNamesFromPools,
+  sortMainTagsByPriorityThenName,
+  TagAndPoolFourBlocks,
+  type TagPoolBlockKind,
+  titleForAddModal,
+} from '@/components/energy/TagAndPoolFourBlocks';
+import TagPoolRelationAddDialog from '@/components/energy/TagPoolRelationAddDialog';
 
 import { useEnergyMainTagContext } from './EnergyShell';
-import { RankCircleTitle } from './RankCircleTitle';
-
-/** Joy ``Chip`` 的 ``endDecorator`` 里嵌 ``IconButton`` 时，点击常被父级吞掉；用 flex 条保证可点。 */
-function RemovablePill(props: {
-  label: string;
-  disabled?: boolean;
-  onRemove: () => void;
-}) {
-  const { label, disabled, onRemove } = props;
-  return (
-    <Box
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        maxWidth: '100%',
-        gap: 0.25,
-        pl: 1,
-        pr: 0.25,
-        py: 0.25,
-        borderRadius: 'sm',
-        bgcolor: 'neutral.softBg',
-        color: 'neutral.softColor',
-      }}
-    >
-      <Typography
-        level="body-sm"
-        sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-      >
-        {label}
-      </Typography>
-      <IconButton
-        size="sm"
-        variant="plain"
-        color="danger"
-        aria-label="移除"
-        disabled={disabled}
-        onClick={(event) => {
-          event.stopPropagation();
-          event.preventDefault();
-          onRemove();
-        }}
-      >
-        <CloseRounded sx={{ fontSize: 16 }} />
-      </IconButton>
-    </Box>
-  );
-}
-
-type HotMainTagKind = 'positive_main' | 'negative_main';
-
-function sortMainTagsByPriorityThenName(tags: MainTagInfo[]) {
-  return [...tags].sort((left, right) => {
-    if (left.priority !== right.priority) {
-      return left.priority - right.priority;
-    }
-    return left.name.localeCompare(right.name, 'zh-Hans-CN');
-  });
-}
 
 export default function EnergyHotPage() {
   const { selectedMainTagName } = useEnergyMainTagContext();
 
   const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
+  const { data: poolList = [] } = useRequest(services.getPools);
   const sortedMainTags = useMemo(
     () => sortMainTagsByPriorityThenName(mainTagList as MainTagInfo[]),
     [mainTagList]
+  );
+  const mainTagDescriptionByName = useMemo(
+    () => buildMainTagDescriptionMap(mainTagList as MainTagInfo[]),
+    [mainTagList]
+  );
+  const poolNameCandidates = useMemo(
+    () => poolNamesFromPools(poolList as Pool[]),
+    [poolList]
   );
 
   const {
@@ -108,7 +54,7 @@ export default function EnergyHotPage() {
   );
 
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addKind, setAddKind] = useState<HotMainTagKind | null>(null);
+  const [addKind, setAddKind] = useState<TagPoolBlockKind | null>(null);
   const [addTopicId, setAddTopicId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -119,11 +65,33 @@ export default function EnergyHotPage() {
     [hotTopicRows, addTopicId]
   );
 
-  const openAddModal = useCallback((topicId: string, kind: HotMainTagKind) => {
-    setAddTopicId(topicId);
-    setAddKind(kind);
-    setAddModalOpen(true);
-  }, []);
+  const addTagCandidates = useMemo(() => {
+    if (!addKind || !addTopic) {
+      return [];
+    }
+    if (addKind !== 'positive_main' && addKind !== 'negative_main') {
+      return [];
+    }
+    const current =
+      addKind === 'positive_main'
+        ? new Set(addTopic.positive_main_tags || [])
+        : new Set(addTopic.negative_main_tags || []);
+    return sortedMainTags.filter((tag) => !current.has(tag.name));
+  }, [addKind, addTopic, sortedMainTags]);
+
+  const addPoolNameCandidates = useMemo(() => {
+    if (!addKind || !addTopic) {
+      return [];
+    }
+    if (addKind !== 'positive_pool' && addKind !== 'negative_pool') {
+      return [];
+    }
+    const current =
+      addKind === 'positive_pool'
+        ? new Set(addTopic.positive_stock_pools || [])
+        : new Set(addTopic.negative_stock_pools || []);
+    return poolNameCandidates.filter((poolName) => !current.has(poolName));
+  }, [addKind, addTopic, poolNameCandidates]);
 
   const closeAddModal = useCallback(() => {
     setAddModalOpen(false);
@@ -135,145 +103,33 @@ export default function EnergyHotPage() {
     await refreshHotTopics();
   }, [refreshHotTopics]);
 
-  const handleRemovePositiveMainTag = useCallback(
-    async (topicId: string, tagName: string) => {
-      setActionLoading(true);
-      try {
-        await services.removeStockHotTopicPositiveMainTag({
-          id: topicId,
-          tag_name: tagName,
-        });
-        await runRefresh();
-      } finally {
-        setActionLoading(false);
+  const handleAddBatch = useCallback(
+    async (names: string[]) => {
+      if (!addKind || !addTopicId || names.length === 0) {
+        return;
       }
-    },
-    [runRefresh]
-  );
-
-  const handleAddPositiveMainTag = useCallback(
-    async (topicId: string, tagName: string) => {
       setActionLoading(true);
       try {
-        await services.addStockHotTopicPositiveMainTag({
-          id: topicId,
-          tag_name: tagName,
-        });
+        const id = addTopicId;
+        for (const name of names) {
+          if (addKind === 'positive_main') {
+            await services.addStockHotTopicPositiveMainTag({ id, tag_name: name });
+          } else if (addKind === 'negative_main') {
+            await services.addStockHotTopicNegativeMainTag({ id, tag_name: name });
+          } else if (addKind === 'positive_pool') {
+            await services.addStockHotTopicPositiveStockPool({ id, pool_name: name });
+          } else {
+            await services.addStockHotTopicNegativeStockPool({ id, pool_name: name });
+          }
+        }
         await runRefresh();
         closeAddModal();
       } finally {
         setActionLoading(false);
       }
     },
-    [runRefresh, closeAddModal]
+    [addKind, addTopicId, runRefresh, closeAddModal]
   );
-
-  const handleRemoveNegativeMainTag = useCallback(
-    async (topicId: string, tagName: string) => {
-      setActionLoading(true);
-      try {
-        await services.removeStockHotTopicNegativeMainTag({
-          id: topicId,
-          tag_name: tagName,
-        });
-        await runRefresh();
-      } finally {
-        setActionLoading(false);
-      }
-    },
-    [runRefresh]
-  );
-
-  const handleAddNegativeMainTag = useCallback(
-    async (topicId: string, tagName: string) => {
-      setActionLoading(true);
-      try {
-        await services.addStockHotTopicNegativeMainTag({
-          id: topicId,
-          tag_name: tagName,
-        });
-        await runRefresh();
-        closeAddModal();
-      } finally {
-        setActionLoading(false);
-      }
-    },
-    [runRefresh, closeAddModal]
-  );
-
-  const addModalTitle =
-    addKind === 'positive_main'
-      ? '添加利好主标签'
-      : addKind === 'negative_main'
-        ? '添加利空主标签'
-        : '';
-
-  const renderAddModalBody = () => {
-    if (!addKind || !addTopicId || !addTopic) {
-      return null;
-    }
-    const currentPositive = new Set(addTopic.positive_main_tags || []);
-    const currentNegative = new Set(addTopic.negative_main_tags || []);
-    const current =
-      addKind === 'positive_main' ? currentPositive : currentNegative;
-    const candidates = sortedMainTags.filter((tag) => !current.has(tag.name));
-    if (candidates.length === 0) {
-      return (
-        <Typography level="body-sm" color="neutral">
-          暂无可添加
-        </Typography>
-      );
-    }
-    return (
-      <Box sx={{ maxHeight: 320, overflowY: 'auto', width: '100%' }}>
-        <List
-          variant="outlined"
-          size="sm"
-          sx={{
-            borderRadius: 'sm',
-            width: '100%',
-            boxSizing: 'border-box',
-            py: 0.25,
-          }}
-        >
-          {candidates.map((tag) => (
-            <ListItem key={tag.id} sx={{ p: 0 }}>
-              <ListItemButton
-                disabled={actionLoading}
-                sx={{
-                  py: 0.5,
-                  px: 1,
-                  minHeight: 'unset',
-                  justifyContent: 'flex-start',
-                  width: '100%',
-                  borderRadius: 'sm',
-                }}
-                onClick={() =>
-                  void (addKind === 'positive_main'
-                    ? handleAddPositiveMainTag(addTopicId, tag.name)
-                    : handleAddNegativeMainTag(addTopicId, tag.name))
-                }
-              >
-                <Typography
-                  level="body-sm"
-                  sx={{
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    minWidth: 0,
-                    width: '100%',
-                  }}
-                  title={tag.name}
-                >
-                  {tag.name}
-                </Typography>
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Box>
-    );
-  };
 
   return (
     <>
@@ -294,6 +150,8 @@ export default function EnergyHotPage() {
               <RankCircleTitle
                 rank={topic.rank}
                 title={topic.news_title || '无标题'}
+                mainTagPolarity={topic.main_tag_polarity ?? null}
+                sx={hotTopicTitleRowSx(topic.main_tag_polarity)}
               />
               <Divider sx={{ my: 1 }} />
               <Typography
@@ -303,126 +161,63 @@ export default function EnergyHotPage() {
                 {topic.news_content || '—'}
               </Typography>
 
-              <Stack divider={<Divider />} spacing={2}>
-                <Box>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      mb: 1,
-                    }}
-                  >
-                    <Typography level="title-sm">利好主标签</Typography>
-                    <Button
-                      size="sm"
-                      variant="soft"
-                      loading={actionLoading}
-                      onClick={() => openAddModal(topic.id, 'positive_main')}
-                    >
-                      添加
-                    </Button>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {(topic.positive_main_tags || []).length === 0 && (
-                      <Typography level="body-sm" color="neutral">
-                        暂无
-                      </Typography>
-                    )}
-                    {(topic.positive_main_tags as string[] | undefined)?.map((tagName) => (
-                      <RemovablePill
-                        key={tagName}
-                        label={tagName}
-                        disabled={actionLoading}
-                        onRemove={() =>
-                          void handleRemovePositiveMainTag(topic.id, tagName)
-                        }
-                      />
-                    ))}
-                  </Box>
-                </Box>
-
-                <Box>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      mb: 1,
-                    }}
-                  >
-                    <Typography level="title-sm">利空主标签</Typography>
-                    <Button
-                      size="sm"
-                      variant="soft"
-                      loading={actionLoading}
-                      onClick={() => openAddModal(topic.id, 'negative_main')}
-                    >
-                      添加
-                    </Button>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {(topic.negative_main_tags || []).length === 0 && (
-                      <Typography level="body-sm" color="neutral">
-                        暂无
-                      </Typography>
-                    )}
-                    {(topic.negative_main_tags as string[] | undefined)?.map((tagName) => (
-                      <RemovablePill
-                        key={tagName}
-                        label={tagName}
-                        disabled={actionLoading}
-                        onRemove={() =>
-                          void handleRemoveNegativeMainTag(topic.id, tagName)
-                        }
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              </Stack>
+              <TagAndPoolFourBlocks
+                actionLoading={actionLoading}
+                positiveMainTags={topic.positive_main_tags ?? []}
+                negativeMainTags={topic.negative_main_tags ?? []}
+                positiveStockPools={topic.positive_stock_pools ?? []}
+                negativeStockPools={topic.negative_stock_pools ?? []}
+                mainTagDescriptionByName={mainTagDescriptionByName}
+                onOpenAdd={(kind) => {
+                  setAddTopicId(topic.id);
+                  setAddKind(kind);
+                  setAddModalOpen(true);
+                }}
+                onRemove={async (kind, name) => {
+                  setActionLoading(true);
+                  try {
+                    if (kind === 'positive_main') {
+                      await services.removeStockHotTopicPositiveMainTag({
+                        id: topic.id,
+                        tag_name: name,
+                      });
+                    } else if (kind === 'negative_main') {
+                      await services.removeStockHotTopicNegativeMainTag({
+                        id: topic.id,
+                        tag_name: name,
+                      });
+                    } else if (kind === 'positive_pool') {
+                      await services.removeStockHotTopicPositiveStockPool({
+                        id: topic.id,
+                        pool_name: name,
+                      });
+                    } else {
+                      await services.removeStockHotTopicNegativeStockPool({
+                        id: topic.id,
+                        pool_name: name,
+                      });
+                    }
+                    await runRefresh();
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+              />
             </CardContent>
           </Card>
         ))}
       </Stack>
 
-      <Modal open={addModalOpen} onClose={closeAddModal}>
-        <ModalDialog
-          layout="center"
-          size="sm"
-          sx={{
-            /** 主标签多为短词，收窄宽度避免列表右侧大块留白 */
-            width: 'min(92vw, 248px)',
-            maxWidth: '248px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            p: 2,
-            boxSizing: 'border-box',
-          }}
-        >
-          <ModalClose />
-          <Typography
-            level="title-sm"
-            sx={{ mb: 1, pr: 2.5, lineHeight: 1.35 }}
-          >
-            {addModalTitle}
-          </Typography>
-          {renderAddModalBody()}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              mt: 1.5,
-              pt: 1.5,
-              borderTop: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Button variant="plain" color="neutral" size="sm" onClick={closeAddModal}>
-              关闭
-            </Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
+      <TagPoolRelationAddDialog
+        open={addModalOpen}
+        title={titleForAddModal(addKind)}
+        kind={addKind}
+        tagCandidates={addTagCandidates}
+        poolNameCandidates={addPoolNameCandidates}
+        actionLoading={actionLoading}
+        onClose={closeAddModal}
+        onConfirmBatch={(names) => void handleAddBatch(names)}
+      />
     </>
   );
 }
