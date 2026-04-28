@@ -14,26 +14,21 @@ import {
   Modal,
   ModalClose,
   ModalDialog,
+  Option,
+  Select,
   Stack,
   Textarea,
   Typography,
 } from '@mui/joy';
 
 import services from '@/services';
-import type { FutureEventItem, MainTagInfo, Pool } from '@/interfaces';
+import type { FutureEventItem, Pool } from '@/interfaces';
 
 import { RankCircleTitle } from '@/components/energy/RankCircleTitle';
-import {
-  buildMainTagDescriptionMap,
-  poolNamesFromPools,
-  sortMainTagsByPriorityThenName,
-  TagAndPoolFourBlocks,
-  type TagPoolBlockKind,
-  titleForAddModal,
-} from '@/components/energy/TagAndPoolFourBlocks';
-import TagPoolRelationAddDialog from '@/components/energy/TagPoolRelationAddDialog';
+import { poolNamesFromPools } from '@/components/energy/TagAndPoolFourBlocks';
 
-function toDatetimeLocalValue(iso: string | null | undefined): string {
+/** `<input type="date">` 用的本地日历日 `YYYY-MM-DD` */
+function toDateInputValue(iso: string | null | undefined): string {
   if (!iso) {
     return '';
   }
@@ -42,22 +37,28 @@ function toDatetimeLocalValue(iso: string | null | undefined): string {
     return '';
   }
   const pad = (value: number) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function fromDatetimeLocalValue(value: string): string | undefined {
+/** 日历日转 UTC ISO（当日本地正午，避免仅日期串的时区歧义） */
+function fromDateInputValue(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) {
     return undefined;
   }
-  const date = new Date(trimmed);
+  const parts = trimmed.split('-').map((segment) => Number.parseInt(segment, 10));
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+    return undefined;
+  }
+  const [year, month, day] = parts;
+  const date = new Date(year, month - 1, day, 12, 0, 0);
   if (Number.isNaN(date.getTime())) {
     return undefined;
   }
   return date.toISOString();
 }
 
-function formatShortDate(value: string | null | undefined): string {
+function formatDayOnly(value: string | null | undefined): string {
   if (!value) {
     return '—';
   }
@@ -65,36 +66,40 @@ function formatShortDate(value: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
   });
+}
+
+/** 兑现日与「今天」相差的完整日历日数：未来为正，过去为负，同一天为 0 */
+function calendarDaysFromToday(iso: string | null | undefined): number {
+  if (!iso) {
+    return NaN;
+  }
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return NaN;
+  }
+  const dueDay = new Date(
+    parsed.getFullYear(),
+    parsed.getMonth(),
+    parsed.getDate()
+  );
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((dueDay.getTime() - todayStart.getTime()) / 86400000);
 }
 
 type EditorMode = 'create' | 'edit';
 
-/** 关联弹层：列表卡片上已有事件，或新建表单内草稿 */
-type FutureEventLinkModalTarget =
-  | null
-  | { scope: 'create' }
-  | { scope: 'list'; eventId: string };
-
 export function FutureEventsSection() {
-  const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
   const { data: poolList = [] } = useRequest(services.getPools);
-  const sortedMainTags = useMemo(
-    () => sortMainTagsByPriorityThenName(mainTagList as MainTagInfo[]),
-    [mainTagList]
-  );
-  const mainTagDescriptionByName = useMemo(
-    () => buildMainTagDescriptionMap(mainTagList as MainTagInfo[]),
-    [mainTagList]
-  );
   const poolNameCandidates = useMemo(
-    () => poolNamesFromPools(poolList as Pool[]),
+    () => [...poolNamesFromPools(poolList as Pool[])].sort((a, b) =>
+      a.localeCompare(b, 'zh-Hans-CN')
+    ),
     [poolList]
   );
 
@@ -121,94 +126,7 @@ export function FutureEventsSection() {
   const [triggerLocal, setTriggerLocal] = useState('');
   const [dueLocal, setDueLocal] = useState('');
   const [rankInput, setRankInput] = useState('');
-
-  const [draftPositiveMainTags, setDraftPositiveMainTags] = useState<string[]>(
-    []
-  );
-  const [draftNegativeMainTags, setDraftNegativeMainTags] = useState<string[]>(
-    []
-  );
-  const [draftPositivePools, setDraftPositivePools] = useState<string[]>([]);
-  const [draftNegativePools, setDraftNegativePools] = useState<string[]>([]);
-
-  const [addLinkModalOpen, setAddLinkModalOpen] = useState(false);
-  const [addKind, setAddKind] = useState<TagPoolBlockKind | null>(null);
-  const [linkModalTarget, setLinkModalTarget] =
-    useState<FutureEventLinkModalTarget>(null);
-  const [linkActionLoading, setLinkActionLoading] = useState(false);
-
-  const listEventForLinkModal = useMemo(() => {
-    if (linkModalTarget?.scope !== 'list') {
-      return null;
-    }
-    return (
-      (eventRows as FutureEventItem[]).find(
-        (row) => row.id === linkModalTarget.eventId
-      ) ?? null
-    );
-  }, [eventRows, linkModalTarget]);
-
-  const addTagCandidates = useMemo(() => {
-    if (!addKind) {
-      return [];
-    }
-    if (addKind !== 'positive_main' && addKind !== 'negative_main') {
-      return [];
-    }
-    if (linkModalTarget?.scope === 'create') {
-      const current =
-        addKind === 'positive_main'
-          ? new Set(draftPositiveMainTags)
-          : new Set(draftNegativeMainTags);
-      return sortedMainTags.filter((tag) => !current.has(tag.name));
-    }
-    if (linkModalTarget?.scope === 'list' && listEventForLinkModal) {
-      const current =
-        addKind === 'positive_main'
-          ? new Set(listEventForLinkModal.positive_main_tags || [])
-          : new Set(listEventForLinkModal.negative_main_tags || []);
-      return sortedMainTags.filter((tag) => !current.has(tag.name));
-    }
-    return [];
-  }, [
-    addKind,
-    linkModalTarget,
-    draftPositiveMainTags,
-    draftNegativeMainTags,
-    sortedMainTags,
-    listEventForLinkModal,
-  ]);
-
-  const addPoolNameCandidates = useMemo(() => {
-    if (!addKind) {
-      return [];
-    }
-    if (addKind !== 'positive_pool' && addKind !== 'negative_pool') {
-      return [];
-    }
-    if (linkModalTarget?.scope === 'create') {
-      const current =
-        addKind === 'positive_pool'
-          ? new Set(draftPositivePools)
-          : new Set(draftNegativePools);
-      return poolNameCandidates.filter((poolName) => !current.has(poolName));
-    }
-    if (linkModalTarget?.scope === 'list' && listEventForLinkModal) {
-      const current =
-        addKind === 'positive_pool'
-          ? new Set(listEventForLinkModal.positive_stock_pools || [])
-          : new Set(listEventForLinkModal.negative_stock_pools || []);
-      return poolNameCandidates.filter((poolName) => !current.has(poolName));
-    }
-    return [];
-  }, [
-    addKind,
-    linkModalTarget,
-    draftPositivePools,
-    draftNegativePools,
-    poolNameCandidates,
-    listEventForLinkModal,
-  ]);
+  const [relatedStockPool, setRelatedStockPool] = useState<string>('');
 
   const openCreate = useCallback(() => {
     setEditorMode('create');
@@ -219,10 +137,7 @@ export function FutureEventsSection() {
     setTriggerLocal('');
     setDueLocal('');
     setRankInput('');
-    setDraftPositiveMainTags([]);
-    setDraftNegativeMainTags([]);
-    setDraftPositivePools([]);
-    setDraftNegativePools([]);
+    setRelatedStockPool('');
     setModalOpen(true);
   }, []);
 
@@ -231,12 +146,13 @@ export function FutureEventsSection() {
     setEditingId(row.id);
     setNameInput(row.name);
     setContentInput(row.content || '');
-    setCreatedLocal(toDatetimeLocalValue(row.created_timestamp));
-    setTriggerLocal(toDatetimeLocalValue(row.trigger_date));
-    setDueLocal(toDatetimeLocalValue(row.due_date));
+    setCreatedLocal(toDateInputValue(row.created_timestamp));
+    setTriggerLocal(toDateInputValue(row.trigger_date));
+    setDueLocal(toDateInputValue(row.due_date));
     setRankInput(
       row.rank !== null && row.rank !== undefined ? String(row.rank) : ''
     );
+    setRelatedStockPool(row.related_stock_pool?.trim() ?? '');
     setModalOpen(true);
   }, []);
 
@@ -245,92 +161,13 @@ export function FutureEventsSection() {
     setEditingId(null);
   }, []);
 
-  const closeAddLinkModal = useCallback(() => {
-    setAddLinkModalOpen(false);
-    setAddKind(null);
-    setLinkModalTarget(null);
-  }, []);
-
-  const runRefresh = useCallback(async () => {
-    await refresh();
-  }, [refresh]);
-
-  const handleAddBatch = useCallback(
-    async (names: string[]) => {
-      if (!addKind || names.length === 0) {
-        return;
-      }
-      if (linkModalTarget?.scope === 'create') {
-        const mergeUnique = (previous: string[], batch: string[]) => {
-          const next = [...previous];
-          for (const name of batch) {
-            if (!next.includes(name)) {
-              next.push(name);
-            }
-          }
-          return next;
-        };
-        if (addKind === 'positive_main') {
-          setDraftPositiveMainTags((previous) => mergeUnique(previous, names));
-        } else if (addKind === 'negative_main') {
-          setDraftNegativeMainTags((previous) => mergeUnique(previous, names));
-        } else if (addKind === 'positive_pool') {
-          setDraftPositivePools((previous) => mergeUnique(previous, names));
-        } else {
-          setDraftNegativePools((previous) => mergeUnique(previous, names));
-        }
-        closeAddLinkModal();
-        return;
-      }
-
-      if (linkModalTarget?.scope !== 'list') {
-        return;
-      }
-      const id = linkModalTarget.eventId;
-      setLinkActionLoading(true);
-      try {
-        for (const name of names) {
-          if (addKind === 'positive_main') {
-            await services.addFutureEventPositiveMainTag({ id, tag_name: name });
-          } else if (addKind === 'negative_main') {
-            await services.addFutureEventNegativeMainTag({ id, tag_name: name });
-          } else if (addKind === 'positive_pool') {
-            await services.addFutureEventPositiveStockPool({ id, pool_name: name });
-          } else {
-            await services.addFutureEventNegativeStockPool({ id, pool_name: name });
-          }
-        }
-        await runRefresh();
-        closeAddLinkModal();
-      } finally {
-        setLinkActionLoading(false);
-      }
-    },
-    [addKind, linkModalTarget, runRefresh, closeAddLinkModal]
-  );
-
-  const removeDraftRelation = useCallback(
-    (kind: TagPoolBlockKind, name: string) => {
-      if (kind === 'positive_main') {
-        setDraftPositiveMainTags((previous) => previous.filter((item) => item !== name));
-      } else if (kind === 'negative_main') {
-        setDraftNegativeMainTags((previous) => previous.filter((item) => item !== name));
-      } else if (kind === 'positive_pool') {
-        setDraftPositivePools((previous) => previous.filter((item) => item !== name));
-      } else {
-        setDraftNegativePools((previous) => previous.filter((item) => item !== name));
-      }
-    },
-    []
-  );
-
   const handleSave = useCallback(async () => {
     if (editorMode === 'create' && !nameInput.trim()) {
       return;
     }
-    const createdTimestamp = fromDatetimeLocalValue(createdLocal);
-    const triggerDate = fromDatetimeLocalValue(triggerLocal);
-    const dueDate = fromDatetimeLocalValue(dueLocal);
+    const createdTimestamp = fromDateInputValue(createdLocal);
+    const triggerDate = fromDateInputValue(triggerLocal);
+    const dueDate = fromDateInputValue(dueLocal);
     const rankTrimmed = rankInput.trim();
     const rankParsed =
       rankTrimmed === '' ? undefined : Number.parseInt(rankTrimmed, 10);
@@ -338,6 +175,9 @@ export function FutureEventsSection() {
       rankParsed !== undefined && !Number.isNaN(rankParsed)
         ? rankParsed
         : undefined;
+
+    const poolForCreate =
+      relatedStockPool.trim() !== '' ? relatedStockPool.trim() : undefined;
 
     setSaving(true);
     try {
@@ -350,23 +190,16 @@ export function FutureEventsSection() {
           trigger_date: triggerDate,
           due_date: dueDate,
           rank: rankPayload,
-          positive_main_tags:
-            draftPositiveMainTags.length > 0 ? draftPositiveMainTags : undefined,
-          negative_main_tags:
-            draftNegativeMainTags.length > 0 ? draftNegativeMainTags : undefined,
-          positive_stock_pools:
-            draftPositivePools.length > 0 ? draftPositivePools : undefined,
-          negative_stock_pools:
-            draftNegativePools.length > 0 ? draftNegativePools : undefined,
+          related_stock_pool: poolForCreate,
         });
       } else if (editingId) {
         await services.updateFutureEvent({
           id: editingId,
           content: contentInput.trim() || undefined,
-          created_timestamp: createdTimestamp,
           trigger_date: triggerDate,
-          due_date: dueDate,
           rank: rankPayload,
+          related_stock_pool:
+            relatedStockPool.trim() === '' ? null : relatedStockPool.trim(),
         });
       }
       await refresh();
@@ -378,16 +211,13 @@ export function FutureEventsSection() {
     closeModal,
     contentInput,
     createdLocal,
-    draftNegativeMainTags,
-    draftNegativePools,
-    draftPositiveMainTags,
-    draftPositivePools,
     dueLocal,
     editorMode,
     editingId,
     nameInput,
     rankInput,
     refresh,
+    relatedStockPool,
     triggerLocal,
   ]);
 
@@ -435,7 +265,18 @@ export function FutureEventsSection() {
       )}
 
       <Stack spacing={2}>
-        {(eventRows as FutureEventItem[]).map((row) => (
+        {(eventRows as FutureEventItem[]).map((row) => {
+          const dueDiffDays = row.due_date
+            ? calendarDaysFromToday(row.due_date)
+            : NaN;
+          const countDaysSx = {
+            fontSize: '1.35rem',
+            fontWeight: 700,
+            color: 'warning.700',
+            mx: 0.35,
+          } as const;
+
+          return (
           <Card key={row.id} variant="outlined">
             <CardContent>
               <Box
@@ -477,57 +318,71 @@ export function FutureEventsSection() {
                 {row.content?.trim() ? row.content : '—'}
               </Typography>
               <Divider sx={{ my: 1 }} />
-              <Typography level="body-xs" color="neutral" sx={{ mb: 1.5 }}>
-                公布 {formatShortDate(row.created_timestamp)} · 触发{' '}
-                {formatShortDate(row.trigger_date)} · 兑现{' '}
-                {formatShortDate(row.due_date)}
+              <Typography level="body-sm" color="neutral" sx={{ mb: 1 }}>
+                公布 {formatDayOnly(row.created_timestamp)} · 触发{' '}
+                {formatDayOnly(row.trigger_date)}
               </Typography>
-
-              <TagAndPoolFourBlocks
-                actionLoading={linkActionLoading}
-                positiveMainTags={row.positive_main_tags ?? []}
-                negativeMainTags={row.negative_main_tags ?? []}
-                positiveStockPools={row.positive_stock_pools ?? []}
-                negativeStockPools={row.negative_stock_pools ?? []}
-                mainTagDescriptionByName={mainTagDescriptionByName}
-                onOpenAdd={(kind) => {
-                  setLinkModalTarget({ scope: 'list', eventId: row.id });
-                  setAddKind(kind);
-                  setAddLinkModalOpen(true);
+              <Box
+                sx={{
+                  p: 1.25,
+                  borderRadius: 'md',
+                  border: '1px solid rgba(65, 109, 249, 0.28)',
+                  bgcolor: 'rgba(65, 109, 249, 0.06)',
                 }}
-                onRemove={async (kind, name) => {
-                  setLinkActionLoading(true);
-                  try {
-                    if (kind === 'positive_main') {
-                      await services.removeFutureEventPositiveMainTag({
-                        id: row.id,
-                        tag_name: name,
-                      });
-                    } else if (kind === 'negative_main') {
-                      await services.removeFutureEventNegativeMainTag({
-                        id: row.id,
-                        tag_name: name,
-                      });
-                    } else if (kind === 'positive_pool') {
-                      await services.removeFutureEventPositiveStockPool({
-                        id: row.id,
-                        pool_name: name,
-                      });
-                    } else {
-                      await services.removeFutureEventNegativeStockPool({
-                        id: row.id,
-                        pool_name: name,
-                      });
-                    }
-                    await runRefresh();
-                  } finally {
-                    setLinkActionLoading(false);
-                  }
-                }}
-              />
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'baseline',
+                    columnGap: 3,
+                    rowGap: 0.75,
+                  }}
+                >
+                  <Typography component="div" level="body-md" sx={{ m: 0 }}>
+                    <Box component="span" sx={{ color: 'neutral.600' }}>
+                      关联股票池：
+                    </Box>
+                    <Box
+                      component="span"
+                      sx={{ color: 'primary.600', fontWeight: 'lg' }}
+                    >
+                      {row.related_stock_pool?.trim() ? row.related_stock_pool.trim() : '—'}
+                    </Box>
+                  </Typography>
+                  {row.due_date && (
+                    <Typography
+                      component="div"
+                      level="body-md"
+                      sx={{ m: 0, color: 'neutral.700' }}
+                    >
+                      距离兑现日{formatDayOnly(row.due_date)}
+                      {!Number.isNaN(dueDiffDays) && dueDiffDays >= 0 && (
+                        <>
+                          还有
+                          <Box component="span" sx={countDaysSx}>
+                            {dueDiffDays}
+                          </Box>
+                          天
+                        </>
+                      )}
+                      {!Number.isNaN(dueDiffDays) && dueDiffDays < 0 && (
+                        <>
+                          已超过
+                          <Box component="span" sx={countDaysSx}>
+                            {-dueDiffDays}
+                          </Box>
+                          天
+                        </>
+                      )}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </Stack>
 
       <Modal open={modalOpen} onClose={closeModal}>
@@ -563,15 +418,22 @@ export function FutureEventsSection() {
             <FormControl>
               <FormLabel>公布日</FormLabel>
               <Input
-                type="datetime-local"
+                type="date"
                 value={createdLocal}
                 onChange={(event) => setCreatedLocal(event.target.value)}
+                disabled={editorMode === 'edit'}
+                readOnly={editorMode === 'edit'}
+                slotProps={{
+                  input: {
+                    sx: editorMode === 'edit' ? { color: 'text.secondary' } : undefined,
+                  },
+                }}
               />
             </FormControl>
             <FormControl>
               <FormLabel>触发日</FormLabel>
               <Input
-                type="datetime-local"
+                type="date"
                 value={triggerLocal}
                 onChange={(event) => setTriggerLocal(event.target.value)}
               />
@@ -579,9 +441,16 @@ export function FutureEventsSection() {
             <FormControl>
               <FormLabel>兑现日</FormLabel>
               <Input
-                type="datetime-local"
+                type="date"
                 value={dueLocal}
                 onChange={(event) => setDueLocal(event.target.value)}
+                disabled={editorMode === 'edit'}
+                readOnly={editorMode === 'edit'}
+                slotProps={{
+                  input: {
+                    sx: editorMode === 'edit' ? { color: 'text.secondary' } : undefined,
+                  },
+                }}
               />
             </FormControl>
             <FormControl>
@@ -593,29 +462,33 @@ export function FutureEventsSection() {
                 placeholder="可选"
               />
             </FormControl>
-
-            {editorMode === 'create' && (
-              <>
-                <Divider sx={{ my: 1 }} />
-                <Typography level="title-sm" sx={{ mb: 0.5 }}>
-                  关联标签与股票池（可选）
-                </Typography>
-                <TagAndPoolFourBlocks
-                  actionLoading={false}
-                  positiveMainTags={draftPositiveMainTags}
-                  negativeMainTags={draftNegativeMainTags}
-                  positiveStockPools={draftPositivePools}
-                  negativeStockPools={draftNegativePools}
-                  mainTagDescriptionByName={mainTagDescriptionByName}
-                  onOpenAdd={(kind) => {
-                    setLinkModalTarget({ scope: 'create' });
-                    setAddKind(kind);
-                    setAddLinkModalOpen(true);
-                  }}
-                  onRemove={removeDraftRelation}
-                />
-              </>
-            )}
+            <FormControl>
+              <FormLabel sx={{ fontWeight: 'lg' }}>关联股票池（可选）</FormLabel>
+              <Select
+                size="md"
+                placeholder="选择股票池"
+                value={relatedStockPool}
+                onChange={(_, value) =>
+                  setRelatedStockPool(
+                    value === null || value === undefined ? '' : String(value)
+                  )
+                }
+                sx={{
+                  minWidth: '100%',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  bgcolor: 'rgba(65, 109, 249, 0.06)',
+                  border: '1px solid rgba(65, 109, 249, 0.35)',
+                }}
+              >
+                <Option value="">（无）</Option>
+                {poolNameCandidates.map((poolName) => (
+                  <Option key={poolName} value={poolName}>
+                    {poolName}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
           </Stack>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
@@ -628,17 +501,6 @@ export function FutureEventsSection() {
           </Box>
         </ModalDialog>
       </Modal>
-
-      <TagPoolRelationAddDialog
-        open={addLinkModalOpen}
-        title={titleForAddModal(addKind)}
-        kind={addKind}
-        tagCandidates={addTagCandidates}
-        poolNameCandidates={addPoolNameCandidates}
-        actionLoading={linkActionLoading}
-        onClose={closeAddLinkModal}
-        onConfirmBatch={(names) => void handleAddBatch(names)}
-      />
     </>
   );
 }

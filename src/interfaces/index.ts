@@ -205,10 +205,8 @@ export type FutureEventItem = {
   trigger_date?: string | null;
   due_date?: string | null;
   rank?: number | null;
-  positive_main_tags?: string[] | null;
-  negative_main_tags?: string[] | null;
-  positive_stock_pools?: string[] | null;
-  negative_stock_pools?: string[] | null;
+  /** 关联的唯一股票池名称 */
+  related_stock_pool?: string | null;
 };
 
 export type CreateFutureEventPayload = {
@@ -218,24 +216,18 @@ export type CreateFutureEventPayload = {
   trigger_date?: string | null;
   due_date?: string | null;
   rank?: number | null;
-  positive_main_tags?: string[] | null;
-  negative_main_tags?: string[] | null;
-  positive_stock_pools?: string[] | null;
-  negative_stock_pools?: string[] | null;
+  related_stock_pool?: string | null;
 };
 
+/** 创建后 ``created_timestamp`` / ``due_date`` 不可改，不在此载荷中提供 */
 export type UpdateFutureEventPayload = {
   id: string;
   name?: string | null;
   content?: string | null;
-  created_timestamp?: string | null;
   trigger_date?: string | null;
-  due_date?: string | null;
   rank?: number | null;
-  positive_main_tags?: string[] | null;
-  negative_main_tags?: string[] | null;
-  positive_stock_pools?: string[] | null;
-  negative_stock_pools?: string[] | null;
+  /** 传 ``null`` 可清空关联股票池 */
+  related_stock_pool?: string | null;
 };
 
 export type StockItemStats = {
