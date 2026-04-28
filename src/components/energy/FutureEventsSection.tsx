@@ -26,6 +26,10 @@ import type { FutureEventItem, Pool } from '@/interfaces';
 
 import { RankCircleTitle } from '@/components/energy/RankCircleTitle';
 import { poolNamesFromPools } from '@/components/energy/TagAndPoolFourBlocks';
+import {
+  calendarDaysFromToday,
+  formatFutureEventDayOnly,
+} from '@/utils/futureEventDates';
 
 /** `<input type="date">` 用的本地日历日 `YYYY-MM-DD` */
 function toDateInputValue(iso: string | null | undefined): string {
@@ -56,40 +60,6 @@ function fromDateInputValue(value: string): string | undefined {
     return undefined;
   }
   return date.toISOString();
-}
-
-function formatDayOnly(value: string | null | undefined): string {
-  if (!value) {
-    return '—';
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-}
-
-/** 兑现日与「今天」相差的完整日历日数：未来为正，过去为负，同一天为 0 */
-function calendarDaysFromToday(iso: string | null | undefined): number {
-  if (!iso) {
-    return NaN;
-  }
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) {
-    return NaN;
-  }
-  const dueDay = new Date(
-    parsed.getFullYear(),
-    parsed.getMonth(),
-    parsed.getDate()
-  );
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.round((dueDay.getTime() - todayStart.getTime()) / 86400000);
 }
 
 type EditorMode = 'create' | 'edit';
@@ -319,8 +289,8 @@ export function FutureEventsSection() {
               </Typography>
               <Divider sx={{ my: 1 }} />
               <Typography level="body-sm" color="neutral" sx={{ mb: 1 }}>
-                公布 {formatDayOnly(row.created_timestamp)} · 触发{' '}
-                {formatDayOnly(row.trigger_date)}
+                公布 {formatFutureEventDayOnly(row.created_timestamp)} · 触发{' '}
+                {formatFutureEventDayOnly(row.trigger_date)}
               </Typography>
               <Box
                 sx={{
@@ -356,7 +326,7 @@ export function FutureEventsSection() {
                       level="body-md"
                       sx={{ m: 0, color: 'neutral.700' }}
                     >
-                      距离兑现日{formatDayOnly(row.due_date)}
+                      距离兑现日{formatFutureEventDayOnly(row.due_date)}
                       {!Number.isNaN(dueDiffDays) && dueDiffDays >= 0 && (
                         <>
                           还有

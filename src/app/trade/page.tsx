@@ -233,6 +233,7 @@ export default function Workspace() {
             >
               <TradeHotTopicsPanel
                 mainTagName={tags.current?.name}
+                stockPoolName={pools.current?.stock_pool_name ?? null}
                 titleEndAction={
                   <Tooltip title="收起侧栏" placement="bottom" variant="solid">
                     <IconButton
