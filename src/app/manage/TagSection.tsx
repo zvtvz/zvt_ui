@@ -253,18 +253,49 @@ function ChipList({
   max?: number;
 }) {
   const list = items ?? [];
-  if (list.length === 0) return <Typography level="body-xs" textColor="neutral.300">-</Typography>;
+  if (list.length === 0) {
+    return (
+      <Typography level="body-md" textColor="neutral.400">
+        -
+      </Typography>
+    );
+  }
   const shown = list.slice(0, max);
   const rest = list.length - shown.length;
+  const chipTypographySx = {
+    fontSize: '1rem',
+    lineHeight: 1.4,
+    fontWeight: 500,
+  };
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.3 }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.65, alignItems: 'center' }}>
       {shown.map((n) => (
-        <Chip key={n} size="sm" variant="soft" color={color} sx={{ fontSize: 10 }}>
+        <Chip
+          key={n}
+          size="md"
+          variant="soft"
+          color={color}
+          sx={{
+            ...chipTypographySx,
+            minHeight: 32,
+            px: 1,
+            py: 0.35,
+          }}
+        >
           {n}
         </Chip>
       ))}
       {rest > 0 && (
-        <Chip size="sm" variant="plain" color="neutral" sx={{ fontSize: 10 }}>
+        <Chip
+          size="md"
+          variant="plain"
+          color="neutral"
+          sx={{
+            ...chipTypographySx,
+            minHeight: 32,
+            px: 1,
+          }}
+        >
           +{rest}
         </Chip>
       )}
