@@ -139,7 +139,7 @@ export default function TagSection(props: TagSectionProps) {
         <Table borderAxis="xBetween" size="sm" hoverRow stickyHeader>
           <thead className="font-bold">
             <tr>
-              <th style={{ width: 120 }}>名称</th>
+              <th style={{ minWidth: 200, width: '18%' }}>名称</th>
               {tagType === 'main_tag' && <th>关联次标签</th>}
               <th style={{ width: 48, textAlign: 'center' }}>优先级</th>
               <th>关联行业</th>
@@ -168,9 +168,14 @@ export default function TagSection(props: TagSectionProps) {
             ) : (
               tags.map((tag) => (
                 <tr key={tag.id || tag.name}>
-                  <td>
+                  <td style={{ minWidth: 200, verticalAlign: 'top' }}>
                     <Tooltip title={tag.desc ?? ''} variant="solid" placement="top-start">
-                      <Typography level="body-sm" fontWeight="md">{tag.name}</Typography>
+                      <Typography
+                        level="body-md"
+                        sx={{ fontSize: '0.9375rem', lineHeight: 1.45, fontWeight: 400 }}
+                      >
+                        {tag.name}
+                      </Typography>
                     </Tooltip>
                   </td>
 
@@ -255,7 +260,7 @@ function ChipList({
   const list = items ?? [];
   if (list.length === 0) {
     return (
-      <Typography level="body-md" textColor="neutral.400">
+      <Typography level="body-sm" textColor="neutral.400">
         -
       </Typography>
     );
@@ -263,23 +268,23 @@ function ChipList({
   const shown = list.slice(0, max);
   const rest = list.length - shown.length;
   const chipTypographySx = {
-    fontSize: '1rem',
-    lineHeight: 1.4,
+    fontSize: '0.875rem',
+    lineHeight: 1.35,
     fontWeight: 500,
   };
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.65, alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.45, alignItems: 'center' }}>
       {shown.map((n) => (
         <Chip
           key={n}
-          size="md"
+          size="sm"
           variant="soft"
           color={color}
           sx={{
             ...chipTypographySx,
-            minHeight: 32,
-            px: 1,
-            py: 0.35,
+            minHeight: 26,
+            px: 0.75,
+            py: 0.2,
           }}
         >
           {n}
@@ -287,13 +292,13 @@ function ChipList({
       ))}
       {rest > 0 && (
         <Chip
-          size="md"
+          size="sm"
           variant="plain"
           color="neutral"
           sx={{
             ...chipTypographySx,
-            minHeight: 32,
-            px: 1,
+            minHeight: 26,
+            px: 0.65,
           }}
         >
           +{rest}

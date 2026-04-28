@@ -76,6 +76,12 @@ function formatShortDate(value: string | null | undefined): string {
 
 type EditorMode = 'create' | 'edit';
 
+/** 关联弹层：列表卡片上已有事件，或新建表单内草稿 */
+type FutureEventLinkModalTarget =
+  | null
+  | { scope: 'create' }
+  | { scope: 'list'; eventId: string };
+
 export function FutureEventsSection() {
   const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
   const { data: poolList = [] } = useRequest(services.getPools);
@@ -116,45 +122,93 @@ export function FutureEventsSection() {
   const [dueLocal, setDueLocal] = useState('');
   const [rankInput, setRankInput] = useState('');
 
+  const [draftPositiveMainTags, setDraftPositiveMainTags] = useState<string[]>(
+    []
+  );
+  const [draftNegativeMainTags, setDraftNegativeMainTags] = useState<string[]>(
+    []
+  );
+  const [draftPositivePools, setDraftPositivePools] = useState<string[]>([]);
+  const [draftNegativePools, setDraftNegativePools] = useState<string[]>([]);
+
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false);
   const [addKind, setAddKind] = useState<TagPoolBlockKind | null>(null);
-  const [addEventId, setAddEventId] = useState<string | null>(null);
+  const [linkModalTarget, setLinkModalTarget] =
+    useState<FutureEventLinkModalTarget>(null);
   const [linkActionLoading, setLinkActionLoading] = useState(false);
 
-  const addEvent = useMemo(
-    () =>
-      (eventRows as FutureEventItem[]).find((row) => row.id === addEventId) ||
-      null,
-    [eventRows, addEventId]
-  );
+  const listEventForLinkModal = useMemo(() => {
+    if (linkModalTarget?.scope !== 'list') {
+      return null;
+    }
+    return (
+      (eventRows as FutureEventItem[]).find(
+        (row) => row.id === linkModalTarget.eventId
+      ) ?? null
+    );
+  }, [eventRows, linkModalTarget]);
 
   const addTagCandidates = useMemo(() => {
-    if (!addKind || !addEvent) {
+    if (!addKind) {
       return [];
     }
     if (addKind !== 'positive_main' && addKind !== 'negative_main') {
       return [];
     }
-    const current =
-      addKind === 'positive_main'
-        ? new Set(addEvent.positive_main_tags || [])
-        : new Set(addEvent.negative_main_tags || []);
-    return sortedMainTags.filter((tag) => !current.has(tag.name));
-  }, [addKind, addEvent, sortedMainTags]);
+    if (linkModalTarget?.scope === 'create') {
+      const current =
+        addKind === 'positive_main'
+          ? new Set(draftPositiveMainTags)
+          : new Set(draftNegativeMainTags);
+      return sortedMainTags.filter((tag) => !current.has(tag.name));
+    }
+    if (linkModalTarget?.scope === 'list' && listEventForLinkModal) {
+      const current =
+        addKind === 'positive_main'
+          ? new Set(listEventForLinkModal.positive_main_tags || [])
+          : new Set(listEventForLinkModal.negative_main_tags || []);
+      return sortedMainTags.filter((tag) => !current.has(tag.name));
+    }
+    return [];
+  }, [
+    addKind,
+    linkModalTarget,
+    draftPositiveMainTags,
+    draftNegativeMainTags,
+    sortedMainTags,
+    listEventForLinkModal,
+  ]);
 
   const addPoolNameCandidates = useMemo(() => {
-    if (!addKind || !addEvent) {
+    if (!addKind) {
       return [];
     }
     if (addKind !== 'positive_pool' && addKind !== 'negative_pool') {
       return [];
     }
-    const current =
-      addKind === 'positive_pool'
-        ? new Set(addEvent.positive_stock_pools || [])
-        : new Set(addEvent.negative_stock_pools || []);
-    return poolNameCandidates.filter((poolName) => !current.has(poolName));
-  }, [addKind, addEvent, poolNameCandidates]);
+    if (linkModalTarget?.scope === 'create') {
+      const current =
+        addKind === 'positive_pool'
+          ? new Set(draftPositivePools)
+          : new Set(draftNegativePools);
+      return poolNameCandidates.filter((poolName) => !current.has(poolName));
+    }
+    if (linkModalTarget?.scope === 'list' && listEventForLinkModal) {
+      const current =
+        addKind === 'positive_pool'
+          ? new Set(listEventForLinkModal.positive_stock_pools || [])
+          : new Set(listEventForLinkModal.negative_stock_pools || []);
+      return poolNameCandidates.filter((poolName) => !current.has(poolName));
+    }
+    return [];
+  }, [
+    addKind,
+    linkModalTarget,
+    draftPositivePools,
+    draftNegativePools,
+    poolNameCandidates,
+    listEventForLinkModal,
+  ]);
 
   const openCreate = useCallback(() => {
     setEditorMode('create');
@@ -165,6 +219,10 @@ export function FutureEventsSection() {
     setTriggerLocal('');
     setDueLocal('');
     setRankInput('');
+    setDraftPositiveMainTags([]);
+    setDraftNegativeMainTags([]);
+    setDraftPositivePools([]);
+    setDraftNegativePools([]);
     setModalOpen(true);
   }, []);
 
@@ -190,7 +248,7 @@ export function FutureEventsSection() {
   const closeAddLinkModal = useCallback(() => {
     setAddLinkModalOpen(false);
     setAddKind(null);
-    setAddEventId(null);
+    setLinkModalTarget(null);
   }, []);
 
   const runRefresh = useCallback(async () => {
@@ -199,12 +257,38 @@ export function FutureEventsSection() {
 
   const handleAddBatch = useCallback(
     async (names: string[]) => {
-      if (!addKind || !addEventId || names.length === 0) {
+      if (!addKind || names.length === 0) {
         return;
       }
+      if (linkModalTarget?.scope === 'create') {
+        const mergeUnique = (previous: string[], batch: string[]) => {
+          const next = [...previous];
+          for (const name of batch) {
+            if (!next.includes(name)) {
+              next.push(name);
+            }
+          }
+          return next;
+        };
+        if (addKind === 'positive_main') {
+          setDraftPositiveMainTags((previous) => mergeUnique(previous, names));
+        } else if (addKind === 'negative_main') {
+          setDraftNegativeMainTags((previous) => mergeUnique(previous, names));
+        } else if (addKind === 'positive_pool') {
+          setDraftPositivePools((previous) => mergeUnique(previous, names));
+        } else {
+          setDraftNegativePools((previous) => mergeUnique(previous, names));
+        }
+        closeAddLinkModal();
+        return;
+      }
+
+      if (linkModalTarget?.scope !== 'list') {
+        return;
+      }
+      const id = linkModalTarget.eventId;
       setLinkActionLoading(true);
       try {
-        const id = addEventId;
         for (const name of names) {
           if (addKind === 'positive_main') {
             await services.addFutureEventPositiveMainTag({ id, tag_name: name });
@@ -222,7 +306,22 @@ export function FutureEventsSection() {
         setLinkActionLoading(false);
       }
     },
-    [addKind, addEventId, runRefresh, closeAddLinkModal]
+    [addKind, linkModalTarget, runRefresh, closeAddLinkModal]
+  );
+
+  const removeDraftRelation = useCallback(
+    (kind: TagPoolBlockKind, name: string) => {
+      if (kind === 'positive_main') {
+        setDraftPositiveMainTags((previous) => previous.filter((item) => item !== name));
+      } else if (kind === 'negative_main') {
+        setDraftNegativeMainTags((previous) => previous.filter((item) => item !== name));
+      } else if (kind === 'positive_pool') {
+        setDraftPositivePools((previous) => previous.filter((item) => item !== name));
+      } else {
+        setDraftNegativePools((previous) => previous.filter((item) => item !== name));
+      }
+    },
+    []
   );
 
   const handleSave = useCallback(async () => {
@@ -251,6 +350,14 @@ export function FutureEventsSection() {
           trigger_date: triggerDate,
           due_date: dueDate,
           rank: rankPayload,
+          positive_main_tags:
+            draftPositiveMainTags.length > 0 ? draftPositiveMainTags : undefined,
+          negative_main_tags:
+            draftNegativeMainTags.length > 0 ? draftNegativeMainTags : undefined,
+          positive_stock_pools:
+            draftPositivePools.length > 0 ? draftPositivePools : undefined,
+          negative_stock_pools:
+            draftNegativePools.length > 0 ? draftNegativePools : undefined,
         });
       } else if (editingId) {
         await services.updateFutureEvent({
@@ -271,6 +378,10 @@ export function FutureEventsSection() {
     closeModal,
     contentInput,
     createdLocal,
+    draftNegativeMainTags,
+    draftNegativePools,
+    draftPositiveMainTags,
+    draftPositivePools,
     dueLocal,
     editorMode,
     editingId,
@@ -380,7 +491,7 @@ export function FutureEventsSection() {
                 negativeStockPools={row.negative_stock_pools ?? []}
                 mainTagDescriptionByName={mainTagDescriptionByName}
                 onOpenAdd={(kind) => {
-                  setAddEventId(row.id);
+                  setLinkModalTarget({ scope: 'list', eventId: row.id });
                   setAddKind(kind);
                   setAddLinkModalOpen(true);
                 }}
@@ -482,6 +593,29 @@ export function FutureEventsSection() {
                 placeholder="可选"
               />
             </FormControl>
+
+            {editorMode === 'create' && (
+              <>
+                <Divider sx={{ my: 1 }} />
+                <Typography level="title-sm" sx={{ mb: 0.5 }}>
+                  关联标签与股票池（可选）
+                </Typography>
+                <TagAndPoolFourBlocks
+                  actionLoading={false}
+                  positiveMainTags={draftPositiveMainTags}
+                  negativeMainTags={draftNegativeMainTags}
+                  positiveStockPools={draftPositivePools}
+                  negativeStockPools={draftNegativePools}
+                  mainTagDescriptionByName={mainTagDescriptionByName}
+                  onOpenAdd={(kind) => {
+                    setLinkModalTarget({ scope: 'create' });
+                    setAddKind(kind);
+                    setAddLinkModalOpen(true);
+                  }}
+                  onRemove={removeDraftRelation}
+                />
+              </>
+            )}
           </Stack>
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
