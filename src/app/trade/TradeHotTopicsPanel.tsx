@@ -39,7 +39,7 @@ type Props = {
 
 /**
  * 交易页「相关热点」只读区：与能量页同一数据源，无编辑/关联操作。
- * 选中股票池时，将该池关联的跟踪事件排在列表最前，并展示兑现日倒计时。
+ * 选中股票池和/或主标签时，查询跟踪事件（可与热点列表并行筛选），排在列表最前，并展示兑现日倒计时。
  */
 export default function TradeHotTopicsPanel({
   mainTagName,
@@ -47,39 +47,49 @@ export default function TradeHotTopicsPanel({
   titleEndAction,
 }: Props) {
   const poolFilter = (stockPoolName ?? '').trim();
+  const mainTagFilter = (mainTagName ?? '').trim();
+  const shouldFetchFuture =
+    poolFilter.length > 0 || mainTagFilter.length > 0;
 
   const { data: hotTopicRows = [], loading: loadingHot } = useRequest(
     async () => {
       const params: Record<string, string> = {};
-      if (mainTagName) {
-        params.main_tag = mainTagName;
+      if (mainTagFilter) {
+        params.main_tag = mainTagFilter;
       }
       return services.listStockHotTopic(params) as Promise<StockHotTopicItem[]>;
     },
-    { refreshDeps: [mainTagName] }
+    { refreshDeps: [mainTagFilter] }
   );
 
   const { data: futureRaw = [], loading: loadingFuture } = useRequest(
-    async () =>
-      services.queryFutureEvent({
-        related_stock_pool: poolFilter,
+    async () => {
+      const params: Record<string, string | number> = {
         limit: 50,
         order_by_field: 'rank',
         order_by_type: 'asc',
-      }) as Promise<FutureEventItem[]>,
+      };
+      if (poolFilter) {
+        params.related_stock_pool = poolFilter;
+      }
+      if (mainTagFilter) {
+        params.main_tag = mainTagFilter;
+      }
+      return services.queryFutureEvent(params) as Promise<FutureEventItem[]>;
+    },
     {
-      refreshDeps: [poolFilter],
-      ready: poolFilter.length > 0,
+      refreshDeps: [poolFilter, mainTagFilter],
+      ready: shouldFetchFuture,
     }
   );
 
-  /** 切换股票池或初次请求未完成时不展示上一池的跟踪事件，避免串池 */
-  const futureRows: FutureEventItem[] = poolFilter
+  /** 切换筛选或请求未完成时不展示上一次的跟踪事件，避免串条件 */
+  const futureRows: FutureEventItem[] = shouldFetchFuture
     ? loadingFuture
       ? []
       : futureRaw
     : [];
-  const loading = loadingHot || (poolFilter.length > 0 && loadingFuture);
+  const loading = loadingHot || (shouldFetchFuture && loadingFuture);
   const hasAnyRow = futureRows.length > 0 || hotTopicRows.length > 0;
 
   return (

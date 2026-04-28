@@ -207,6 +207,8 @@ export type FutureEventItem = {
   rank?: number | null;
   /** 关联的唯一股票池名称 */
   related_stock_pool?: string | null;
+  /** 关联的主标签名称（与主标签 name 一致） */
+  related_main_tag?: string | null;
 };
 
 export type CreateFutureEventPayload = {
@@ -217,6 +219,7 @@ export type CreateFutureEventPayload = {
   due_date?: string | null;
   rank?: number | null;
   related_stock_pool?: string | null;
+  related_main_tag?: string | null;
 };
 
 /** 创建后 ``created_timestamp`` / ``due_date`` 不可改，不在此载荷中提供 */
@@ -228,6 +231,8 @@ export type UpdateFutureEventPayload = {
   rank?: number | null;
   /** 传 ``null`` 可清空关联股票池 */
   related_stock_pool?: string | null;
+  /** 传 ``null`` 可清空关联主标签 */
+  related_main_tag?: string | null;
 };
 
 export type StockItemStats = {

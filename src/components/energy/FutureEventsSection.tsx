@@ -22,7 +22,7 @@ import {
 } from '@mui/joy';
 
 import services from '@/services';
-import type { FutureEventItem, Pool } from '@/interfaces';
+import type { FutureEventItem, MainTagInfo, Pool } from '@/interfaces';
 
 import { RankCircleTitle } from '@/components/energy/RankCircleTitle';
 import { poolNamesFromPools } from '@/components/energy/TagAndPoolFourBlocks';
@@ -66,11 +66,19 @@ type EditorMode = 'create' | 'edit';
 
 export function FutureEventsSection() {
   const { data: poolList = [] } = useRequest(services.getPools);
+  const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
   const poolNameCandidates = useMemo(
     () => [...poolNamesFromPools(poolList as Pool[])].sort((a, b) =>
       a.localeCompare(b, 'zh-Hans-CN')
     ),
     [poolList]
+  );
+  const mainTagNameCandidates = useMemo(
+    () =>
+      [...new Set((mainTagList as MainTagInfo[]).map((tag) => tag.name).filter(Boolean))].sort(
+        (a, b) => a.localeCompare(b, 'zh-Hans-CN')
+      ),
+    [mainTagList]
   );
 
   const {
@@ -97,6 +105,7 @@ export function FutureEventsSection() {
   const [dueLocal, setDueLocal] = useState('');
   const [rankInput, setRankInput] = useState('');
   const [relatedStockPool, setRelatedStockPool] = useState<string>('');
+  const [relatedMainTag, setRelatedMainTag] = useState<string>('');
 
   const openCreate = useCallback(() => {
     setEditorMode('create');
@@ -108,6 +117,7 @@ export function FutureEventsSection() {
     setDueLocal('');
     setRankInput('');
     setRelatedStockPool('');
+    setRelatedMainTag('');
     setModalOpen(true);
   }, []);
 
@@ -123,6 +133,7 @@ export function FutureEventsSection() {
       row.rank !== null && row.rank !== undefined ? String(row.rank) : ''
     );
     setRelatedStockPool(row.related_stock_pool?.trim() ?? '');
+    setRelatedMainTag(row.related_main_tag?.trim() ?? '');
     setModalOpen(true);
   }, []);
 
@@ -148,6 +159,8 @@ export function FutureEventsSection() {
 
     const poolForCreate =
       relatedStockPool.trim() !== '' ? relatedStockPool.trim() : undefined;
+    const tagForCreate =
+      relatedMainTag.trim() !== '' ? relatedMainTag.trim() : undefined;
 
     setSaving(true);
     try {
@@ -161,6 +174,7 @@ export function FutureEventsSection() {
           due_date: dueDate,
           rank: rankPayload,
           related_stock_pool: poolForCreate,
+          related_main_tag: tagForCreate,
         });
       } else if (editingId) {
         await services.updateFutureEvent({
@@ -170,6 +184,8 @@ export function FutureEventsSection() {
           rank: rankPayload,
           related_stock_pool:
             relatedStockPool.trim() === '' ? null : relatedStockPool.trim(),
+          related_main_tag:
+            relatedMainTag.trim() === '' ? null : relatedMainTag.trim(),
         });
       }
       await refresh();
@@ -187,6 +203,7 @@ export function FutureEventsSection() {
     nameInput,
     rankInput,
     refresh,
+    relatedMainTag,
     relatedStockPool,
     triggerLocal,
   ]);
@@ -318,6 +335,17 @@ export function FutureEventsSection() {
                       sx={{ color: 'primary.600', fontWeight: 'lg' }}
                     >
                       {row.related_stock_pool?.trim() ? row.related_stock_pool.trim() : '—'}
+                    </Box>
+                  </Typography>
+                  <Typography component="div" level="body-md" sx={{ m: 0 }}>
+                    <Box component="span" sx={{ color: 'neutral.600' }}>
+                      关联主标签：
+                    </Box>
+                    <Box
+                      component="span"
+                      sx={{ color: 'primary.600', fontWeight: 'lg' }}
+                    >
+                      {row.related_main_tag?.trim() ? row.related_main_tag.trim() : '—'}
                     </Box>
                   </Typography>
                   {row.due_date && (
@@ -455,6 +483,33 @@ export function FutureEventsSection() {
                 {poolNameCandidates.map((poolName) => (
                   <Option key={poolName} value={poolName}>
                     {poolName}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl>
+              <FormLabel sx={{ fontWeight: 'lg' }}>关联主标签（可选）</FormLabel>
+              <Select
+                size="md"
+                placeholder="选择主标签"
+                value={relatedMainTag}
+                onChange={(_, value) =>
+                  setRelatedMainTag(
+                    value === null || value === undefined ? '' : String(value)
+                  )
+                }
+                sx={{
+                  minWidth: '100%',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  bgcolor: 'rgba(65, 109, 249, 0.06)',
+                  border: '1px solid rgba(65, 109, 249, 0.35)',
+                }}
+              >
+                <Option value="">（无）</Option>
+                {mainTagNameCandidates.map((tagName) => (
+                  <Option key={tagName} value={tagName}>
+                    {tagName}
                   </Option>
                 ))}
               </Select>
