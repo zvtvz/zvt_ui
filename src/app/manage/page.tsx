@@ -10,8 +10,10 @@ import {
   tradePoolTabActiveClass,
   tradeInnerTabClass,
 } from './tradeStyleClasses';
+import { EnergyHotTopicsSection } from '@/components/energy/EnergyHotTopicsSection';
+import { FutureEventsSection } from '@/components/energy/FutureEventsSection';
 
-const SECTION_LABELS = ['标签信息', '构建标签'] as const;
+const SECTION_LABELS = ['标签信息', '构建标签', '当前热点', '跟踪事件'] as const;
 const TAG_KIND_LABELS = ['主标签', '次标签', '隐藏标签'] as const;
 
 export default function ManagePage() {
@@ -39,7 +41,7 @@ export default function ManagePage() {
     <Card size="sm" variant="plain" className="overflow-visible">
       <CardContent className="!p-4">
         <div className="border-b pb-2 mb-3 flex flex-row items-center justify-between">
-          <span className="text-sm font-bold">标签管理</span>
+          <span className="text-sm font-bold">管理</span>
         </div>
 
         <div className="flex flex-row items-center flex-wrap gap-y-1 border-b border-neutral-200 pb-2 mb-3">
@@ -133,6 +135,10 @@ export default function ManagePage() {
             onBuild={buildStockTags}
           />
         )}
+
+        {sectionTab === 2 && <EnergyHotTopicsSection />}
+
+        {sectionTab === 3 && <FutureEventsSection />}
       </CardContent>
     </Card>
   );

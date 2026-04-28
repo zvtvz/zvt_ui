@@ -22,14 +22,7 @@ export default function Header() {
               '/trade'
             )}`}
           >
-            <Link href="/trade">结构</Link>
-          </div>
-          <div
-            className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(
-              '/energy'
-            )}`}
-          >
-            <Link href="/energy">能量</Link>
+            <Link href="/trade">交易</Link>
           </div>
           <div
             className={`h-full flex items-center ml-8 hover:opacity-80 cursor-pointer border-b-4 border-transparent ${activeCls(

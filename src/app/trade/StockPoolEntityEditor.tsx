@@ -1,8 +1,9 @@
 'use client';
 
+import CloseRounded from '@mui/icons-material/CloseRounded';
 import services from '@/services';
 import type { StockListItem } from '@/interfaces';
-import { Button, Chip, Input, FormControl, FormLabel, Box } from '@mui/joy';
+import { Button, Chip, IconButton, Input, FormControl, FormLabel, Box } from '@mui/joy';
 import { useCallback, useState } from 'react';
 
 export type StockPoolEntityRow = {
@@ -106,7 +107,21 @@ export default function StockPoolEntityEditor({ rows, onChange }: Props) {
             size="sm"
             variant="soft"
             color="primary"
-            onDelete={() => removeRow(r.entity_id)}
+            endDecorator={
+              <IconButton
+                size="sm"
+                variant="plain"
+                color="neutral"
+                aria-label={`移除 ${r.name || r.code}`}
+                sx={{ minWidth: 24, minHeight: 24, p: 0, mr: -0.25 }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  removeRow(r.entity_id);
+                }}
+              >
+                <CloseRounded sx={{ fontSize: 16, opacity: 0.7 }} />
+              </IconButton>
+            }
           >
             {r.name || r.code || r.entity_id}
             <span className="ml-1 opacity-70">{r.code}</span>
