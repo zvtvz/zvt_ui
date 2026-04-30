@@ -12,8 +12,9 @@ import {
 } from './tradeStyleClasses';
 import { EnergyHotTopicsSection } from '@/components/energy/EnergyHotTopicsSection';
 import { FutureEventsSection } from '@/components/energy/FutureEventsSection';
+import StockPoolsTab from './StockPoolsTab';
 
-const SECTION_LABELS = ['标签信息', '构建标签', '当前热点', '跟踪事件'] as const;
+const SECTION_LABELS = ['标签信息', '构建标签', '当前热点', '跟踪事件', '股票池'] as const;
 const TAG_KIND_LABELS = ['主标签', '次标签', '隐藏标签'] as const;
 
 export default function ManagePage() {
@@ -139,6 +140,8 @@ export default function ManagePage() {
         {sectionTab === 2 && <EnergyHotTopicsSection />}
 
         {sectionTab === 3 && <FutureEventsSection />}
+
+        {sectionTab === 4 && <StockPoolsTab />}
       </CardContent>
     </Card>
   );

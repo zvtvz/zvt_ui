@@ -21,6 +21,7 @@ type Props = {
   pool: Pool | null;
   onSaved: () => void;
   onCancel: () => void;
+  onArchived?: () => void;
 };
 
 export default function UpdateStockPoolDialog({
@@ -28,11 +29,21 @@ export default function UpdateStockPoolDialog({
   pool,
   onSaved,
   onCancel,
+  onArchived,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false);
   const [error, setError] = useState('');
   const [entityRows, setEntityRows] = useState<StockPoolEntityRow[]>([]);
+
+  useEffect(() => {
+    if (!open) {
+      setConfirmArchive(false);
+      setError('');
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open || !pool?.stock_pool_name) {
@@ -79,6 +90,21 @@ export default function UpdateStockPoolDialog({
       cancelled = true;
     };
   }, [open, pool?.stock_pool_name]);
+
+  const handleArchive = async () => {
+    if (!pool?.stock_pool_name) return;
+    setArchiving(true);
+    setError('');
+    try {
+      await services.archiveStockPool({ stock_pool_name: pool.stock_pool_name });
+      onArchived?.();
+    } catch (err: any) {
+      setError(err?.message || '归档失败');
+      setConfirmArchive(false);
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!pool?.stock_pool_name) return;
@@ -127,18 +153,50 @@ export default function UpdateStockPoolDialog({
             <div className="mt-2 text-sm text-red-600">{error}</div>
           )}
         </DialogContent>
-        <div className="flex justify-end gap-2 mt-4 px-4 pb-4">
-          <Button variant="plain" size="sm" onClick={onCancel}>
-            取消
-          </Button>
-          <Button
-            size="sm"
-            loading={loading}
-            disabled={loadingData}
-            onClick={handleSave}
-          >
-            保存
-          </Button>
+        <div className="flex justify-between gap-2 mt-4 px-4 pb-4">
+          <div>
+            {pool?.stock_pool_type === 'custom' && (
+              confirmArchive ? (
+                <div className="flex items-center gap-2">
+                  <Typography level="body-xs" textColor="warning.600">确认归档？</Typography>
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    color="warning"
+                    loading={archiving}
+                    onClick={handleArchive}
+                  >
+                    确认
+                  </Button>
+                  <Button size="sm" variant="plain" onClick={() => setConfirmArchive(false)}>
+                    取消
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="soft"
+                  color="neutral"
+                  onClick={() => setConfirmArchive(true)}
+                >
+                  归档
+                </Button>
+              )
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="plain" size="sm" onClick={onCancel}>
+              取消
+            </Button>
+            <Button
+              size="sm"
+              loading={loading}
+              disabled={loadingData}
+              onClick={handleSave}
+            >
+              保存
+            </Button>
+          </div>
         </div>
       </ModalDialog>
     </Modal>

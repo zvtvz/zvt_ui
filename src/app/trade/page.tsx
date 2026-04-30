@@ -325,6 +325,11 @@ export default function Workspace() {
           }
         }}
         onCancel={() => setUpdatePoolOpen(false)}
+        onArchived={async () => {
+          setUpdatePoolOpen(false);
+          const nextPool = pools.data?.find((p) => p.id !== pools.current?.id);
+          await refreshPools(nextPool?.stock_pool_name);
+        }}
       />
       {dialog.open && <Dialog.Info {...dialog.props} />}
     </>

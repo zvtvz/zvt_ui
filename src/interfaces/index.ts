@@ -138,6 +138,7 @@ export type Pool = {
   entity_id: string;
   stock_pool_type: string;
   stock_pool_name: string;
+  active?: boolean;
 };
 
 export type Stock = {
