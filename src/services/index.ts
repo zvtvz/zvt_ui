@@ -88,6 +88,10 @@ const apis = {
   getTData: '/api/trading/query_ts',
   buyStocks: '/api/trading/buy',
   sellStocks: '/api/trading/sell',
+
+  // monitor
+  listMonitorJobs: 'GET /api/monitor/jobs',
+  listMonitorRuns: 'GET /api/monitor/runs',
 } as const;
 
 const instance = createInstance<keyof typeof apis>({

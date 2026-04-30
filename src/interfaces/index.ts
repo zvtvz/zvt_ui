@@ -257,3 +257,23 @@ export type StockItemStats = {
     recent_additional_or_rights_issue: true;
   }[];
 };
+
+export type ScheduledJobInfo = {
+  job_id: string;
+  description: string | null;
+  cron_expr: string | null;
+  func_name: string | null;
+  registered_at: string | null;
+};
+
+export type RecorderJobRunInfo = {
+  run_id: string;
+  recorder_name: string;
+  status: 'running' | 'success' | 'failed' | string;
+  started_at: string | null;
+  finished_at: string | null;
+  entities_processed: number;
+  records_processed: number;
+  error_message: string | null;
+  duration_seconds: number | null;
+};
