@@ -61,7 +61,7 @@ export default function StockPoolEntityEditor({ rows, onChange }: Props) {
 
   return (
     <FormControl className="mb-2">
-      <FormLabel>标的（A 股）</FormLabel>
+      <FormLabel>A 股标的</FormLabel>
       <div className="flex gap-2 mb-2">
         <Input
           size="sm"

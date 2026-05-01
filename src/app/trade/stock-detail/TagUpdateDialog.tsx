@@ -270,7 +270,7 @@ export default function TagUpdateDialog({
     }
   };
 
-  /** 仅取消该隐藏标签的激活状态，保留 hidden_tags 字典中的条目（与「删除」不同）。 */
+  /** 仅取消该隐藏标签的激活状态，保留 hidden_tags 字典中的条目，与删除整条不同。 */
   const handleDeactivateHidden = async (name: string) => {
     const activeMain = stockTags?.main_tag;
     if (!activeMain) return;
@@ -652,6 +652,13 @@ export default function TagUpdateDialog({
                   inputValue={draft.tag}
                   onInputChange={(event, newInputValue) => {
                     setDraft((previous) => ({ ...previous, tag: newInputValue }));
+                  }}
+                  sx={{ '--unstable_popup-zIndex': 20000 }}
+                  slotProps={{
+                    listbox: {
+                      placement: 'bottom-start',
+                      sx: { zIndex: 20000 },
+                    },
                   }}
                 />
                 <FormLabel>原因</FormLabel>

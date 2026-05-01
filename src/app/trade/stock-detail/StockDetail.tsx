@@ -1,10 +1,11 @@
 import Loading from '@/components/Loading';
 import Events from './Events';
 import News from './News';
-import { Button, Typography } from '@mui/joy';
+import { Button } from '@mui/joy';
 import TagUpdateDialog from './TagUpdateDialog';
 import { useState } from 'react';
 import StockChart from './StockChart';
+import CapitalStructureDialog from './CapitalStructureDialog';
 
 type Props = {
   loading: any;
@@ -20,6 +21,7 @@ export default function StockDetail({
   refreshNews,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [capitalOpen, setCapitalOpen] = useState(false);
 
   return (
     <>
@@ -30,13 +32,22 @@ export default function StockDetail({
             <span className="ml-1 opacity-55">{stocks.current?.code}</span>
           </div>
 
-          <Button
-            size="sm"
-            className="!text-xs !leading-4 !min-h-[24px] !px-2"
-            onClick={() => setOpen(true)}
-          >
-            更新标签
-          </Button>
+          <div className="flex flex-row gap-1 items-center">
+            <Button
+              size="sm"
+              className="!text-xs !leading-4 !min-h-[24px] !px-2"
+              onClick={() => setOpen(true)}
+            >
+              更新标签
+            </Button>
+            <Button
+              size="sm"
+              className="!text-xs !leading-4 !min-h-[24px] !px-2"
+              onClick={() => setCapitalOpen(true)}
+            >
+              资金结构
+            </Button>
+          </div>
         </div>
       </div>
       {stocks.current && <StockChart entityId={stocks.current?.entity_id} />}
@@ -58,6 +69,13 @@ export default function StockDetail({
           open={open}
           stock={stocks.current}
           onCancel={() => setOpen(false)}
+        />
+      )}
+      {capitalOpen && stocks.current && (
+        <CapitalStructureDialog
+          open={capitalOpen}
+          stock={stocks.current}
+          onCancel={() => setCapitalOpen(false)}
         />
       )}
     </>

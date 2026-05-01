@@ -1,11 +1,34 @@
 'use client';
 
-import { Table, Tooltip } from '@mui/joy';
+import { Chip, Table, Tooltip } from '@mui/joy';
 import { CircularProgress } from '@mui/joy';
 
 import SortCell from './SortCell';
 import { toMoney } from '@/utils';
 import Blink from './Blink';
+import { TREND_PREFIX, SENTIMENT_PREFIX } from '@/constants/capitalStructure';
+
+function isTrendKind(value?: string | null) {
+  return Boolean(value?.startsWith(TREND_PREFIX));
+}
+function isSentimentKind(value?: string | null) {
+  return Boolean(value?.startsWith(SENTIMENT_PREFIX));
+}
+
+function CapitalStructureChip({ value }: { value?: string | null }) {
+  if (!value) return null;
+  const trend = isTrendKind(value);
+  return (
+    <Chip
+      size="sm"
+      variant="soft"
+      color={trend ? 'primary' : 'warning'}
+      sx={{ fontWeight: 'bold' }}
+    >
+      {value}
+    </Chip>
+  );
+}
 
 type Props = any;
 
@@ -49,19 +72,26 @@ export default function StockList({
               <th className="!text-right">
                 {renderHeaderCell('total_cap', '总市值')}
               </th>
+              <th>资金结构</th>
               <th>主标签</th>
               <th>次标签</th>
               <th>隐藏标签</th>
             </tr>
           </thead>
           <tbody>
-            {stocks?.data?.map((stock: any) => (
+            {stocks?.data?.map((stock: any) => {
+              const isSelected = stock.id === (stocks.current as any)?.id;
+              const isSentiment = isSentimentKind(stock.capital_structure);
+              const rowBg = isSelected
+                ? 'bg-[#E3FBE3]'
+                : isSentiment
+                  ? 'bg-amber-50'
+                  : '';
+              return (
               <tr
                 key={stock.id}
                 onClick={() => selectStock(stock)}
-                className={`cursor-pointer ${
-                  stock.id === (stocks.current as any)?.id && 'bg-[#E3FBE3]'
-                }`}
+                className={`cursor-pointer ${rowBg}`}
               >
                 <td>
                   {stock.name}|<span className="opacity-90">{stock.code}</span>
@@ -91,6 +121,9 @@ export default function StockList({
                 <td className="text-right">
                   <Blink mkey={toMoney(stock.total_cap)} />
                 </td>
+                <td>
+                  <CapitalStructureChip value={stock.capital_structure} />
+                </td>
                 <td>{stock.main_tag}</td>
                 <td>{stock.sub_tag}</td>
                 <td>
@@ -108,7 +141,8 @@ export default function StockList({
                   </Tooltip>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </Table>
       </div>
