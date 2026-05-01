@@ -270,6 +270,32 @@ export default function TagUpdateDialog({
     }
   };
 
+  /** 仅取消该隐藏标签的激活状态，保留 hidden_tags 字典中的条目（与「删除」不同）。 */
+  const handleDeactivateHidden = async (name: string) => {
+    const activeMain = stockTags?.main_tag;
+    if (!activeMain) return;
+    setActionLoading(true);
+    try {
+      const mainReason =
+        stockTags?.main_tags?.[activeMain] ?? stockTags?.main_tag_reason ?? '';
+      const nextActive = { ...activeHiddenTagsPayload };
+      delete nextActive[name];
+      await services.updateStockTags({
+        entity_id: stock.entity_id,
+        main_tag: activeMain,
+        main_tag_reason: mainReason,
+        sub_tag: stockTags?.sub_tag || undefined,
+        sub_tag_reason: stockTags?.sub_tag_reason || undefined,
+        active_hidden_tags: nextActive,
+        keep_current_selections: false,
+      });
+      await refreshStockTags();
+      if (addDialogOpen) await refreshCatalog();
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const closeAddDialog = () => {
     setAddKind(null);
   };
@@ -559,7 +585,21 @@ export default function TagUpdateDialog({
                                 >
                                   激活
                                 </Button>
-                              ) : null}
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="plain"
+                                  color="neutral"
+                                  loading={actionLoading}
+                                  disabled={!stockTags?.main_tag}
+                                  title={
+                                    !stockTags?.main_tag ? '请先设置主标签' : undefined
+                                  }
+                                  onClick={() => handleDeactivateHidden(name)}
+                                >
+                                  取消激活
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="plain"
