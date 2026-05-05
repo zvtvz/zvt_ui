@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Table, Typography } from '@mui/joy';
 import { useRequest } from 'ahooks';
 import services from '@/services';
@@ -9,12 +9,23 @@ import { tradeInnerTabClass, tradePoolTabActiveClass } from './tradeStyleClasses
 
 type CatalogKind = 'industry' | 'concept';
 
+type EntityCountSort = 'none' | 'asc' | 'desc';
+
+function entityCountSortKey(row: BlockInfo, direction: 'asc' | 'desc'): number {
+  const raw = row.entity_count;
+  if (raw != null && !Number.isNaN(Number(raw))) {
+    return Number(raw);
+  }
+  return direction === 'asc' ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+}
+
 export default function BlockCatalogManageSection(props: {
   kind: CatalogKind;
   onAfterMutation?: () => void;
 }) {
   const { kind, onAfterMutation } = props;
   const [listTab, setListTab] = useState<'active' | 'archived'>('active');
+  const [entityCountSort, setEntityCountSort] = useState<EntityCountSort>('none');
   const activeQuery = listTab === 'active';
 
   const { data, loading, refresh } = useRequest(
@@ -27,7 +38,24 @@ export default function BlockCatalogManageSection(props: {
     { refreshDeps: [kind, activeQuery] }
   );
 
+  useEffect(() => {
+    setEntityCountSort('none');
+  }, [kind, activeQuery]);
+
   const rows = (data ?? []) as BlockInfo[];
+
+  const displayRows = useMemo(() => {
+    if (entityCountSort === 'none') {
+      return rows;
+    }
+    const list = [...rows];
+    list.sort((a, b) => {
+      const va = entityCountSortKey(a, entityCountSort);
+      const vb = entityCountSortKey(b, entityCountSort);
+      return entityCountSort === 'asc' ? va - vb : vb - va;
+    });
+    return list;
+  }, [rows, entityCountSort]);
 
   async function handleSetActive(rowId: string, active: boolean) {
     if (kind === 'industry') {
@@ -39,7 +67,7 @@ export default function BlockCatalogManageSection(props: {
     onAfterMutation?.();
   }
 
-  const columnCount = kind === 'industry' ? 4 : 3;
+  const columnCount = kind === 'industry' ? 5 : 4;
 
   return (
     <Box>
@@ -85,6 +113,39 @@ export default function BlockCatalogManageSection(props: {
               <th style={{ minWidth: 200 }}>名称</th>
               {kind === 'industry' && <th style={{ width: 72 }}>层级</th>}
               <th>说明</th>
+              <th
+                style={{ width: 100, whiteSpace: 'nowrap' }}
+                aria-sort={
+                  entityCountSort === 'asc'
+                    ? 'ascending'
+                    : entityCountSort === 'desc'
+                      ? 'descending'
+                      : 'none'
+                }
+              >
+                <button
+                  type="button"
+                  title="按标的数排序：升序 → 降序 → 恢复默认"
+                  className="inline-flex items-center gap-0.5 font-bold cursor-pointer select-none rounded px-0.5 py-0.5 -mx-0.5 hover:bg-neutral-100 border-0 bg-transparent text-inherit"
+                  onClick={() => {
+                    setEntityCountSort((previous) =>
+                      previous === 'none' ? 'asc' : previous === 'asc' ? 'desc' : 'none'
+                    );
+                  }}
+                >
+                  标的数
+                  {entityCountSort === 'asc' ? (
+                    <span className="font-normal opacity-80 text-[#416df9]" aria-hidden>
+                      ↑
+                    </span>
+                  ) : null}
+                  {entityCountSort === 'desc' ? (
+                    <span className="font-normal opacity-80 text-[#416df9]" aria-hidden>
+                      ↓
+                    </span>
+                  ) : null}
+                </button>
+              </th>
               <th style={{ width: 120, whiteSpace: 'nowrap' }}>操作</th>
             </tr>
           </thead>
@@ -106,7 +167,7 @@ export default function BlockCatalogManageSection(props: {
                 </td>
               </tr>
             ) : (
-              rows.map((row) => {
+              displayRows.map((row) => {
                 const rowId = row.id;
                 return (
                   <tr key={rowId ?? row.name}>
@@ -125,6 +186,11 @@ export default function BlockCatalogManageSection(props: {
                     <td>
                       <Typography level="body-xs" textColor="neutral.500">
                         {row.desc ?? '—'}
+                      </Typography>
+                    </td>
+                    <td>
+                      <Typography level="body-xs" textColor="neutral.500">
+                        {row.entity_count != null ? row.entity_count : '—'}
                       </Typography>
                     </td>
                     <td>

@@ -107,6 +107,7 @@ export type BlockInfo = {
   level?: number;
   active?: boolean;
   parents?: unknown;
+  entity_count?: number;
 };
 
 export type TagType = 'main_tag' | 'sub_tag' | 'hidden_tag';
