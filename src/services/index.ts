@@ -33,6 +33,8 @@ const apis = {
   getIndustryInfo: 'GET /api/work/get_industry_info',
   getConceptInfo: 'GET /api/work/get_concept_info',
   getAreaInfo: 'GET /api/work/get_area_info',
+  setIndustryInfoActive: '/api/work/set_industry_info_active',
+  setConceptInfoActive: '/api/work/set_concept_info_active',
 
   // 初始化后台任务
   initIndustryInfo: '/api/work/init_industry_info',

@@ -101,9 +101,12 @@ export type UpdateHiddenTagInfo = {
 };
 
 export type BlockInfo = {
+  id?: string;
   name: string;
   desc: string | null;
   level?: number;
+  active?: boolean;
+  parents?: unknown;
 };
 
 export type TagType = 'main_tag' | 'sub_tag' | 'hidden_tag';

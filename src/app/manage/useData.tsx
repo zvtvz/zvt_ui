@@ -68,8 +68,8 @@ export function useManageData() {
   const mainTags = useRequest(services.getMainTagInfo, { refreshDeps: [] });
   const subTags = useRequest(services.getSubTagInfo, { refreshDeps: [] });
   const hiddenTags = useRequest(services.getHiddenTagInfo, { refreshDeps: [] });
-  const industries = useRequest(services.getIndustryInfo, { refreshDeps: [] });
-  const concepts = useRequest(services.getConceptInfo, { refreshDeps: [] });
+  const industries = useRequest(() => services.getIndustryInfo({ active: true }), { refreshDeps: [] });
+  const concepts = useRequest(() => services.getConceptInfo({ active: true }), { refreshDeps: [] });
   const areas = useRequest(services.getAreaInfo, { refreshDeps: [] });
 
   const [opLog, setOpLog] = useState<string[]>([]);
@@ -209,6 +209,11 @@ export function useManageData() {
     }
   }
 
+  async function refreshBlockRefs() {
+    industries.refresh();
+    concepts.refresh();
+  }
+
   return {
     mainTags: (mainTags.data ?? []) as MainTagInfo[],
     subTags: (subTags.data ?? []) as SubTagInfo[],
@@ -228,5 +233,6 @@ export function useManageData() {
     initBlocks,
     buildStockTags,
     refreshByType,
+    refreshBlockRefs,
   };
 }

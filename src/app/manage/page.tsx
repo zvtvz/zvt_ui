@@ -12,10 +12,11 @@ import {
 } from './tradeStyleClasses';
 import { EnergyHotTopicsSection } from '@/components/energy/EnergyHotTopicsSection';
 import { FutureEventsSection } from '@/components/energy/FutureEventsSection';
+import BlockCatalogManageSection from './BlockCatalogManageSection';
 import StockPoolsTab from './StockPoolsTab';
 
 const SECTION_LABELS = ['标签信息', '构建标签', '当前热点', '跟踪事件', '股票池'] as const;
-const TAG_KIND_LABELS = ['主标签', '次标签', '隐藏标签'] as const;
+const TAG_KIND_LABELS = ['主标签', '次标签', '隐藏标签', '行业信息', '概念信息'] as const;
 
 export default function ManagePage() {
   const [sectionTab, setSectionTab] = useState<number>(0);
@@ -34,6 +35,7 @@ export default function ManagePage() {
     deleteTag,
     initBlocks,
     buildStockTags,
+    refreshBlockRefs,
   } = useManageData();
 
   const blockProps = { industries, concepts, areas };
@@ -119,6 +121,12 @@ export default function ManagePage() {
                 onDelete={(tagName) => deleteTag('hidden_tag', tagName)}
                 {...blockProps}
               />
+            )}
+            {tagTab === 3 && (
+              <BlockCatalogManageSection kind="industry" onAfterMutation={refreshBlockRefs} />
+            )}
+            {tagTab === 4 && (
+              <BlockCatalogManageSection kind="concept" onAfterMutation={refreshBlockRefs} />
             )}
           </>
         )}
