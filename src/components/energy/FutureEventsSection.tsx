@@ -226,19 +226,17 @@ export function FutureEventsSection() {
 
   return (
     <>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: 2,
-        }}
-      >
-        <Typography level="title-sm">跟踪事件列表</Typography>
-        <Button size="sm" onClick={openCreate}>
+      <div className="flex flex-row justify-between items-center mb-2">
+        <span className="opacity-85 text-sm">共 {eventRows.length} 个</span>
+        <Button
+          size="sm"
+          variant="soft"
+          className="!text-[12px] !py-1"
+          onClick={openCreate}
+        >
           新建跟踪事件
         </Button>
-      </Box>
+      </div>
 
       {loading && (
         <Typography level="body-sm" sx={{ mb: 2 }}>

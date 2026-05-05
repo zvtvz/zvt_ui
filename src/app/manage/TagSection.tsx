@@ -9,7 +9,6 @@ import {
   Box,
   Tooltip,
 } from '@mui/joy';
-import AddIcon from '@mui/icons-material/Add';
 import useConfirmDialog from '@/components/Dialog/useConfirmDialog';
 import Dialog from '@/components/Dialog';
 import {
@@ -127,7 +126,6 @@ export default function TagSection(props: TagSectionProps) {
         <Button
           size="sm"
           variant="soft"
-          startDecorator={<AddIcon />}
           className="!text-[12px] !py-1"
           onClick={() => setDialog({ mode: 'create' })}
         >

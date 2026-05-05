@@ -5,9 +5,11 @@ import { useRequest } from 'ahooks';
 import { Button, Chip, Typography } from '@mui/joy';
 import services from '@/services';
 import type { Pool } from '@/interfaces';
+import CreateStockPoolDialog from '@/app/trade/CreateStockPoolDialog';
 import UpdateStockPoolDialog from '@/app/trade/UpdateStockPoolDialog';
 
 export default function StockPoolsTab() {
+  const [createPoolOpen, setCreatePoolOpen] = useState(false);
   const [editingPool, setEditingPool] = useState<Pool | null>(null);
   const [restoringName, setRestoringName] = useState<string | null>(null);
   const [deletingName, setDeletingName] = useState<string | null>(null);
@@ -54,6 +56,18 @@ export default function StockPoolsTab() {
 
   return (
     <div>
+      <div className="flex flex-row justify-between items-center mb-2">
+        <span className="opacity-85 text-sm">共 {poolList.length} 个</span>
+        <Button
+          size="sm"
+          variant="soft"
+          className="!text-[12px] !py-1"
+          onClick={() => setCreatePoolOpen(true)}
+        >
+          新建股票池
+        </Button>
+      </div>
+
       {loading && (
         <div className="text-sm text-neutral-500 py-4">加载中…</div>
       )}
@@ -160,6 +174,14 @@ export default function StockPoolsTab() {
         })}
       </div>
 
+      <CreateStockPoolDialog
+        open={createPoolOpen}
+        onSubmit={() => {
+          refresh();
+          setCreatePoolOpen(false);
+        }}
+        onCancel={() => setCreatePoolOpen(false)}
+      />
       <UpdateStockPoolDialog
         open={editingPool !== null}
         pool={editingPool}
