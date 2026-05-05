@@ -1,10 +1,19 @@
 'use client';
 
 import CloseRounded from '@mui/icons-material/CloseRounded';
+import { useRequest } from 'ahooks';
 import services from '@/services';
 import type { StockListItem } from '@/interfaces';
-import { Button, Chip, IconButton, Input, FormControl, FormLabel, Box } from '@mui/joy';
-import { useCallback, useState } from 'react';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Typography,
+} from '@mui/joy';
+import { useCallback, useMemo, useState } from 'react';
 
 export type StockPoolEntityRow = {
   entity_id: string;
@@ -17,10 +26,29 @@ type Props = {
   onChange: (rows: StockPoolEntityRow[]) => void;
 };
 
+type ConceptOption = { name: string };
+
+const MAX_CHIP_PREVIEW = 20;
+
 export default function StockPoolEntityEditor({ rows, onChange }: Props) {
   const [searchKey, setSearchKey] = useState('');
   const [searchResults, setSearchResults] = useState<StockListItem[]>([]);
   const [searching, setSearching] = useState(false);
+  const [conceptDraft, setConceptDraft] = useState('');
+  const [conceptSyncLoading, setConceptSyncLoading] = useState(false);
+  const [conceptSyncMessage, setConceptSyncMessage] = useState('');
+  const [expandAllChips, setExpandAllChips] = useState(false);
+
+  const { data: conceptList = [], loading: conceptListLoading } = useRequest(
+    () => services.getConceptInfo({ active: true }) as Promise<ConceptOption[]>,
+    { refreshDeps: [] }
+  );
+  const conceptNames = (Array.isArray(conceptList) ? conceptList : [])
+    .map((item) => item?.name)
+    .filter((name): name is string => Boolean(name))
+    .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+
+  const conceptNameSet = useMemo(() => new Set(conceptNames), [conceptNames]);
 
   const runSearch = useCallback(async () => {
     const key = searchKey.trim();
@@ -43,14 +71,12 @@ export default function StockPoolEntityEditor({ rows, onChange }: Props) {
     if (rows.some((r) => r.entity_id === item.entity_id)) {
       return;
     }
-    onChange([
-      ...rows,
-      {
-        entity_id: item.entity_id,
-        code: item.code,
-        name: item.name,
-      },
-    ]);
+    const row: StockPoolEntityRow = {
+      entity_id: item.entity_id,
+      code: item.code,
+      name: item.name,
+    };
+    onChange([row, ...rows.filter((r) => r.entity_id !== item.entity_id)]);
     setSearchResults([]);
     setSearchKey('');
   };
@@ -59,9 +85,128 @@ export default function StockPoolEntityEditor({ rows, onChange }: Props) {
     onChange(rows.filter((r) => r.entity_id !== entityId));
   };
 
+  const mergeFromConcept = useCallback(async () => {
+    const name = conceptDraft.trim();
+    if (!name) {
+      setConceptSyncMessage('请先选择概念');
+      return;
+    }
+    if (!conceptNameSet.has(name)) {
+      setConceptSyncMessage('请从下拉列表中选择有效的概念名称');
+      return;
+    }
+    setConceptSyncMessage('');
+    setConceptSyncLoading(true);
+    try {
+      const body = await services.listEntityIdsFromConcept({ concept_name: name });
+      if (body && (body as any).detail) {
+        const detail = (body as any).detail;
+        setConceptSyncMessage(
+          Array.isArray(detail) ? detail[0]?.msg || String(detail[0]) : String(detail)
+        );
+        return;
+      }
+      const rawIds: string[] = Array.isArray((body as any)?.entity_ids)
+        ? (body as any).entity_ids
+        : [];
+      if (!rawIds.length) {
+        setConceptSyncMessage('该概念暂无成分数据，请确认已同步板块及 block_stock 数据集');
+        return;
+      }
+      const existing = new Set(rows.map((r) => r.entity_id));
+      const newIds = rawIds.filter((id) => id && !existing.has(id));
+      const duplicateCount = rawIds.length - newIds.length;
+      if (!newIds.length) {
+        setConceptSyncMessage(
+          duplicateCount > 0
+            ? `所选概念成分共 ${rawIds.length} 只，均已存在于列表中`
+            : '没有可并入的标的'
+        );
+        return;
+      }
+      const labels = await services.resolveStockPoolEntities({ entity_ids: newIds });
+      if (labels && (labels as any).detail) {
+        const detail = (labels as any).detail;
+        setConceptSyncMessage(
+          Array.isArray(detail) ? detail[0]?.msg || String(detail[0]) : String(detail)
+        );
+        return;
+      }
+      const list = Array.isArray(labels) ? labels : [];
+      const additionsRaw = list.map((item: any) => ({
+        entity_id: item.entity_id,
+        code: item.code || '',
+        name: item.name || '',
+      }));
+      const seenAddition = new Set<string>();
+      const additions = additionsRaw.filter((a) => {
+        if (!a.entity_id || seenAddition.has(a.entity_id)) return false;
+        seenAddition.add(a.entity_id);
+        return true;
+      });
+      const mergedIds = new Set(additions.map((a) => a.entity_id));
+      onChange([...additions, ...rows.filter((r) => !mergedIds.has(r.entity_id))]);
+      setConceptSyncMessage(
+        `已并入 ${additions.length} 只${duplicateCount > 0 ? `，跳过与列表重复的 ${duplicateCount} 只` : ''}`
+      );
+    } catch (err: any) {
+      setConceptSyncMessage(err?.message || '从概念同步失败');
+    } finally {
+      setConceptSyncLoading(false);
+    }
+  }, [conceptDraft, conceptNameSet, onChange, rows]);
+
+  const hasHiddenChips = rows.length > MAX_CHIP_PREVIEW;
+  const chipRows =
+    expandAllChips || !hasHiddenChips ? rows : rows.slice(0, MAX_CHIP_PREVIEW);
+
   return (
     <FormControl className="mb-2">
       <FormLabel>A 股标的</FormLabel>
+      <div className="flex flex-wrap gap-2 mb-3 items-end">
+        <Autocomplete
+          options={conceptNames}
+          size="sm"
+          loading={conceptListLoading}
+          placeholder={conceptListLoading ? '加载概念…' : '输入筛选或选择概念'}
+          value={conceptDraft || null}
+          onChange={(_event, newValue) => {
+            setConceptDraft((newValue as string) || '');
+            setConceptSyncMessage('');
+          }}
+          inputValue={conceptDraft}
+          onInputChange={(_event, newInputValue) => {
+            setConceptDraft(newInputValue);
+            setConceptSyncMessage('');
+          }}
+          sx={{
+            flex: '1 1 220px',
+            minWidth: 200,
+            width: '100%',
+            '--unstable_popup-zIndex': 20000,
+          }}
+          slotProps={{
+            listbox: {
+              placement: 'bottom-start',
+              sx: { zIndex: 20000, maxHeight: 280 },
+            },
+          }}
+        />
+        <Button
+          size="sm"
+          variant="outlined"
+          loading={conceptSyncLoading}
+          disabled={conceptListLoading || !conceptDraft.trim()}
+          onClick={() => void mergeFromConcept()}
+        >
+          从概念并入
+        </Button>
+      </div>
+      {conceptSyncMessage && (
+        <Typography level="body-xs" className="mb-2" sx={{ color: 'neutral.700' }}>
+          {conceptSyncMessage}
+        </Typography>
+      )}
       <div className="flex gap-2 mb-2">
         <Input
           size="sm"
@@ -100,35 +245,87 @@ export default function StockPoolEntityEditor({ rows, onChange }: Props) {
           ))}
         </Box>
       )}
-      <div className="flex flex-wrap gap-1 min-h-[32px]">
-        {rows.map((r) => (
-          <Chip
-            key={r.entity_id}
+      <div className="flex flex-row flex-wrap items-center gap-2 mb-1">
+        <Typography level="body-xs" sx={{ opacity: 0.75 }}>
+          已选 {rows.length} 只
+          {hasHiddenChips && !expandAllChips
+            ? `（展示前 ${MAX_CHIP_PREVIEW} 只）`
+            : null}
+        </Typography>
+        <Button
+          size="sm"
+          variant="plain"
+          color="neutral"
+          disabled={rows.length === 0}
+          onClick={() => {
+            onChange([]);
+            setExpandAllChips(false);
+            setConceptSyncMessage('');
+          }}
+        >
+          清空
+        </Button>
+        {hasHiddenChips ? (
+          <Button
             size="sm"
-            variant="soft"
+            variant="plain"
             color="primary"
-            endDecorator={
-              <IconButton
-                size="sm"
-                variant="plain"
-                color="neutral"
-                aria-label={`移除 ${r.name || r.code}`}
-                sx={{ minWidth: 24, minHeight: 24, p: 0, mr: -0.25 }}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  removeRow(r.entity_id);
-                }}
-              >
-                <CloseRounded sx={{ fontSize: 16, opacity: 0.7 }} />
-              </IconButton>
-            }
+            onClick={() => setExpandAllChips((previous) => !previous)}
           >
-            {r.name || r.code || r.entity_id}
-            <span className="ml-1 opacity-70">{r.code}</span>
-          </Chip>
+            {expandAllChips ? '收起' : `展开全部 (${rows.length})`}
+          </Button>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap gap-1 min-h-[32px]">
+        {chipRows.map((r) => (
+          <Box
+            key={r.entity_id}
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.25,
+              maxWidth: '100%',
+              borderRadius: 'sm',
+              bgcolor: 'primary.softBg',
+              color: 'primary.softColor',
+              pl: 1,
+              pr: 0.25,
+              py: 0.25,
+              fontSize: '0.875rem',
+              lineHeight: 1.35,
+              fontWeight: 500,
+            }}
+          >
+            <Typography
+              component="span"
+              level="body-sm"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: 220,
+              }}
+            >
+              {r.name || r.code || r.entity_id}
+              <Typography component="span" level="body-xs" sx={{ opacity: 0.72, ml: 0.5 }}>
+                {r.code}
+              </Typography>
+            </Typography>
+            <button
+              type="button"
+              className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded p-0.5 text-neutral-600 hover:bg-[rgba(0,0,0,0.06)] hover:text-neutral-900"
+              aria-label={`移除 ${r.name || r.code}`}
+              onClick={() => removeRow(r.entity_id)}
+            >
+              <CloseRounded sx={{ fontSize: 16, opacity: 0.75 }} />
+            </button>
+          </Box>
         ))}
         {rows.length === 0 && (
-          <span className="text-sm text-neutral-500">未添加标的，可在上方搜索后加入</span>
+          <span className="text-sm text-neutral-500">
+            未添加标的，可从概念并入或搜索后加入
+          </span>
         )}
       </div>
     </FormControl>

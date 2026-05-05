@@ -7,6 +7,7 @@ const apis = {
   buildStockPool: '/api/stockpool/build_stock_pool',
   removeStockPoolEntities: '/api/stockpool/remove_stock_pool_entities',
   resolveStockPoolEntities: '/api/stockpool/resolve_stock_pool_entities',
+  listEntityIdsFromConcept: '/api/stockpool/list_entity_ids_from_concept',
   archiveStockPool: '/api/stockpool/archive_stock_pool',
   restoreStockPool: '/api/stockpool/restore_stock_pool',
   deleteStockPool: '/api/stockpool/delete_stock_pool',
