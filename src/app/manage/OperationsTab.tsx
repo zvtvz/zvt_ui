@@ -22,9 +22,9 @@ import {
 import FactoryIcon from '@mui/icons-material/Factory';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
-import LabelIcon from '@mui/icons-material/Label';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CloseRounded from '@mui/icons-material/CloseRounded';
+import HealingIcon from '@mui/icons-material/Healing';
 import BlockSelectorDialog from './BlockSelectorDialog';
 import type { BuildStockTagsOptions, StockTagBuildType } from './useData';
 import type { BlockInfo, HiddenTagInfo, MainTagInfo, SubTagInfo } from '@/interfaces';
@@ -43,6 +43,7 @@ const OPERATION_SECTION_LABELS = [
   '维护主标签',
   '维护次标签',
   '维护隐藏标签',
+  '数据补偿',
 ] as const;
 
 interface Props {
@@ -53,8 +54,9 @@ interface Props {
   industries: BlockInfo[];
   concepts: BlockInfo[];
   areas: BlockInfo[];
-  onInit: (type: 'industry' | 'concept' | 'area' | 'sub_tag') => Promise<void>;
+  onInit: (type: 'industry' | 'concept' | 'area') => Promise<void>;
   onBuild: (type: StockTagBuildType, options?: BuildStockTagsOptions) => Promise<void>;
+  onSanitizeStockTags: () => Promise<void>;
 }
 
 export default function OperationsTab({
@@ -67,6 +69,7 @@ export default function OperationsTab({
   areas,
   onInit,
   onBuild,
+  onSanitizeStockTags,
 }: Props) {
   const [operationSectionTab, setOperationSectionTab] = useState<number>(0);
   const [busy, setBusy] = useState<string | null>(null);
@@ -406,17 +409,6 @@ export default function OperationsTab({
                 >
                   初始化地域数据
                 </Button>
-                <Button
-                  size="sm"
-                  className="!text-[12px]"
-                  startDecorator={<LabelIcon />}
-                  variant="soft"
-                  color="neutral"
-                  loading={busy === 'sub_tag'}
-                  onClick={() => handle('sub_tag', () => onInit('sub_tag'))}
-                >
-                  初始化次标签（概念映射）
-                </Button>
               </Box>
             </CardContent>
           </Card>
@@ -522,6 +514,32 @@ export default function OperationsTab({
                 : 'hidden_area'
           )}
           </Box>
+        )}
+
+        {operationSectionTab === 4 && (
+          <Card variant="plain" size="sm" sx={{ mb: 0 }}>
+            <CardContent>
+              <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
+                数据补偿
+              </Typography>
+              <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
+                扫描全部 StockTags：移除主/次/隐藏标签 JSON 中已不在标签目录（MainTagInfo / SubTagInfo /
+                HiddenTagInfo）的名称；主标签字典为空时展示列回退为「其他」，次标签清空；激活隐藏与 hidden_tags
+                对齐。结果写入操作日志。
+              </Typography>
+              <Button
+                size="sm"
+                className="!text-[12px]"
+                startDecorator={<HealingIcon />}
+                variant="solid"
+                color="primary"
+                loading={busy === 'sanitize_tags'}
+                onClick={() => handle('sanitize_tags', () => onSanitizeStockTags())}
+              >
+                标签补偿
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </Box>
 

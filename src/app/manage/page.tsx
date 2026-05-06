@@ -35,6 +35,7 @@ export default function ManagePage() {
     deleteTag,
     initBlocks,
     buildStockTags,
+    sanitizeStockTagReferences,
     refreshBlockRefs,
   } = useManageData();
 
@@ -142,6 +143,7 @@ export default function ManagePage() {
             areas={areas}
             onInit={initBlocks}
             onBuild={buildStockTags}
+            onSanitizeStockTags={sanitizeStockTagReferences}
           />
         )}
 

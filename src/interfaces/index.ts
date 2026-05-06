@@ -38,6 +38,15 @@ export type HiddenTagInfo = {
   areas: string[] | null;
 };
 
+/** 标签补偿接口返回（与后端 SanitizeStockTagReferencesResultModel 一致） */
+export type SanitizeStockTagReferencesResult = {
+  stocks_scanned: number;
+  stocks_updated: number;
+  orphan_main_tag_keys_removed: number;
+  orphan_sub_tag_keys_removed: number;
+  orphan_hidden_tag_keys_removed: number;
+};
+
 /** 创建主标签请求体（含直接关联的次标签名称列表） */
 export type CreateMainTagInfo = {
   name: string;

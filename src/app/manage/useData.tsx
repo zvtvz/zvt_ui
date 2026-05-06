@@ -15,6 +15,7 @@ import {
   UpdateMainTagInfo,
   UpdateSubTagInfo,
   UpdateHiddenTagInfo,
+  SanitizeStockTagReferencesResult,
 } from '@/interfaces';
 
 export type StockTagBuildType =
@@ -141,18 +142,16 @@ export function useManageData() {
     else hiddenTags.refresh();
   }
 
-  async function initBlocks(type: 'industry' | 'concept' | 'area' | 'sub_tag') {
+  async function initBlocks(type: 'industry' | 'concept' | 'area') {
     addLog(`正在初始化 ${type} 数据...`);
     try {
       if (type === 'industry') await services.initIndustryInfo();
       else if (type === 'concept') await services.initConceptInfo();
-      else if (type === 'area') await services.initAreaInfo();
-      else await services.initSubTagInfo();
+      else await services.initAreaInfo();
       addLog(`初始化 ${type} 数据完成`);
       if (type === 'industry') industries.refresh();
       else if (type === 'concept') concepts.refresh();
-      else if (type === 'area') areas.refresh();
-      else subTags.refresh();
+      else areas.refresh();
     } catch {
       addLog(`初始化 ${type} 数据失败`);
     }
@@ -214,6 +213,19 @@ export function useManageData() {
     concepts.refresh();
   }
 
+  async function sanitizeStockTagReferences() {
+    addLog('正在执行标签补偿…');
+    try {
+      const res = (await services.sanitizeStockTagReferences()) as SanitizeStockTagReferencesResult;
+      addLog(
+        `标签补偿完成：扫描 ${res.stocks_scanned} 条，更新 ${res.stocks_updated} 条；` +
+          `剔除孤儿键 主 ${res.orphan_main_tag_keys_removed} / 次 ${res.orphan_sub_tag_keys_removed} / 隐藏 ${res.orphan_hidden_tag_keys_removed}`
+      );
+    } catch {
+      addLog('标签补偿失败');
+    }
+  }
+
   return {
     mainTags: (mainTags.data ?? []) as MainTagInfo[],
     subTags: (subTags.data ?? []) as SubTagInfo[],
@@ -232,6 +244,7 @@ export function useManageData() {
     deleteTag,
     initBlocks,
     buildStockTags,
+    sanitizeStockTagReferences,
     refreshByType,
     refreshBlockRefs,
   };
