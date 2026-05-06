@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Table, Typography } from '@mui/joy';
+import { Box, Button, Checkbox, Table, Typography } from '@mui/joy';
 import { useRequest } from 'ahooks';
 import services from '@/services';
 import type { BlockInfo } from '@/interfaces';
@@ -10,6 +10,11 @@ import { tradeInnerTabClass, tradePoolTabActiveClass } from './tradeStyleClasses
 type CatalogKind = 'industry' | 'concept';
 
 type EntityCountSort = 'none' | 'asc' | 'desc';
+
+type BatchSetBlockReferenceActiveResult = {
+  updated_count: number;
+  not_found_ids: string[];
+};
 
 function entityCountSortKey(row: BlockInfo, direction: 'asc' | 'desc'): number {
   const raw = row.entity_count;
@@ -26,6 +31,9 @@ export default function BlockCatalogManageSection(props: {
   const { kind, onAfterMutation } = props;
   const [listTab, setListTab] = useState<'active' | 'archived'>('active');
   const [entityCountSort, setEntityCountSort] = useState<EntityCountSort>('none');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const activeQuery = listTab === 'active';
 
   const { data, loading, refresh } = useRequest(
@@ -42,6 +50,10 @@ export default function BlockCatalogManageSection(props: {
     setEntityCountSort('none');
   }, [kind, activeQuery]);
 
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [kind, listTab, activeQuery]);
+
   const rows = (data ?? []) as BlockInfo[];
 
   const displayRows = useMemo(() => {
@@ -57,17 +69,64 @@ export default function BlockCatalogManageSection(props: {
     return list;
   }, [rows, entityCountSort]);
 
-  async function handleSetActive(rowId: string, active: boolean) {
-    if (kind === 'industry') {
-      await services.setIndustryInfoActive({ id: rowId, active });
-    } else {
-      await services.setConceptInfoActive({ id: rowId, active });
+  const selectableIdsOnPage = useMemo(
+    () => displayRows.map((row) => row.id).filter((id): id is string => Boolean(id)),
+    [displayRows]
+  );
+
+  const allDisplayedSelected =
+    selectableIdsOnPage.length > 0 && selectableIdsOnPage.every((id) => selectedIds.has(id));
+
+  const headerCheckboxIndeterminate =
+    selectedIds.size > 0 && !allDisplayedSelected && selectableIdsOnPage.some((id) => selectedIds.has(id));
+
+  function toggleSelectAllOnPage() {
+    if (allDisplayedSelected) {
+      setSelectedIds(new Set());
+      return;
     }
-    await refresh();
-    onAfterMutation?.();
+    setSelectedIds(new Set(selectableIdsOnPage));
   }
 
-  const columnCount = kind === 'industry' ? 5 : 4;
+  function toggleRow(rowId: string) {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
+  }
+
+  async function handleBatchSetActive(active: boolean) {
+    const ids = [...selectedIds];
+    if (!ids.length) {
+      return;
+    }
+    setBatchBusy(true);
+    try {
+      const body = { ids, active };
+      const result = (kind === 'industry'
+        ? await services.batchSetIndustryInfoActive(body)
+        : await services.batchSetConceptInfoActive(body)) as BatchSetBlockReferenceActiveResult;
+      setSelectedIds(new Set());
+      await refresh();
+      onAfterMutation?.();
+      const missing = result.not_found_ids?.length
+        ? `；未找到 id：${result.not_found_ids.slice(0, 5).join('、')}${
+            result.not_found_ids.length > 5 ? '…' : ''
+          }`
+        : '';
+      setNotice(`已更新 ${result.updated_count} 条${missing}`);
+      window.setTimeout(() => setNotice(null), 8000);
+    } finally {
+      setBatchBusy(false);
+    }
+  }
+
+  const columnCount = kind === 'industry' ? 6 : 5;
 
   return (
     <Box>
@@ -102,14 +161,62 @@ export default function BlockCatalogManageSection(props: {
         </div>
       </div>
 
-      <div className="flex flex-row justify-between items-center mb-2">
+      <div className="flex flex-row flex-wrap justify-between items-center gap-2 mb-2">
         <span className="opacity-85 text-sm">共 {rows.length} 条</span>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+          <Typography level="body-sm" textColor="neutral.600">
+            已选 {selectedIds.size} 条
+          </Typography>
+          {listTab === 'active' ? (
+            <Button
+              size="sm"
+              variant="soft"
+              color="neutral"
+              className="!text-[12px]"
+              loading={batchBusy}
+              disabled={!selectedIds.size}
+              onClick={() => handleBatchSetActive(false)}
+            >
+              批量归档
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="soft"
+              color="primary"
+              className="!text-[12px]"
+              loading={batchBusy}
+              disabled={!selectedIds.size}
+              onClick={() => handleBatchSetActive(true)}
+            >
+              批量恢复
+            </Button>
+          )}
+        </Box>
       </div>
+
+      {notice ? (
+        <Typography level="body-sm" color="success" sx={{ mb: 1 }}>
+          {notice}
+        </Typography>
+      ) : null}
 
       <div className="overflow-auto">
         <Table borderAxis="xBetween" size="sm" hoverRow stickyHeader>
           <thead className="font-bold">
             <tr>
+              <th style={{ width: 44, textAlign: 'center' }}>
+                <Checkbox
+                  size="sm"
+                  checked={allDisplayedSelected}
+                  indeterminate={headerCheckboxIndeterminate}
+                  disabled={!selectableIdsOnPage.length}
+                  onChange={toggleSelectAllOnPage}
+                  slotProps={{
+                    input: { 'aria-label': '全选当前列表' },
+                  }}
+                />
+              </th>
               <th style={{ minWidth: 200 }}>名称</th>
               {kind === 'industry' && <th style={{ width: 72 }}>层级</th>}
               <th>说明</th>
@@ -146,7 +253,6 @@ export default function BlockCatalogManageSection(props: {
                   ) : null}
                 </button>
               </th>
-              <th style={{ width: 120, whiteSpace: 'nowrap' }}>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -169,8 +275,20 @@ export default function BlockCatalogManageSection(props: {
             ) : (
               displayRows.map((row) => {
                 const rowId = row.id;
+                const canSelect = Boolean(rowId);
                 return (
                   <tr key={rowId ?? row.name}>
+                    <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                      <Checkbox
+                        size="sm"
+                        checked={Boolean(rowId && selectedIds.has(rowId))}
+                        disabled={!canSelect}
+                        onChange={() => rowId && toggleRow(rowId)}
+                        slotProps={{
+                          input: { 'aria-label': `选择 ${row.name}` },
+                        }}
+                      />
+                    </td>
                     <td style={{ verticalAlign: 'top' }}>
                       <Typography level="body-md" sx={{ fontSize: '0.9375rem', lineHeight: 1.45 }}>
                         {row.name}
@@ -192,31 +310,6 @@ export default function BlockCatalogManageSection(props: {
                       <Typography level="body-xs" textColor="neutral.500">
                         {row.entity_count != null ? row.entity_count : '—'}
                       </Typography>
-                    </td>
-                    <td>
-                      {listTab === 'active' ? (
-                        <Button
-                          size="sm"
-                          variant="soft"
-                          color="neutral"
-                          className="!text-[12px] !py-1"
-                          disabled={!rowId}
-                          onClick={() => rowId && handleSetActive(rowId, false)}
-                        >
-                          归档
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="soft"
-                          color="primary"
-                          className="!text-[12px] !py-1"
-                          disabled={!rowId}
-                          onClick={() => rowId && handleSetActive(rowId, true)}
-                        >
-                          恢复
-                        </Button>
-                      )}
                     </td>
                   </tr>
                 );

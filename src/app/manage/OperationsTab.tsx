@@ -523,21 +523,22 @@ export default function OperationsTab({
                 数据补偿
               </Typography>
               <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
-                扫描全部 StockTags：移除主/次/隐藏标签 JSON 中已不在标签目录（MainTagInfo / SubTagInfo /
-                HiddenTagInfo）的名称；主标签字典为空时展示列回退为「其他」，次标签清空；激活隐藏与 hidden_tags
-                对齐。结果写入操作日志。
+                先修剪主/次/隐藏标签目录：去掉已删除或已归档（行业/概念）的板块名、不存在的地域名、主标签下已不存在的次标签名；
+                再扫描全部 StockTags，移除主/次/隐藏 JSON 中已不在标签目录的名称，并回退展示列。结果写入操作日志。
               </Typography>
-              <Button
-                size="sm"
-                className="!text-[12px]"
-                startDecorator={<HealingIcon />}
-                variant="solid"
-                color="primary"
-                loading={busy === 'sanitize_tags'}
-                onClick={() => handle('sanitize_tags', () => onSanitizeStockTags())}
-              >
-                标签补偿
-              </Button>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Button
+                  size="sm"
+                  className="!text-[12px]"
+                  startDecorator={<HealingIcon />}
+                  variant="soft"
+                  color="primary"
+                  loading={busy === 'sanitize_tags'}
+                  onClick={() => handle('sanitize_tags', () => onSanitizeStockTags())}
+                >
+                  标签补偿
+                </Button>
+              </Box>
             </CardContent>
           </Card>
         )}

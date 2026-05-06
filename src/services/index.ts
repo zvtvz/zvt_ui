@@ -36,6 +36,8 @@ const apis = {
   getAreaInfo: 'GET /api/work/get_area_info',
   setIndustryInfoActive: '/api/work/set_industry_info_active',
   setConceptInfoActive: '/api/work/set_concept_info_active',
+  batchSetIndustryInfoActive: '/api/work/batch_set_industry_info_active',
+  batchSetConceptInfoActive: '/api/work/batch_set_concept_info_active',
 
   // 初始化后台任务
   initIndustryInfo: '/api/work/init_industry_info',

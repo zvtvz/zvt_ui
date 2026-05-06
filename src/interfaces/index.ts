@@ -45,6 +45,11 @@ export type SanitizeStockTagReferencesResult = {
   orphan_main_tag_keys_removed: number;
   orphan_sub_tag_keys_removed: number;
   orphan_hidden_tag_keys_removed: number;
+  tag_catalog_rows_updated: number;
+  catalog_sub_tag_links_removed: number;
+  catalog_industry_links_removed: number;
+  catalog_concept_links_removed: number;
+  catalog_area_links_removed: number;
 };
 
 /** 创建主标签请求体（含直接关联的次标签名称列表） */
