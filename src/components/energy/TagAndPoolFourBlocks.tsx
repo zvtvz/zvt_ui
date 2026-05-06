@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import CloseRounded from '@mui/icons-material/CloseRounded';
-import { Box, Button, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/joy';
+import { Box, Button, Chip, IconButton, Stack, Typography } from '@mui/joy';
 
 import type { MainTagInfo, Pool } from '@/interfaces';
 
@@ -49,43 +49,59 @@ function ChipRow({
           : null;
         const tip = desc || (isPoolBlock ? `股票池：${name}` : name);
         return (
-          <Tooltip key={name} title={tip} variant="soft" placement="top">
+          <Box
+            key={name}
+            title={tip}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.125,
+              maxWidth: '100%',
+              flexWrap: 'nowrap',
+              verticalAlign: 'middle',
+            }}
+          >
             <Chip
+              component="div"
               size="sm"
               variant="soft"
               color="neutral"
-              className="max-w-full"
-              endDecorator={
-                <IconButton
-                  size="sm"
-                  variant="plain"
-                  color="neutral"
-                  disabled={actionLoading}
-                  aria-label={`移除 ${name}`}
-                  sx={{ minWidth: 24, minHeight: 24, p: 0, mr: -0.25 }}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    onRemove(kind, name);
-                  }}
-                >
-                  <CloseRounded sx={{ fontSize: 16, opacity: 0.7 }} />
-                </IconButton>
-              }
-              slotProps={{
-                label: {
-                  sx: {
-                    pr: 0,
-                    maxWidth: 220,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  },
+              sx={{
+                maxWidth: 220,
+                flexShrink: 1,
+                minWidth: 0,
+                pointerEvents: 'none',
+                '& .MuiChip-label': {
+                  maxWidth: 200,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 },
               }}
             >
               {name}
             </Chip>
-          </Tooltip>
+            <IconButton
+              type="button"
+              size="sm"
+              variant="plain"
+              color="neutral"
+              disabled={actionLoading}
+              aria-label={`移除 ${name}`}
+              sx={{
+                flexShrink: 0,
+                minWidth: 28,
+                minHeight: 28,
+                p: 0,
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                onRemove(kind, name);
+              }}
+            >
+              <CloseRounded sx={{ fontSize: 16, opacity: 0.7 }} />
+            </IconButton>
+          </Box>
         );
       })}
       <Button
