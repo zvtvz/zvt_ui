@@ -33,8 +33,8 @@ export type StockTagBuildType =
 export type BuildStockTagsOptions = {
   entityIds?: string[];
   overwriteSetByUser?: boolean;
-  /** 目标 tag_info.name，仅匹配/写入该标签定义 */
-  tagName?: string;
+  /** 目标 tag_info.name（必填），仅匹配/写入该标签定义 */
+  tagName: string;
   /** 行业类重建：仅这些行业名称参与关联 */
   industrySources?: string[];
   /** 概念类重建 */
@@ -184,22 +184,25 @@ export function useManageData() {
     hidden_area: (b) => services.buildStockHiddenTagByArea(b),
   };
 
-  async function buildStockTags(type: StockTagBuildType, options?: BuildStockTagsOptions) {
+  async function buildStockTags(type: StockTagBuildType, options: BuildStockTagsOptions) {
     const label = buildLabelMap[type];
-    const overwrite = Boolean(options?.overwriteSetByUser);
-    const tagNameTrimmed = options?.tagName?.trim();
+    const tagNameTrimmed = options.tagName.trim();
+    if (!tagNameTrimmed) {
+      addLog('缺少目标标签 tag_name，请从列表中选择后再构建');
+      return;
+    }
+    const overwrite = Boolean(options.overwriteSetByUser);
     const sources = relationSourcesForBuildType(type, options);
-    const extras: string[] = [];
-    if (tagNameTrimmed) extras.push(`目标标签=${tagNameTrimmed}`);
+    const extras: string[] = [`目标标签=${tagNameTrimmed}`];
     if (sources?.length) extras.push(`关联属性=${sources.join('、')}`);
-    const extraLog = extras.length ? `（${extras.join('；')}）` : '';
+    const extraLog = `（${extras.join('；')}）`;
     addLog(`正在重建股票标签（${label}）${overwrite ? '，覆盖手动设置' : ''}${extraLog}...`);
     try {
       const body: Record<string, unknown> = {
-        entity_ids: options?.entityIds ?? null,
+        entity_ids: options.entityIds ?? null,
         overwrite_set_by_user: overwrite,
+        tag_name: tagNameTrimmed,
       };
-      if (tagNameTrimmed) body.tag_name = tagNameTrimmed;
       if (sources?.length) body.sources = sources;
       const res = await buildApiMap[type](body);
       addLog(`重建完成（${label}）：处理 ${res?.processed ?? '?'} 条，跳过 ${res?.skipped ?? '?'} 条`);

@@ -10,8 +10,8 @@ import {
   Box,
   Divider,
   Checkbox,
-  Select,
-  Option,
+  Autocomplete,
+  FormLabel,
   Radio,
   RadioGroup,
 } from '@mui/joy';
@@ -22,7 +22,6 @@ import {
 import FactoryIcon from '@mui/icons-material/Factory';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import HealingIcon from '@mui/icons-material/Healing';
 import BlockSelectorDialog from './BlockSelectorDialog';
@@ -35,8 +34,6 @@ type MainBuildAxis = 'industry' | 'concept' | 'sub_tag';
 
 /** 与接口 sources 对应的关联维度（当前选中的 y） */
 type SourceAxis = 'industry' | 'concept' | 'area' | 'sub_tag';
-
-const TARGET_TAG_NONE = '__none__';
 
 const OPERATION_SECTION_LABELS = [
   '数据初始化',
@@ -55,7 +52,7 @@ interface Props {
   concepts: BlockInfo[];
   areas: BlockInfo[];
   onInit: (type: 'industry' | 'concept' | 'area') => Promise<void>;
-  onBuild: (type: StockTagBuildType, options?: BuildStockTagsOptions) => Promise<void>;
+  onBuild: (type: StockTagBuildType, options: BuildStockTagsOptions) => Promise<void>;
   onSanitizeStockTags: () => Promise<void>;
 }
 
@@ -76,6 +73,8 @@ export default function OperationsTab({
   const [overwriteUserTags, setOverwriteUserTags] = useState(false);
 
   const [targetTagName, setTargetTagName] = useState('');
+  /** 输入框展示与筛选用，与已选中的 ``targetTagName`` 分离，避免未点选列表时把部分输入当作 tagName。 */
+  const [targetTagInput, setTargetTagInput] = useState('');
   const [industrySources, setIndustrySources] = useState<string[]>([]);
   const [conceptSources, setConceptSources] = useState<string[]>([]);
   const [areaSources, setAreaSources] = useState<string[]>([]);
@@ -104,10 +103,11 @@ export default function OperationsTab({
     }
   }
 
-  function optionsForBuildType(type: StockTagBuildType): BuildStockTagsOptions {
-    const trimmed = targetTagName.trim();
-    const options: BuildStockTagsOptions = { overwriteSetByUser: overwriteUserTags };
-    if (trimmed) options.tagName = trimmed;
+  function optionsForBuildType(type: StockTagBuildType, tagName: string): BuildStockTagsOptions {
+    const options: BuildStockTagsOptions = {
+      tagName,
+      overwriteSetByUser: overwriteUserTags,
+    };
     if (type === 'main_sub_tag' && subTagSources.length) options.subTagSources = [...subTagSources];
     if (type.endsWith('_industry') && industrySources.length) options.industrySources = [...industrySources];
     if (type.endsWith('_concept') && conceptSources.length) options.conceptSources = [...conceptSources];
@@ -115,8 +115,8 @@ export default function OperationsTab({
     return options;
   }
 
-  function runBuild(type: StockTagBuildType) {
-    return handle(type, () => onBuild(type, optionsForBuildType(type)));
+  function runBuild(type: StockTagBuildType, tagName: string) {
+    return handle(type, () => onBuild(type, optionsForBuildType(type, tagName)));
   }
 
   function clearAllRelationSources() {
@@ -133,7 +133,9 @@ export default function OperationsTab({
     else setSubTagSources((prev) => prev.filter((item) => item !== name));
   }
 
-  function renderBuildActionsRow(buildType: StockTagBuildType) {
+  function renderBuildActionsRow(buildType: StockTagBuildType, validTargetTagNames: string[]) {
+    const trimmed = targetTagName.trim();
+    const targetOk = Boolean(trimmed && validTargetTagNames.includes(trimmed));
     return (
       <Box
         sx={{
@@ -151,7 +153,11 @@ export default function OperationsTab({
           size="sm"
           className="!text-[12px]"
           loading={busy === buildType}
-          onClick={() => runBuild(buildType)}
+          disabled={!targetOk}
+          onClick={() => {
+            if (!targetOk) return;
+            runBuild(buildType, trimmed);
+          }}
         >
           构建标签
         </Button>
@@ -204,37 +210,37 @@ export default function OperationsTab({
     return (
       <Card variant="plain" size="sm">
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-            <FilterListIcon fontSize="small" />
-            <Typography level="title-sm" className="!text-sm !font-bold">
-              重建限定（可选）
-            </Typography>
-          </Box>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box>
-              <Typography level="body-xs" sx={{ mb: 0.5 }}>
-                目标标签（选填）
-              </Typography>
-              <Select
+              <FormLabel sx={{ mb: 0.5 }}>目标标签（必填）</FormLabel>
+              <Autocomplete
                 size="sm"
+                options={tagNameOptions}
+                placeholder="从列表选择；可输入筛选"
                 value={
-                  targetTagName && tagNameOptions.includes(targetTagName)
-                    ? targetTagName
-                    : TARGET_TAG_NONE
+                  targetTagName && tagNameOptions.includes(targetTagName) ? targetTagName : null
                 }
-                onChange={(_, value) =>
-                  setTargetTagName(value === TARGET_TAG_NONE ? '' : String(value))
-                }
-                sx={{ maxWidth: 360 }}
-                slotProps={{ listbox: { sx: { maxHeight: 280 } } }}
-              >
-                <Option value={TARGET_TAG_NONE}>不限制</Option>
-                {tagNameOptions.map((name) => (
-                  <Option key={name} value={name}>
-                    {name}
-                  </Option>
-                ))}
-              </Select>
+                onChange={(_, newValue) => {
+                  const next = typeof newValue === 'string' ? newValue : '';
+                  setTargetTagName(next);
+                  setTargetTagInput(next);
+                }}
+                inputValue={targetTagInput}
+                onInputChange={(_, newInputValue, reason) => {
+                  if (reason === 'reset') {
+                    setTargetTagInput(targetTagName);
+                    return;
+                  }
+                  setTargetTagInput(newInputValue);
+                }}
+                sx={{ maxWidth: 360, '--unstable_popup-zIndex': 20000 }}
+                slotProps={{
+                  listbox: {
+                    placement: 'bottom-start',
+                    sx: { zIndex: 20000, maxHeight: 280 },
+                  },
+                }}
+              />
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
               <Button
@@ -298,6 +304,14 @@ export default function OperationsTab({
     return axis === 'sub_tag' ? 'sub_tag' : axis;
   }
 
+  function switchOperationSection(index: number) {
+    if (operationSectionTab !== index && (index === 1 || index === 2 || index === 3)) {
+      setTargetTagName('');
+      setTargetTagInput('');
+    }
+    setOperationSectionTab(index);
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <BlockSelectorDialog
@@ -353,11 +367,11 @@ export default function OperationsTab({
               role="button"
               tabIndex={0}
               className={`${tradePoolTabClass} ${operationSectionTab === index ? tradePoolTabActiveClass : ''}`}
-              onClick={() => setOperationSectionTab(index)}
+              onClick={() => switchOperationSection(index)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  setOperationSectionTab(index);
+                  switchOperationSection(index);
                 }
               }}
             >
@@ -428,6 +442,7 @@ export default function OperationsTab({
                   setMainBuildAxis(event.target.value as MainBuildAxis);
                   clearAllRelationSources();
                   setTargetTagName('');
+                  setTargetTagInput('');
                 }}
                 sx={{ flexWrap: 'wrap', gap: 1 }}
               >
@@ -443,7 +458,8 @@ export default function OperationsTab({
               ? 'main_industry'
               : mainBuildAxis === 'concept'
                 ? 'main_concept'
-                : 'main_sub_tag'
+                : 'main_sub_tag',
+            mainTagNames
           )}
           </Box>
         )}
@@ -462,6 +478,7 @@ export default function OperationsTab({
                   setSubBuildAxis(event.target.value as BlockAxis);
                   clearAllRelationSources();
                   setTargetTagName('');
+                  setTargetTagInput('');
                 }}
                 sx={{ flexWrap: 'wrap', gap: 1 }}
               >
@@ -477,7 +494,8 @@ export default function OperationsTab({
               ? 'sub_industry'
               : subBuildAxis === 'concept'
                 ? 'sub_concept'
-                : 'sub_area'
+                : 'sub_area',
+            subTagNames
           )}
           </Box>
         )}
@@ -496,6 +514,7 @@ export default function OperationsTab({
                   setHiddenBuildAxis(event.target.value as BlockAxis);
                   clearAllRelationSources();
                   setTargetTagName('');
+                  setTargetTagInput('');
                 }}
                 sx={{ flexWrap: 'wrap', gap: 1 }}
               >
@@ -511,7 +530,8 @@ export default function OperationsTab({
               ? 'hidden_industry'
               : hiddenBuildAxis === 'concept'
                 ? 'hidden_concept'
-                : 'hidden_area'
+                : 'hidden_area',
+            hiddenTagNames
           )}
           </Box>
         )}
