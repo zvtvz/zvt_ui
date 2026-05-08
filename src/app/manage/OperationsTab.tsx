@@ -51,7 +51,7 @@ interface Props {
   industries: BlockInfo[];
   concepts: BlockInfo[];
   areas: BlockInfo[];
-  onInit: (type: 'industry' | 'concept' | 'area') => Promise<void>;
+  onInit: (type: 'industry' | 'concept' | 'area' | 'sub_tags_from_concepts') => Promise<void>;
   onBuild: (type: StockTagBuildType, options: BuildStockTagsOptions) => Promise<void>;
   onSanitizeStockTags: () => Promise<void>;
 }
@@ -388,6 +388,7 @@ export default function OperationsTab({
               </Typography>
               <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
                 从东方财富（em）抓取行业、概念、地域板块列表，写入本地参考数据。已存在的条目跳过，不覆盖已配置的标签关系。
+                「从概念生成次标签」读取 active 概念，幂等生成同名次标签目录（写入 ``SubTagInfo.concepts``），不修改主标签目录。
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <Button
@@ -422,6 +423,17 @@ export default function OperationsTab({
                   onClick={() => handle('area', () => onInit('area'))}
                 >
                   初始化地域数据
+                </Button>
+                <Button
+                  size="sm"
+                  className="!text-[12px]"
+                  startDecorator={<LightbulbIcon />}
+                  variant="outlined"
+                  color="success"
+                  loading={busy === 'sub_tags_from_concepts'}
+                  onClick={() => handle('sub_tags_from_concepts', () => onInit('sub_tags_from_concepts'))}
+                >
+                  从概念生成次标签
                 </Button>
               </Box>
             </CardContent>

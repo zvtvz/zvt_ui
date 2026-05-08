@@ -142,18 +142,30 @@ export function useManageData() {
     else hiddenTags.refresh();
   }
 
-  async function initBlocks(type: 'industry' | 'concept' | 'area') {
-    addLog(`正在初始化 ${type} 数据...`);
+  async function initBlocks(type: 'industry' | 'concept' | 'area' | 'sub_tags_from_concepts') {
+    const label =
+      type === 'industry'
+        ? '行业'
+        : type === 'concept'
+          ? '概念'
+          : type === 'area'
+            ? '地域'
+            : '从概念生成次标签';
+    addLog(`正在初始化：${label}…`);
     try {
       if (type === 'industry') await services.initIndustryInfo();
       else if (type === 'concept') await services.initConceptInfo();
-      else await services.initAreaInfo();
-      addLog(`初始化 ${type} 数据完成`);
+      else if (type === 'area') await services.initAreaInfo();
+      else await services.initSubTagInfoFromConcepts();
+      addLog(`${label} 初始化完成`);
       if (type === 'industry') industries.refresh();
       else if (type === 'concept') concepts.refresh();
-      else areas.refresh();
+      else if (type === 'area') areas.refresh();
+      else {
+        subTags.refresh();
+      }
     } catch {
-      addLog(`初始化 ${type} 数据失败`);
+      addLog(`${label} 初始化失败`);
     }
   }
 
