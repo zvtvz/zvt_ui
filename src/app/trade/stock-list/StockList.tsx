@@ -14,6 +14,23 @@ function isTrendKind(value?: string | null) {
 function isSentimentKind(value?: string | null) {
   return Boolean(value?.startsWith(SENTIMENT_PREFIX));
 }
+function EssenceCell({ value }: { value?: string | null }) {
+  const full = (value || '').trim();
+  if (!full) return null;
+  const inner = (
+    <div className="max-w-[240px] text-left leading-snug line-clamp-2 break-words">
+      {full}
+    </div>
+  );
+  return (
+    <Tooltip
+      title={<div className="max-w-[320px] whitespace-pre-wrap">{full}</div>}
+      variant="solid"
+    >
+      {inner}
+    </Tooltip>
+  );
+}
 
 function CapitalStructureChip({ value }: { value?: string | null }) {
   if (!value) return null;
@@ -72,10 +89,11 @@ export default function StockList({
               <th className="!text-right">
                 {renderHeaderCell('total_cap', '总市值')}
               </th>
-              <th>资金结构</th>
               <th>主标签</th>
               <th>次标签</th>
               <th>隐藏标签</th>
+              <th>资金结构</th>
+              <th>本质</th>
             </tr>
           </thead>
           <tbody>
@@ -121,9 +139,6 @@ export default function StockList({
                 <td className="text-right">
                   <Blink mkey={toMoney(stock.total_cap)} />
                 </td>
-                <td>
-                  <CapitalStructureChip value={stock.capital_structure} />
-                </td>
                 <td>{stock.main_tag}</td>
                 <td>{stock.sub_tag}</td>
                 <td>
@@ -139,6 +154,12 @@ export default function StockList({
                       {(stock.hidden_tags || []).join('、')}
                     </div>
                   </Tooltip>
+                </td>
+                <td>
+                  <CapitalStructureChip value={stock.capital_structure} />
+                </td>
+                <td>
+                  <EssenceCell value={stock.essence} />
                 </td>
               </tr>
               );
