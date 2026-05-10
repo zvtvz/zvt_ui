@@ -15,8 +15,7 @@ import {
 } from '@mui/joy';
 import { useRequest } from 'ahooks';
 import { useEffect, useMemo, useState } from 'react';
-
-const MAX_LEN = 100;
+import { ESSENCE_MAX_LENGTH } from '@/constants/essence';
 
 type StockTagsPayload = {
   main_tag?: string | null;
@@ -60,12 +59,12 @@ export default function EssenceDialog({ open, stock, onCancel }: Props) {
 
   const canSave = Boolean(stockTags?.main_tag);
 
-  const remaining = MAX_LEN - [...draft].length;
+  const remaining = ESSENCE_MAX_LENGTH - [...draft].length;
 
   const handleSave = async () => {
     const activeMain = stockTags?.main_tag;
     if (!activeMain) return;
-    if ([...draft].length > MAX_LEN) return;
+    if ([...draft].length > ESSENCE_MAX_LENGTH) return;
     setSaving(true);
     try {
       const mainReason =
@@ -108,7 +107,7 @@ export default function EssenceDialog({ open, stock, onCancel }: Props) {
                   请先为该股票设置主标签后再编辑本质。
                 </Typography>
               ) : null}
-              <FormLabel>描述决定该股票涨跌的核心内因（最多 {MAX_LEN} 字）</FormLabel>
+              <FormLabel>描述决定该股票涨跌的核心内因（最多 {ESSENCE_MAX_LENGTH} 字）</FormLabel>
               <Textarea
                 size="sm"
                 minRows={3}
@@ -118,8 +117,8 @@ export default function EssenceDialog({ open, stock, onCancel }: Props) {
                   const next = event.target.value;
                   const chars = [...next];
                   setDraft(
-                    chars.length > MAX_LEN
-                      ? chars.slice(0, MAX_LEN).join('')
+                    chars.length > ESSENCE_MAX_LENGTH
+                      ? chars.slice(0, ESSENCE_MAX_LENGTH).join('')
                       : next
                   );
                 }}
@@ -138,7 +137,7 @@ export default function EssenceDialog({ open, stock, onCancel }: Props) {
             size="sm"
             className="!ml-2"
             loading={saving}
-            disabled={!canSave || loading || [...draft].length > MAX_LEN}
+            disabled={!canSave || loading || [...draft].length > ESSENCE_MAX_LENGTH}
             onClick={handleSave}
           >
             保存
