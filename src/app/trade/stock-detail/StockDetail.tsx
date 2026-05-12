@@ -6,7 +6,7 @@ import TagUpdateDialog from './TagUpdateDialog';
 import { useState } from 'react';
 import StockChart from './StockChart';
 import CapitalStructureDialog from './CapitalStructureDialog';
-import EssenceDialog from './EssenceDialog';
+import CommentaryDialog from './CommentaryDialog';
 
 type Props = {
   loading: any;
@@ -23,7 +23,7 @@ export default function StockDetail({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [capitalOpen, setCapitalOpen] = useState(false);
-  const [essenceOpen, setEssenceOpen] = useState(false);
+  const [commentaryOpen, setCommentaryOpen] = useState(false);
 
   return (
     <>
@@ -45,9 +45,9 @@ export default function StockDetail({
             <Button
               size="sm"
               className="!text-xs !leading-4 !min-h-[24px] !px-2"
-              onClick={() => setEssenceOpen(true)}
+              onClick={() => setCommentaryOpen(true)}
             >
-              本质
+              点评
             </Button>
             <Button
               size="sm"
@@ -87,11 +87,11 @@ export default function StockDetail({
           onCancel={() => setCapitalOpen(false)}
         />
       )}
-      {essenceOpen && stocks.current && (
-        <EssenceDialog
-          open={essenceOpen}
+      {commentaryOpen && stocks.current && (
+        <CommentaryDialog
+          open={commentaryOpen}
           stock={stocks.current}
-          onCancel={() => setEssenceOpen(false)}
+          onCancel={() => setCommentaryOpen(false)}
         />
       )}
     </>

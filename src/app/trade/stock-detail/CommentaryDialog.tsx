@@ -15,7 +15,7 @@ import {
 } from '@mui/joy';
 import { useRequest } from 'ahooks';
 import { useEffect, useMemo, useState } from 'react';
-import { ESSENCE_MAX_LENGTH } from '@/constants/essence';
+import { COMMENTARY_MAX_LENGTH } from '@/constants/commentary';
 
 type StockTagsPayload = {
   main_tag?: string | null;
@@ -33,7 +33,7 @@ type Props = {
   onCancel: () => void;
 };
 
-export default function EssenceDialog({ open, stock, onCancel }: Props) {
+export default function CommentaryDialog({ open, stock, onCancel }: Props) {
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -59,12 +59,12 @@ export default function EssenceDialog({ open, stock, onCancel }: Props) {
 
   const canSave = Boolean(stockTags?.main_tag);
 
-  const remaining = ESSENCE_MAX_LENGTH - [...draft].length;
+  const remaining = COMMENTARY_MAX_LENGTH - [...draft].length;
 
   const handleSave = async () => {
     const activeMain = stockTags?.main_tag;
     if (!activeMain) return;
-    if ([...draft].length > ESSENCE_MAX_LENGTH) return;
+    if ([...draft].length > COMMENTARY_MAX_LENGTH) return;
     setSaving(true);
     try {
       const mainReason =
@@ -98,27 +98,30 @@ export default function EssenceDialog({ open, stock, onCancel }: Props) {
         size="sm"
       >
         <ModalClose size="sm" />
-        <DialogTitle>本质</DialogTitle>
+        <DialogTitle>点评</DialogTitle>
         <DialogContent sx={{ overflow: 'visible' }}>
           <Loading loading={loading} fixedTop={260}>
             <Stack spacing={1.5}>
               {!canSave ? (
                 <Typography level="body-sm" color="warning">
-                  请先为该股票设置主标签后再编辑本质。
+                  请先为该股票设置主标签后再编辑点评。
                 </Typography>
               ) : null}
-              <FormLabel>描述决定该股票涨跌的核心内因（最多 {ESSENCE_MAX_LENGTH} 字）</FormLabel>
+              <Typography level="body-xs" sx={{ opacity: 0.8 }}>
+                记录你对该标的的主观核心观点；当前不会自动生成，需手动维护。
+              </Typography>
+              <FormLabel>点评内容（最多 {COMMENTARY_MAX_LENGTH} 字）</FormLabel>
               <Textarea
                 size="sm"
                 minRows={3}
-                placeholder="例如：行业景气度回升、核心订单落地……"
+                placeholder="例如：看好订单兑现节奏，但估值已偏乐观……"
                 value={draft}
                 onChange={(event) => {
                   const next = event.target.value;
                   const chars = [...next];
                   setDraft(
-                    chars.length > ESSENCE_MAX_LENGTH
-                      ? chars.slice(0, ESSENCE_MAX_LENGTH).join('')
+                    chars.length > COMMENTARY_MAX_LENGTH
+                      ? chars.slice(0, COMMENTARY_MAX_LENGTH).join('')
                       : next
                   );
                 }}
@@ -137,7 +140,7 @@ export default function EssenceDialog({ open, stock, onCancel }: Props) {
             size="sm"
             className="!ml-2"
             loading={saving}
-            disabled={!canSave || loading || [...draft].length > ESSENCE_MAX_LENGTH}
+            disabled={!canSave || loading || [...draft].length > COMMENTARY_MAX_LENGTH}
             onClick={handleSave}
           >
             保存
