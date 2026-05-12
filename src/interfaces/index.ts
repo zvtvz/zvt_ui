@@ -157,6 +157,8 @@ export type Pool = {
   stock_pool_type: string;
   stock_pool_name: string;
   active?: boolean;
+  /** 关联概念名（与 concept_info / 板块概念同名）；未配置时为 null/undefined */
+  related_concept?: string | null;
 };
 
 export type Stock = {

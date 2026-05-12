@@ -1,8 +1,10 @@
 'use client';
 
+import { useRequest } from 'ahooks';
 import services from '@/services';
 import type { Pool } from '@/interfaces';
 import {
+  Autocomplete,
   Modal,
   ModalDialog,
   DialogTitle,
@@ -10,8 +12,10 @@ import {
   Button,
   ModalClose,
   Typography,
+  FormControl,
+  FormLabel,
 } from '@mui/joy';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import StockPoolEntityEditor, {
   type StockPoolEntityRow,
 } from './StockPoolEntityEditor';
@@ -37,13 +41,54 @@ export default function UpdateStockPoolDialog({
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [error, setError] = useState('');
   const [entityRows, setEntityRows] = useState<StockPoolEntityRow[]>([]);
+  const [relatedConcept, setRelatedConcept] = useState<string>('');
+
+  const isCustomPool = pool?.stock_pool_type === 'custom';
+
+  const { data: conceptList = [], loading: conceptListLoading } = useRequest(
+    () => services.getConceptInfo({ active: true }) as Promise<{ name?: string }[]>,
+    {
+      ready: open && isCustomPool,
+      refreshDeps: [open, pool?.stock_pool_name, isCustomPool],
+    }
+  );
+
+  const conceptNames = useMemo(() => {
+    return (Array.isArray(conceptList) ? conceptList : [])
+      .map((row) => (row?.name || '').trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+  }, [conceptList]);
+
+  const poolRelatedOrphan = useMemo(() => {
+    const raw = pool?.related_concept;
+    return typeof raw === 'string' && raw.trim() ? raw.trim() : '';
+  }, [pool?.related_concept]);
+
+  const selectOptionNames = useMemo(() => {
+    const names = [...conceptNames];
+    if (poolRelatedOrphan && !names.includes(poolRelatedOrphan)) {
+      names.push(poolRelatedOrphan);
+      names.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+    }
+    return names;
+  }, [conceptNames, poolRelatedOrphan]);
 
   useEffect(() => {
     if (!open) {
       setConfirmArchive(false);
       setError('');
+      setRelatedConcept('');
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !pool?.stock_pool_name) return;
+    const raw = pool.related_concept;
+    const normalized =
+      typeof raw === 'string' && raw.trim() ? raw.trim() : '';
+    setRelatedConcept(normalized);
+  }, [open, pool?.stock_pool_name, pool?.related_concept]);
 
   useEffect(() => {
     if (!open || !pool?.stock_pool_name) {
@@ -111,6 +156,29 @@ export default function UpdateStockPoolDialog({
     setError('');
     setLoading(true);
     try {
+      if (isCustomPool) {
+        const conceptName = relatedConcept.trim();
+        if (
+          conceptName &&
+          !conceptNames.includes(conceptName) &&
+          conceptName !== poolRelatedOrphan
+        ) {
+          setError('请从下拉列表中选择有效的概念名称');
+          setLoading(false);
+          return;
+        }
+        const conceptRes = await services.setStockPoolRelatedConcept({
+          stock_pool_name: pool.stock_pool_name,
+          related_concept: conceptName || null,
+        });
+        if (conceptRes && (conceptRes as any).detail) {
+          const d = (conceptRes as any).detail;
+          setError(
+            Array.isArray(d) ? d[0]?.msg || String(d[0]) : String(d)
+          );
+          return;
+        }
+      }
       const res = await services.buildStockPool({
         stock_pool_name: pool.stock_pool_name,
         entity_ids: entityRows.map((r) => r.entity_id),
@@ -142,6 +210,42 @@ export default function UpdateStockPoolDialog({
               ? `「${pool.stock_pool_name}」内 A 股标的，可搜索添加或点击标签删除`
               : ''}
           </Typography>
+          {isCustomPool && (
+            <FormControl className="mb-3" size="sm">
+              <FormLabel>关联概念</FormLabel>
+              <Autocomplete
+                freeSolo={false}
+                options={selectOptionNames}
+                size="sm"
+                loading={conceptListLoading}
+                placeholder={
+                  conceptListLoading ? '加载概念…' : '输入筛选或选择概念（可选）'
+                }
+                value={relatedConcept || null}
+                onChange={(_event, newValue) => {
+                  setRelatedConcept(typeof newValue === 'string' ? newValue : '');
+                }}
+                inputValue={relatedConcept}
+                onInputChange={(_event, newInputValue) => {
+                  setRelatedConcept(newInputValue);
+                }}
+                sx={{
+                  width: '100%',
+                  '--unstable_popup-zIndex': 20000,
+                }}
+                slotProps={{
+                  listbox: {
+                    variant: 'outlined',
+                    placement: 'bottom-start',
+                    sx: { zIndex: 20000, maxHeight: 280 },
+                  },
+                }}
+              />
+              <Typography level="body-xs" className="mt-1 opacity-70">
+                与「从概念并入」相同：输入可筛选列表；须为已启用概念名。清空表示不关联板块成分。
+              </Typography>
+            </FormControl>
+          )}
           {loadingData ? (
             <div className="py-8 text-center text-sm text-neutral-500">
               加载中…

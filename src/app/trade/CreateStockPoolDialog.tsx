@@ -1,5 +1,7 @@
+import { useRequest } from 'ahooks';
 import services from '@/services';
 import {
+  Autocomplete,
   Modal,
   ModalDialog,
   DialogTitle,
@@ -11,8 +13,9 @@ import {
   Select,
   Option,
   ModalClose,
+  Typography,
 } from '@mui/joy';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import StockPoolEntityEditor, {
   type StockPoolEntityRow,
 } from './StockPoolEntityEditor';
@@ -38,11 +41,28 @@ export default function CreateStockPoolDialog({
   const [error, setError] = useState('');
   const [stockPoolType, setStockPoolType] = useState<string>('custom');
   const [entityRows, setEntityRows] = useState<StockPoolEntityRow[]>([]);
+  const [relatedConcept, setRelatedConcept] = useState<string>('');
+
+  const { data: conceptList = [], loading: conceptListLoading } = useRequest(
+    () => services.getConceptInfo({ active: true }) as Promise<{ name?: string }[]>,
+    {
+      ready: open && stockPoolType === 'custom',
+      refreshDeps: [open, stockPoolType],
+    }
+  );
+
+  const conceptNames = useMemo(() => {
+    return (Array.isArray(conceptList) ? conceptList : [])
+      .map((row) => (row?.name || '').trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+  }, [conceptList]);
 
   useEffect(() => {
     if (!open) {
       setEntityRows([]);
       setError('');
+      setRelatedConcept('');
     }
   }, [open]);
 
@@ -63,11 +83,25 @@ export default function CreateStockPoolDialog({
               setLoading(false);
               return;
             }
+            const conceptPick = relatedConcept.trim();
+            if (stockPoolType === 'custom' && conceptPick && !conceptNames.includes(conceptPick)) {
+              setError('请从下拉列表中选择有效的概念名称');
+              setLoading(false);
+              return;
+            }
             try {
-              const res = await services.createStockPoolInfo({
+              const createPayload: {
+                stock_pool_name: string;
+                stock_pool_type: string;
+                related_concept?: string | null;
+              } = {
                 stock_pool_name,
                 stock_pool_type: stockPoolType || 'custom',
-              });
+              };
+              if (stockPoolType === 'custom' && relatedConcept.trim()) {
+                createPayload.related_concept = relatedConcept.trim();
+              }
+              const res = await services.createStockPoolInfo(createPayload);
               if (res && (res as any).detail) {
                 const d = (res as any).detail;
                 setError(
@@ -91,6 +125,7 @@ export default function CreateStockPoolDialog({
                 }
               }
               setEntityRows([]);
+              setRelatedConcept('');
               onSubmit(stock_pool_name);
             } catch (err: any) {
               setError(err?.message || err?.response?.data?.detail || '创建失败');
@@ -129,7 +164,43 @@ export default function CreateStockPoolDialog({
               </Select>
             </FormControl>
             {stockPoolType === 'custom' && (
-              <StockPoolEntityEditor rows={entityRows} onChange={setEntityRows} />
+              <>
+                <FormControl className="mb-4" size="sm">
+                  <FormLabel>关联概念</FormLabel>
+                  <Autocomplete
+                    freeSolo={false}
+                    options={conceptNames}
+                    size="sm"
+                    loading={conceptListLoading}
+                    placeholder={
+                      conceptListLoading ? '加载概念…' : '输入筛选或选择概念（可选）'
+                    }
+                    value={relatedConcept || null}
+                    onChange={(_event, newValue) => {
+                      setRelatedConcept(typeof newValue === 'string' ? newValue : '');
+                    }}
+                    inputValue={relatedConcept}
+                    onInputChange={(_event, newInputValue) => {
+                      setRelatedConcept(newInputValue);
+                    }}
+                    sx={{
+                      width: '100%',
+                      '--unstable_popup-zIndex': 20000,
+                    }}
+                    slotProps={{
+                      listbox: {
+                        variant: 'outlined',
+                        placement: 'bottom-start',
+                        sx: { zIndex: 20000, maxHeight: 280 },
+                      },
+                    }}
+                  />
+                  <Typography level="body-xs" className="mt-1 opacity-70">
+                    与「从概念并入」相同：输入可筛选；须为已启用概念名。清空表示不关联。
+                  </Typography>
+                </FormControl>
+                <StockPoolEntityEditor rows={entityRows} onChange={setEntityRows} />
+              </>
             )}
             {error && (
               <div className="mt-2 text-sm text-red-600">{error}</div>
