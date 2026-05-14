@@ -27,6 +27,7 @@ import Dialog from '@/components/Dialog';
 import useDialog from '@/components/Dialog/useDialog';
 
 const HOT_TOPICS_SIDEBAR_STORAGE_KEY = 'zvt_trade_hot_topics_sidebar_open';
+const STOCK_DETAIL_SIDEBAR_STORAGE_KEY = 'zvt_trade_stock_detail_sidebar_open';
 
 export default function Workspace() {
   const {
@@ -46,6 +47,7 @@ export default function Workspace() {
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
   const [updatePoolOpen, setUpdatePoolOpen] = useState(false);
   const [hotTopicsSidebarOpen, setHotTopicsSidebarOpen] = useState(true);
+  const [stockDetailSidebarOpen, setStockDetailSidebarOpen] = useState(true);
   const dialog = useDialog();
 
   useEffect(() => {
@@ -59,10 +61,30 @@ export default function Workspace() {
     }
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STOCK_DETAIL_SIDEBAR_STORAGE_KEY);
+      if (raw === '0') {
+        setStockDetailSidebarOpen(false);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const setHotTopicsSidebarOpenPersisted = useCallback((open: boolean) => {
     setHotTopicsSidebarOpen(open);
     try {
       localStorage.setItem(HOT_TOPICS_SIDEBAR_STORAGE_KEY, open ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setStockDetailSidebarOpenPersisted = useCallback((open: boolean) => {
+    setStockDetailSidebarOpen(open);
+    try {
+      localStorage.setItem(STOCK_DETAIL_SIDEBAR_STORAGE_KEY, open ? '1' : '0');
     } catch {
       /* ignore */
     }
@@ -289,22 +311,54 @@ export default function Workspace() {
               )}
             </div>
           </Card>
-          {hasListRows && (
-            <Card
-              className="w-[500px] !sticky !top-[56px] flex-shrink-0 min-h-0"
-              size="sm"
-              variant="plain"
-            >
-              <CardContent>
-                <StockDetail
-                  loading={loading}
-                  stocks={stocks}
-                  dialog={dialog}
-                  refreshNews={updateStockEvents}
-                />
-              </CardContent>
-            </Card>
-          )}
+          {hasListRows &&
+            (stockDetailSidebarOpen ? (
+              <Card
+                className="w-[500px] !sticky !top-[56px] flex-shrink-0 min-h-0 flex flex-col overflow-hidden"
+                size="sm"
+                variant="plain"
+              >
+                <div className="flex flex-row justify-end items-center flex-shrink-0 px-2 pt-2">
+                  <Tooltip title="收起个股详情侧栏" placement="bottom" variant="solid">
+                    <IconButton
+                      size="sm"
+                      variant="plain"
+                      color="neutral"
+                      aria-label="收起个股详情侧栏"
+                      onClick={() => setStockDetailSidebarOpenPersisted(false)}
+                    >
+                      <ChevronRight sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </Tooltip>
+                </div>
+                <CardContent className="flex-1 min-h-0 overflow-auto !pt-0">
+                  <StockDetail
+                    loading={loading}
+                    stocks={stocks}
+                    dialog={dialog}
+                    refreshNews={updateStockEvents}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card
+                className="w-10 flex-shrink-0 flex flex-col items-center py-2 min-h-0 self-stretch !sticky !top-[56px]"
+                size="sm"
+                variant="plain"
+              >
+                <Tooltip title="展开个股详情" placement="left" variant="solid">
+                  <IconButton
+                    size="sm"
+                    variant="soft"
+                    color="neutral"
+                    aria-label="展开个股详情侧栏"
+                    onClick={() => setStockDetailSidebarOpenPersisted(true)}
+                  >
+                    <ChevronLeft sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+              </Card>
+            ))}
         </div>
       ) : null}
       <CreateStockPoolDialog
