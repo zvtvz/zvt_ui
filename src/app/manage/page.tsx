@@ -13,10 +13,11 @@ import {
 import { EnergyHotTopicsSection } from '@/components/energy/EnergyHotTopicsSection';
 import { FutureEventsSection } from '@/components/energy/FutureEventsSection';
 import BlockCatalogManageSection from './BlockCatalogManageSection';
+import IndustryChainManageSection from './IndustryChainManageSection';
 import StockPoolsTab from './StockPoolsTab';
 
 const SECTION_LABELS = ['标签信息', '构建标签', '当前热点', '跟踪事件', '股票池'] as const;
-const TAG_KIND_LABELS = ['主标签', '次标签', '隐藏标签', '行业信息', '概念信息'] as const;
+const TAG_KIND_LABELS = ['主标签', '次标签', '隐藏标签', '行业信息', '概念信息', '产业链'] as const;
 
 export default function ManagePage() {
   const [sectionTab, setSectionTab] = useState<number>(0);
@@ -35,6 +36,8 @@ export default function ManagePage() {
     deleteTag,
     initBlocks,
     buildStockTags,
+    buildStockIndustryChain,
+    buildStockTagsFromIndustryChain,
     sanitizeStockTagReferences,
     refreshBlockRefs,
   } = useManageData();
@@ -129,6 +132,7 @@ export default function ManagePage() {
             {tagTab === 4 && (
               <BlockCatalogManageSection kind="concept" onAfterMutation={refreshBlockRefs} />
             )}
+            {tagTab === 5 && <IndustryChainManageSection />}
           </>
         )}
 
@@ -143,6 +147,8 @@ export default function ManagePage() {
             areas={areas}
             onInit={initBlocks}
             onBuild={buildStockTags}
+            onBuildStockIndustryChain={buildStockIndustryChain}
+            onBuildStockTagsFromIndustryChain={buildStockTagsFromIndustryChain}
             onSanitizeStockTags={sanitizeStockTagReferences}
           />
         )}

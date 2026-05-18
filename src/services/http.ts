@@ -50,6 +50,14 @@ export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
         options.method === 'DELETE' &&
         typeof data === 'object' &&
         data !== null &&
+        'record_id' in data &&
+        (data as { record_id: unknown }).record_id != null
+      ) {
+        realUrl = `${realUrl}/${encodeURIComponent(String((data as { record_id: string }).record_id))}`;
+      } else if (
+        options.method === 'DELETE' &&
+        typeof data === 'object' &&
+        data !== null &&
         'name' in data &&
         (data as { name: unknown }).name != null
       ) {

@@ -24,6 +24,7 @@ import {
   UpdateSubTagInfo,
   UpdateHiddenTagInfo,
 } from '@/interfaces';
+import HubRounded from '@mui/icons-material/HubRounded';
 import TagEditDialog from './TagEditDialog';
 
 // ─── 泛型行数据 ────────────────────────────────────────────────────────────────
@@ -98,7 +99,23 @@ export default function TagSection(props: TagSectionProps) {
       industries: data.industries.length ? data.industries : null,
       concepts: data.concepts.length ? data.concepts : null,
       areas: data.areas.length ? data.areas : null,
-      ...(tagType === 'main_tag' ? { sub_tags: data.sub_tags.length ? data.sub_tags : null } : {}),
+      ...(tagType === 'main_tag'
+        ? {
+            sub_tags: data.sub_tags.length ? data.sub_tags : null,
+            is_industry_chain:
+              dialog?.mode === 'edit' && dialog.tag
+                ? Boolean((dialog.tag as MainTagInfo).is_industry_chain)
+                : false,
+          }
+        : {}),
+      ...(tagType === 'sub_tag'
+        ? {
+            is_industry_chain_segment:
+              dialog?.mode === 'edit' && dialog.tag
+                ? Boolean((dialog.tag as SubTagInfo).is_industry_chain_segment)
+                : false,
+          }
+        : {}),
     };
 
     if (dialog?.mode === 'create') {
@@ -167,14 +184,51 @@ export default function TagSection(props: TagSectionProps) {
               tags.map((tag) => (
                 <tr key={tag.id || tag.name}>
                   <td style={{ minWidth: 200, verticalAlign: 'top' }}>
-                    <Tooltip title={tag.desc ?? ''} variant="solid" placement="top-start">
-                      <Typography
-                        level="body-md"
-                        sx={{ fontSize: '0.9375rem', lineHeight: 1.45, fontWeight: 400 }}
-                      >
-                        {tag.name}
-                      </Typography>
-                    </Tooltip>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <Tooltip title={tag.desc ?? ''} variant="solid" placement="top-start">
+                        <Typography
+                          level="body-md"
+                          sx={{ fontSize: '0.9375rem', lineHeight: 1.45, fontWeight: 400 }}
+                        >
+                          {tag.name}
+                        </Typography>
+                      </Tooltip>
+                      {tagType === 'main_tag' && (tag as MainTagInfo).is_industry_chain ? (
+                        <Tooltip title="产业链主标签" variant="solid" placement="top">
+                          <HubRounded
+                            aria-label="产业链主标签"
+                            sx={{
+                              fontSize: 16,
+                              color: 'primary.500',
+                              opacity: 0.9,
+                              flexShrink: 0,
+                              display: 'block',
+                            }}
+                          />
+                        </Tooltip>
+                      ) : null}
+                      {tagType === 'sub_tag' && (tag as SubTagInfo).is_industry_chain_segment ? (
+                        <Tooltip title="产业链环节（次标签）" variant="solid" placement="top">
+                          <HubRounded
+                            aria-label="产业链环节"
+                            sx={{
+                              fontSize: 16,
+                              color: 'primary.500',
+                              opacity: 0.9,
+                              flexShrink: 0,
+                              display: 'block',
+                            }}
+                          />
+                        </Tooltip>
+                      ) : null}
+                    </Box>
                   </td>
 
                   {tagType === 'main_tag' && (

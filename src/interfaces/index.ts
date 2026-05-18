@@ -10,6 +10,8 @@ export type MainTagInfo = {
   concepts: string[] | null;
   areas: string[] | null;
   sub_tags: string[];
+  /** 与 ``industry_chain.name`` 对应的主标签目录 */
+  is_industry_chain?: boolean;
 };
 
 /** 次标签：细分方向，归属由 MainTagInfo.sub_tags 管理 */
@@ -23,6 +25,8 @@ export type SubTagInfo = {
   industries: string[] | null;
   concepts: string[] | null;
   areas: string[] | null;
+  /** 与 ``industry_chain.segments`` 中某一环节名对应 */
+  is_industry_chain_segment?: boolean;
 };
 
 /** 隐藏标签：暗线特征，与主/次标签共同起作用 */
@@ -61,6 +65,7 @@ export type CreateMainTagInfo = {
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
+  is_industry_chain?: boolean;
 };
 
 /** 创建次标签请求体（独立创建，不指定所属主标签；归属由主标签侧管理） */
@@ -71,6 +76,7 @@ export type CreateSubTagInfo = {
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
+  is_industry_chain_segment?: boolean;
 };
 
 /** 创建隐藏标签请求体 */
@@ -92,6 +98,7 @@ export type UpdateMainTagInfo = {
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
+  is_industry_chain?: boolean;
 };
 
 /** 更新次标签请求体（全量更新，归属由主标签侧管理）*/
@@ -102,6 +109,7 @@ export type UpdateSubTagInfo = {
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
+  is_industry_chain_segment?: boolean;
 };
 
 /** 更新隐藏标签请求体（全量更新）*/
@@ -122,6 +130,72 @@ export type BlockInfo = {
   active?: boolean;
   parents?: unknown;
   entity_count?: number;
+};
+
+/** 产业链目录（与后端 ``IndustryChainModel`` 一致；``segments`` = 环节名 → 环节描述） */
+export type IndustryChainInfo = {
+  id: string;
+  entity_id: string;
+  timestamp: string;
+  name: string;
+  segments: Record<string, string>;
+  desc: string | null;
+  active: boolean;
+};
+
+export type CreateIndustryChain = {
+  name: string;
+  segments?: Record<string, string>;
+  desc?: string | null;
+};
+
+export type UpdateIndustryChain = {
+  id: string;
+  name: string;
+  segments: Record<string, string>;
+  desc?: string | null;
+  active: boolean;
+};
+
+/** ``GET /api/work/list_stock_industry_chain`` 单行（不含 ``chain_apply_payload``） */
+export type StockIndustryChainListItem = {
+  id: string;
+  entity_id: string;
+  entity_type?: string | null;
+  code?: string | null;
+  name?: string | null;
+  industry_chain?: string | null;
+  industry_segment?: string | null;
+  position?: string | null;
+  core_business_and_market_position?: string | null;
+  pre_industry_chain?: string | null;
+  pre_industry_segment?: string | null;
+  pre_position?: string | null;
+  pre_core_business_and_market_position?: string | null;
+};
+
+/** ``POST /api/work/build_stock_industry_chain`` 成功体 */
+export type BuildStockIndustryChainResult = {
+  industry_chain_id: string;
+  industry_chain_name: string;
+  industry_chain_active: boolean;
+  segments: Record<string, string>;
+  agent_exit_code: number;
+  agent_standard_output_preview: string;
+  agent_standard_error_preview: string;
+  applied_entity_count: number;
+  skipped_stock_not_in_dataset: number;
+  skipped_invalid_entries: number;
+  skipped_messages: string[];
+};
+
+/** ``POST /api/work/build_stock_tags_from_industry_chain`` 成功体 */
+export type BuildStockTagsFromIndustryChainResult = {
+  industry_chain_name: string;
+  applied_entity_count: number;
+  skipped_stock_not_in_dataset: number;
+  skipped_invalid_entries: number;
+  skipped_messages: string[];
 };
 
 export type TagType = 'main_tag' | 'sub_tag' | 'hidden_tag';

@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRequest } from 'ahooks';
 import {
   Typography,
   Button,
@@ -14,6 +15,9 @@ import {
   FormLabel,
   Radio,
   RadioGroup,
+  Sheet,
+  Table,
+  Tooltip,
 } from '@mui/joy';
 import {
   tradePoolTabClass,
@@ -26,7 +30,20 @@ import CloseRounded from '@mui/icons-material/CloseRounded';
 import HealingIcon from '@mui/icons-material/Healing';
 import BlockSelectorDialog from './BlockSelectorDialog';
 import type { BuildStockTagsOptions, StockTagBuildType } from './useData';
-import type { BlockInfo, HiddenTagInfo, MainTagInfo, SubTagInfo } from '@/interfaces';
+import type { BlockInfo, HiddenTagInfo, IndustryChainInfo, MainTagInfo, StockIndustryChainListItem, SubTagInfo } from '@/interfaces';
+import services from '@/services';
+
+function IndustryChainClampCell({ value }: { value?: string | null }) {
+  const full = (value || '').trim();
+  if (!full) {
+    return <span className="text-neutral-400">—</span>;
+  }
+  return (
+    <Tooltip title={<div className="max-w-[320px] whitespace-pre-wrap">{full}</div>} variant="solid">
+      <div className="max-w-[240px] text-left leading-snug line-clamp-2 break-words">{full}</div>
+    </Tooltip>
+  );
+}
 
 type BlockAxis = 'industry' | 'concept' | 'area';
 /** 主标签构建：行业 / 概念 / 次标签（无按地域推主标签接口） */
@@ -37,6 +54,7 @@ type SourceAxis = 'industry' | 'concept' | 'area' | 'sub_tag';
 
 const OPERATION_SECTION_LABELS = [
   '数据初始化',
+  '产业链标签',
   '维护主标签',
   '维护次标签',
   '维护隐藏标签',
@@ -53,6 +71,11 @@ interface Props {
   areas: BlockInfo[];
   onInit: (type: 'industry' | 'concept' | 'area' | 'sub_tags_from_concepts') => Promise<void>;
   onBuild: (type: StockTagBuildType, options: BuildStockTagsOptions) => Promise<void>;
+  onBuildStockIndustryChain: (options: { industryChainName: string }) => Promise<void>;
+  onBuildStockTagsFromIndustryChain: (options: {
+    industryChainName: string;
+    overwriteSetByUser?: boolean;
+  }) => Promise<void>;
   onSanitizeStockTags: () => Promise<void>;
 }
 
@@ -66,6 +89,8 @@ export default function OperationsTab({
   areas,
   onInit,
   onBuild,
+  onBuildStockIndustryChain,
+  onBuildStockTagsFromIndustryChain,
   onSanitizeStockTags,
 }: Props) {
   const [operationSectionTab, setOperationSectionTab] = useState<number>(0);
@@ -88,6 +113,39 @@ export default function OperationsTab({
   const [mainBuildAxis, setMainBuildAxis] = useState<MainBuildAxis>('industry');
   const [subBuildAxis, setSubBuildAxis] = useState<BlockAxis>('industry');
   const [hiddenBuildAxis, setHiddenBuildAxis] = useState<BlockAxis>('industry');
+
+  const industryChainsForAgent = useRequest(
+    async () => (await services.getIndustryChain({ active: true })) as IndustryChainInfo[],
+    { refreshDeps: [] }
+  );
+  const industryChainNameOptions = useMemo(
+    () => industryChainsForAgent.data?.map((row) => row.name).filter(Boolean) ?? [],
+    [industryChainsForAgent.data]
+  );
+  const [selectedIndustryChainName, setSelectedIndustryChainName] = useState('');
+  const [industryChainOverwriteUser, setIndustryChainOverwriteUser] = useState(true);
+
+  const chainRowsForIndustry = useRequest(
+    async () => {
+      const chain = selectedIndustryChainName.trim();
+      if (!chain) return [] as StockIndustryChainListItem[];
+      return (await services.listStockIndustryChain({
+        industry_chain_name: chain,
+      })) as StockIndustryChainListItem[];
+    },
+    { refreshDeps: [selectedIndustryChainName], ready: Boolean(selectedIndustryChainName.trim()) }
+  );
+
+  useEffect(() => {
+    const names = industryChainNameOptions;
+    if (!names.length) {
+      if (selectedIndustryChainName) setSelectedIndustryChainName('');
+      return;
+    }
+    if (!selectedIndustryChainName || !names.includes(selectedIndustryChainName)) {
+      setSelectedIndustryChainName(names[0]);
+    }
+  }, [industryChainNameOptions, selectedIndustryChainName]);
 
   const subTagBlockItems: BlockInfo[] = useMemo(
     () => subTags.map((tag) => ({ name: tag.name, desc: tag.desc })),
@@ -305,7 +363,7 @@ export default function OperationsTab({
   }
 
   function switchOperationSection(index: number) {
-    if (operationSectionTab !== index && (index === 1 || index === 2 || index === 3)) {
+    if (operationSectionTab !== index && (index === 2 || index === 3 || index === 4)) {
       setTargetTagName('');
       setTargetTagInput('');
     }
@@ -386,10 +444,6 @@ export default function OperationsTab({
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
                 数据初始化
               </Typography>
-              <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
-                从东方财富（em）抓取行业、概念、地域板块列表，写入本地参考数据。已存在的条目跳过，不覆盖已配置的标签关系。
-                「从概念生成次标签」读取 active 概念，幂等生成同名次标签目录（写入 ``SubTagInfo.concepts``），不修改主标签目录。
-              </Typography>
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <Button
                   size="sm"
@@ -441,6 +495,208 @@ export default function OperationsTab({
         )}
 
         {operationSectionTab === 1 && (
+          <Card variant="plain" size="sm" sx={{ mb: 0 }}>
+            <CardContent>
+              {industryChainsForAgent.loading ? (
+                <Typography level="body-sm">加载产业链目录…</Typography>
+              ) : !industryChainNameOptions.length ? (
+                <Typography level="body-sm" textColor="neutral.500">
+                  暂无活跃产业链，请在「标签信息 → 产业链」中维护。
+                </Typography>
+              ) : (
+                <>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 1,
+                      rowGap: 1,
+                      mb: 1.5,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        flex: '1 1 auto',
+                        minWidth: 0,
+                      }}
+                    >
+                      {industryChainNameOptions.map((name) => (
+                        <div
+                          key={name}
+                          role="button"
+                          tabIndex={0}
+                          className={`${tradePoolTabClass} ${
+                            selectedIndustryChainName === name ? tradePoolTabActiveClass : ''
+                          }`}
+                          onClick={() => setSelectedIndustryChainName(name)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              setSelectedIndustryChainName(name);
+                            }
+                          }}
+                        >
+                          {name}
+                        </div>
+                      ))}
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 1,
+                        flexShrink: 0,
+                        marginLeft: 'auto',
+                      }}
+                    >
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        className="!text-[12px] !py-1"
+                        loading={busy === 'industry_chain_build_table'}
+                        disabled={!selectedIndustryChainName.trim()}
+                        onClick={() =>
+                          handle('industry_chain_build_table', async () => {
+                            await onBuildStockIndustryChain({
+                              industryChainName: selectedIndustryChainName,
+                            });
+                            chainRowsForIndustry.refresh();
+                          })
+                        }
+                      >
+                        构建个股产业链
+                      </Button>
+                      <Sheet
+                        variant="outlined"
+                        sx={{
+                          display: 'inline-flex',
+                          flexDirection: 'row',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          gap: 1,
+                          px: 1.25,
+                          py: 0.75,
+                          borderRadius: 'sm',
+                        }}
+                      >
+                        <Button
+                          size="sm"
+                          variant="soft"
+                          className="!text-[12px] !py-1"
+                          loading={busy === 'industry_chain_build_tags'}
+                          disabled={!selectedIndustryChainName.trim()}
+                          onClick={() =>
+                            handle('industry_chain_build_tags', async () => {
+                              await onBuildStockTagsFromIndustryChain({
+                                industryChainName: selectedIndustryChainName,
+                                overwriteSetByUser: industryChainOverwriteUser,
+                              });
+                              chainRowsForIndustry.refresh();
+                            })
+                          }
+                        >
+                          由产业链构建标签
+                        </Button>
+                        <Checkbox
+                          label="覆盖手动设置"
+                          checked={industryChainOverwriteUser}
+                          onChange={(event) => setIndustryChainOverwriteUser(event.target.checked)}
+                          size="sm"
+                          sx={{ py: 0, minHeight: 0, '& .MuiCheckbox-label': { fontSize: 12 } }}
+                        />
+                      </Sheet>
+                    </Box>
+                  </Box>
+                  <div className="overflow-auto max-h-[420px]">
+                    <Table
+                      borderAxis="xBetween"
+                      size="sm"
+                      hoverRow
+                      stickyHeader
+                      aria-label="产业链中间表"
+                    >
+                      <thead className="font-bold">
+                        <tr>
+                          <th className="w-[140px]">股票名称</th>
+                          <th className="min-w-[128px] max-w-[180px]">标的 ID</th>
+                          <th>产业链</th>
+                          <th>环节</th>
+                          <th>定位</th>
+                          <th className="min-w-[200px]">核心业务与市场地位</th>
+                          <th>上轮产业链</th>
+                          <th>上轮环节</th>
+                          <th>上轮定位</th>
+                          <th className="min-w-[160px]">上轮核心业务与市场地位</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chainRowsForIndustry.loading && (
+                          <tr>
+                            <td colSpan={10}>
+                              <Typography level="body-sm" sx={{ p: 1 }}>
+                                加载中…
+                              </Typography>
+                            </td>
+                          </tr>
+                        )}
+                        {!chainRowsForIndustry.loading &&
+                          !(chainRowsForIndustry.data?.length ?? 0) && (
+                            <tr>
+                              <td colSpan={10}>
+                                <Typography level="body-sm" textColor="neutral.500" sx={{ p: 1 }}>
+                                  暂无中间表数据；可先执行「构建个股产业链」。
+                                </Typography>
+                              </td>
+                            </tr>
+                          )}
+                        {!chainRowsForIndustry.loading &&
+                          (chainRowsForIndustry.data ?? []).map((row) => (
+                            <tr key={row.id}>
+                              <td>
+                                {(row.name || '').trim() || '—'}|
+                                <span className="opacity-90">{row.code ?? ''}</span>
+                              </td>
+                              <td>
+                                <Tooltip
+                                  title={row.entity_id || ''}
+                                  variant="solid"
+                                  placement="top-start"
+                                >
+                                  <div className="max-w-[168px] truncate text-xs opacity-90 font-mono">
+                                    {row.entity_id}
+                                  </div>
+                                </Tooltip>
+                              </td>
+                              <td>{row.industry_chain ?? ''}</td>
+                              <td>{row.industry_segment ?? ''}</td>
+                              <td>{row.position ?? ''}</td>
+                              <td>
+                                <IndustryChainClampCell value={row.core_business_and_market_position} />
+                              </td>
+                              <td>{row.pre_industry_chain ?? ''}</td>
+                              <td>{row.pre_industry_segment ?? ''}</td>
+                              <td>{row.pre_position ?? ''}</td>
+                              <td>
+                                <IndustryChainClampCell value={row.pre_core_business_and_market_position} />
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {operationSectionTab === 2 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Card variant="plain" size="sm">
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -476,7 +732,7 @@ export default function OperationsTab({
           </Box>
         )}
 
-        {operationSectionTab === 2 && (
+        {operationSectionTab === 3 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Card variant="plain" size="sm">
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -512,7 +768,7 @@ export default function OperationsTab({
           </Box>
         )}
 
-        {operationSectionTab === 3 && (
+        {operationSectionTab === 4 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Card variant="plain" size="sm">
             <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -548,7 +804,7 @@ export default function OperationsTab({
           </Box>
         )}
 
-        {operationSectionTab === 4 && (
+        {operationSectionTab === 5 && (
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">

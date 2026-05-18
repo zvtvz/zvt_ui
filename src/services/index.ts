@@ -40,6 +40,14 @@ const apis = {
   batchSetIndustryInfoActive: '/api/work/batch_set_industry_info_active',
   batchSetConceptInfoActive: '/api/work/batch_set_concept_info_active',
 
+  // 产业链目录（industry_chain）
+  createIndustryChain: '/api/work/create_industry_chain',
+  getIndustryChain: 'GET /api/work/get_industry_chain',
+  updateIndustryChain: '/api/work/update_industry_chain',
+  deleteIndustryChain: 'DELETE /api/work/delete_industry_chain',
+  setIndustryChainActive: '/api/work/set_industry_chain_active',
+  batchSetIndustryChainActive: '/api/work/batch_set_industry_chain_active',
+
   // 初始化后台任务
   initIndustryInfo: '/api/work/init_industry_info',
   initConceptInfo: '/api/work/init_concept_info',
@@ -56,6 +64,9 @@ const apis = {
   buildStockHiddenTagByIndustry: '/api/work/build_stock_hidden_tag_by_industry',
   buildStockHiddenTagByConcept: '/api/work/build_stock_hidden_tag_by_concept',
   buildStockHiddenTagByArea: '/api/work/build_stock_hidden_tag_by_area',
+  buildStockIndustryChain: '/api/work/build_stock_industry_chain',
+  buildStockTagsFromIndustryChain: '/api/work/build_stock_tags_from_industry_chain',
+  listStockIndustryChain: 'GET /api/work/list_stock_industry_chain',
   sanitizeStockTagReferences: '/api/work/sanitize_stock_tag_references',
 
   // 手动打标
