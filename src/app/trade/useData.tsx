@@ -41,6 +41,9 @@ function isIndustryChainMainTag(tag: MainTagInfo | undefined) {
   return Boolean(tag?.is_industry_chain);
 }
 
+/** 三级 tab「其他」：非产业链环节 sub_tag 的个股 */
+export const INDUSTRY_CHAIN_OTHER_SEGMENT = '__industry_chain_other__';
+
 export default function useData() {
   const [loading, setLoading] = useSetState({
     stocks: false,
@@ -110,16 +113,23 @@ export default function useData() {
     pool: Pool | undefined,
     segmentName: string | null
   ) => {
-    const params: Record<string, string> = {};
+    const params: Record<string, string | string[]> = {};
     if (pool?.stock_pool_name) {
       params.stock_pool_name = pool.stock_pool_name;
     }
     if (tag?.name) {
       params.main_tag = tag.name;
     }
-    const subTag = (segmentName || '').trim();
-    if (subTag && isIndustryChainMainTag(tag)) {
-      params.sub_tag = subTag;
+    if (isIndustryChainMainTag(tag) && segmentName === INDUSTRY_CHAIN_OTHER_SEGMENT) {
+      const segmentNames = resolveSegmentsForMainTag(tag).map((row) => row.name);
+      if (segmentNames.length) {
+        params.sub_tag_not_in = segmentNames;
+      }
+    } else {
+      const subTag = (segmentName || '').trim();
+      if (subTag && isIndustryChainMainTag(tag)) {
+        params.sub_tag = subTag;
+      }
     }
     if (sortRef.current.field) {
       params.order_by_field = sortRef.current.field;

@@ -27,6 +27,10 @@ type Props = {
   onChange: (rows: StockPoolEntityRow[]) => void;
   /** 展示「从主标签并入」行（构建产业链等场景） */
   enableMainTagMerge?: boolean;
+  /** 构建产业链时当前产业链名，配合 ``ignoreExistingInIndustryChain`` 传给并入接口 */
+  industryChainName?: string;
+  /** 从概念/主标签并入时排除已在 ``StockIndustryChain`` 中该产业链的个股 */
+  ignoreExistingInIndustryChain?: boolean;
 };
 
 type ConceptOption = { name: string };
@@ -37,6 +41,8 @@ export default function StockPoolEntityEditor({
   rows,
   onChange,
   enableMainTagMerge = false,
+  industryChainName = '',
+  ignoreExistingInIndustryChain = false,
 }: Props) {
   const [searchKey, setSearchKey] = useState('');
   const [searchResults, setSearchResults] = useState<StockListItem[]>([]);
@@ -72,6 +78,14 @@ export default function StockPoolEntityEditor({
     .filter((name): name is string => Boolean(name))
     .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
   const mainTagNameSet = useMemo(() => new Set(mainTagNames), [mainTagNames]);
+
+  const ignoreInIndustryChainParam = useMemo(() => {
+    if (!ignoreExistingInIndustryChain) {
+      return undefined;
+    }
+    const chainName = industryChainName.trim();
+    return chainName || undefined;
+  }, [ignoreExistingInIndustryChain, industryChainName]);
 
   const mergeEntityIdsIntoRows = useCallback(
     async (rawIds: string[], emptyMessage: string): Promise<string> => {
@@ -164,7 +178,12 @@ export default function StockPoolEntityEditor({
     setConceptSyncMessage('');
     setConceptSyncLoading(true);
     try {
-      const body = await services.listEntityIdsFromConcept({ concept_name: name });
+      const body = await services.listEntityIdsFromConcept({
+        concept_name: name,
+        ...(ignoreInIndustryChainParam
+          ? { ignore_in_industry_chain: ignoreInIndustryChainParam }
+          : {}),
+      });
       if (body && (body as any).detail) {
         const detail = (body as any).detail;
         setConceptSyncMessage(
@@ -185,7 +204,7 @@ export default function StockPoolEntityEditor({
     } finally {
       setConceptSyncLoading(false);
     }
-  }, [conceptDraft, conceptNameSet, mergeEntityIdsIntoRows]);
+  }, [conceptDraft, conceptNameSet, ignoreInIndustryChainParam, mergeEntityIdsIntoRows]);
 
   const mergeFromMainTag = useCallback(async () => {
     const name = mainTagDraft.trim();
@@ -200,7 +219,12 @@ export default function StockPoolEntityEditor({
     setMainTagSyncMessage('');
     setMainTagSyncLoading(true);
     try {
-      const body = await services.listEntityIdsFromMainTag({ main_tag_name: name });
+      const body = await services.listEntityIdsFromMainTag({
+        main_tag_name: name,
+        ...(ignoreInIndustryChainParam
+          ? { ignore_in_industry_chain: ignoreInIndustryChainParam }
+          : {}),
+      });
       if (body && (body as { detail?: unknown }).detail) {
         const detail = (body as { detail?: unknown }).detail;
         setMainTagSyncMessage(
@@ -223,7 +247,7 @@ export default function StockPoolEntityEditor({
     } finally {
       setMainTagSyncLoading(false);
     }
-  }, [mainTagDraft, mainTagNameSet, mergeEntityIdsIntoRows]);
+  }, [mainTagDraft, mainTagNameSet, ignoreInIndustryChainParam, mergeEntityIdsIntoRows]);
 
   const hasHiddenChips = rows.length > MAX_CHIP_PREVIEW;
   const chipRows =

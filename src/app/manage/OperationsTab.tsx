@@ -53,8 +53,8 @@ type MainBuildAxis = 'industry' | 'concept' | 'sub_tag';
 type SourceAxis = 'industry' | 'concept' | 'area' | 'sub_tag';
 
 const OPERATION_SECTION_LABELS = [
-  '数据初始化',
   '产业链标签',
+  '数据初始化',
   '维护主标签',
   '维护次标签',
   '维护隐藏标签',
@@ -135,6 +135,8 @@ export default function OperationsTab({
   const [industryChainOverwriteUser, setIndustryChainOverwriteUser] = useState(true);
   const [buildIndustryChainDialogOpen, setBuildIndustryChainDialogOpen] = useState(false);
   const [selectedChainEntityIds, setSelectedChainEntityIds] = useState<Set<string>>(new Set());
+  const [chainListFilterSegmentChanged, setChainListFilterSegmentChanged] = useState(false);
+  const [chainListFilterPositionChanged, setChainListFilterPositionChanged] = useState(false);
 
   const chainRowsForIndustry = useRequest(
     async () => {
@@ -142,9 +144,18 @@ export default function OperationsTab({
       if (!chain) return [] as StockIndustryChainListItem[];
       return (await services.listStockIndustryChain({
         industry_chain_name: chain,
+        only_segment_changed: chainListFilterSegmentChanged,
+        only_position_changed: chainListFilterPositionChanged,
       })) as StockIndustryChainListItem[];
     },
-    { refreshDeps: [selectedIndustryChainName], ready: Boolean(selectedIndustryChainName.trim()) }
+    {
+      refreshDeps: [
+        selectedIndustryChainName,
+        chainListFilterSegmentChanged,
+        chainListFilterPositionChanged,
+      ],
+      ready: Boolean(selectedIndustryChainName.trim()),
+    }
   );
 
   useEffect(() => {
@@ -160,9 +171,14 @@ export default function OperationsTab({
 
   useEffect(() => {
     setSelectedChainEntityIds(new Set());
+    setChainListFilterSegmentChanged(false);
+    setChainListFilterPositionChanged(false);
   }, [selectedIndustryChainName]);
 
   const chainTableRows = chainRowsForIndustry.data ?? [];
+
+  const chainListFiltersActive =
+    chainListFilterSegmentChanged || chainListFilterPositionChanged;
 
   const selectableChainEntityIds = useMemo(
     () =>
@@ -497,7 +513,7 @@ export default function OperationsTab({
           ))}
         </div>
 
-        {operationSectionTab === 0 && (
+        {operationSectionTab === 1 && (
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
@@ -553,7 +569,7 @@ export default function OperationsTab({
           </Card>
         )}
 
-        {operationSectionTab === 1 && (
+        {operationSectionTab === 0 && (
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               {industryChainsForAgent.loading ? (
@@ -617,6 +633,42 @@ export default function OperationsTab({
                       </Button>
                     </Box>
                   </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      mb: 1,
+                    }}
+                  >
+                    <Checkbox
+                      size="sm"
+                      label="只展示产业链环节变化的"
+                      checked={chainListFilterSegmentChanged}
+                      onChange={(event) =>
+                        setChainListFilterSegmentChanged(event.target.checked)
+                      }
+                      sx={{ py: 0, minHeight: 0, '& .MuiCheckbox-label': { fontSize: 12 } }}
+                    />
+                    <Checkbox
+                      size="sm"
+                      label="只展示定位变化的"
+                      checked={chainListFilterPositionChanged}
+                      onChange={(event) =>
+                        setChainListFilterPositionChanged(event.target.checked)
+                      }
+                      sx={{ py: 0, minHeight: 0, '& .MuiCheckbox-label': { fontSize: 12 } }}
+                    />
+                    {chainListFiltersActive ? (
+                      <Typography level="body-xs" sx={{ opacity: 0.75 }}>
+                        共 {chainTableRows.length} 条
+                        {chainListFilterSegmentChanged && chainListFilterPositionChanged
+                          ? '（满足任一筛选）'
+                          : ''}
+                      </Typography>
+                    ) : null}
+                  </Box>
                   <div className="overflow-auto max-h-[420px]">
                     <Table
                       borderAxis="xBetween"
@@ -658,16 +710,17 @@ export default function OperationsTab({
                             </td>
                           </tr>
                         )}
-                        {!chainRowsForIndustry.loading &&
-                          !(chainRowsForIndustry.data?.length ?? 0) && (
-                            <tr>
-                              <td colSpan={11}>
-                                <Typography level="body-sm" textColor="neutral.500" sx={{ p: 1 }}>
-                                  暂无中间表数据；可先执行「构建个股产业链」。
-                                </Typography>
-                              </td>
-                            </tr>
-                          )}
+                        {!chainRowsForIndustry.loading && chainTableRows.length === 0 && (
+                          <tr>
+                            <td colSpan={11}>
+                              <Typography level="body-sm" textColor="neutral.500" sx={{ p: 1 }}>
+                                {chainListFiltersActive
+                                  ? '当前筛选无匹配记录。'
+                                  : '暂无中间表数据；可先执行「构建个股产业链」。'}
+                              </Typography>
+                            </td>
+                          </tr>
+                        )}
                         {!chainRowsForIndustry.loading &&
                           chainTableRows.map((row) => (
                             <tr key={row.id}>

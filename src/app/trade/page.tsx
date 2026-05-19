@@ -14,7 +14,7 @@ import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 
-import useData from './useData';
+import useData, { INDUSTRY_CHAIN_OTHER_SEGMENT } from './useData';
 import CreateStockPoolDialog from './CreateStockPoolDialog';
 import UpdateStockPoolDialog from './UpdateStockPoolDialog';
 import { useCallback, useEffect, useState } from 'react';
@@ -282,6 +282,29 @@ export default function Workspace() {
               </Tooltip>
             );
           })}
+          <Tooltip
+            title="主标签下次标签不属于任一产业链环节的个股"
+            variant="solid"
+          >
+            <Chip
+              color="primary"
+              onClick={() =>
+                changeActiveSegment(
+                  segments.current === INDUSTRY_CHAIN_OTHER_SEGMENT
+                    ? null
+                    : INDUSTRY_CHAIN_OTHER_SEGMENT
+                )
+              }
+              variant={
+                segments.current === INDUSTRY_CHAIN_OTHER_SEGMENT ? 'solid' : 'soft'
+              }
+              className="cursor-pointer mr-2 my-0 !px-4"
+              size="sm"
+              sx={{ borderRadius: 8 }}
+            >
+              <span className="text-[14px] py-1.5">其他</span>
+            </Chip>
+          </Tooltip>
         </div>
       ) : null}
       {showTradeMain ? (

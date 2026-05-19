@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   Button,
+  Checkbox,
   DialogContent,
   DialogTitle,
   Modal,
@@ -30,10 +31,12 @@ export default function BuildStockIndustryChainDialog({
   onConfirm,
 }: Props) {
   const [entityRows, setEntityRows] = useState<StockPoolEntityRow[]>([]);
+  const [ignoreExistingInIndustryChain, setIgnoreExistingInIndustryChain] = useState(true);
 
   useEffect(() => {
     if (!open) {
       setEntityRows([]);
+      setIgnoreExistingInIndustryChain(true);
     }
   }, [open]);
 
@@ -55,7 +58,20 @@ export default function BuildStockIndustryChainDialog({
               ? `产业链「${trimmedChainName}」：可指定 A 股标的后调用 Agent；不选则各环节由模型自行举例。`
               : '请先选择产业链'}
           </Typography>
-          <StockPoolEntityEditor rows={entityRows} onChange={setEntityRows} enableMainTagMerge />
+          <Checkbox
+            size="sm"
+            label="忽略已有个股"
+            checked={ignoreExistingInIndustryChain}
+            onChange={(event) => setIgnoreExistingInIndustryChain(event.target.checked)}
+            sx={{ mb: 1.5 }}
+          />
+          <StockPoolEntityEditor
+            rows={entityRows}
+            onChange={setEntityRows}
+            enableMainTagMerge
+            industryChainName={trimmedChainName}
+            ignoreExistingInIndustryChain={ignoreExistingInIndustryChain}
+          />
           <Typography level="body-xs" className="mt-1 opacity-70">
             已选 {entityRows.length} 只时将仅对这些股票分类；清空列表后确认则走发现模式（每环节不少于 3 只示例）。
           </Typography>
