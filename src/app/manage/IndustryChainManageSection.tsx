@@ -21,7 +21,12 @@ import { useRequest } from 'ahooks';
 import Add from '@mui/icons-material/Add';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import services from '@/services';
-import type { CreateIndustryChain, IndustryChainInfo, UpdateIndustryChain } from '@/interfaces';
+import type {
+  BuildMainTagSubTagFromIndustryChainResult,
+  CreateIndustryChain,
+  IndustryChainInfo,
+  UpdateIndustryChain,
+} from '@/interfaces';
 import { tradeInnerTabClass, tradePoolTabActiveClass } from './tradeStyleClasses';
 
 type BatchSetIndustryChainActiveResult = {
@@ -59,6 +64,7 @@ export default function IndustryChainManageSection() {
   const [listTab, setListTab] = useState<'active' | 'archived'>('active');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchBusy, setBatchBusy] = useState(false);
+  const [syncTagsBusy, setSyncTagsBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
@@ -110,6 +116,25 @@ export default function IndustryChainManageSection() {
       }
       return next;
     });
+  }
+
+  async function syncTagsFromIndustryChain() {
+    setSyncTagsBusy(true);
+    setNotice(null);
+    try {
+      const result = (await services.buildMainTagSubTagInfoFromIndustryChain()) as BuildMainTagSubTagFromIndustryChainResult;
+      setNotice(
+        `已同步标签：产业链 ${result.chains_processed} 条，` +
+          `主标新建 ${result.main_tag_created}、更新 ${result.main_tag_updated}，` +
+          `次标新建 ${result.sub_tag_created}、更新 ${result.sub_tag_updated}`
+      );
+      window.setTimeout(() => setNotice(null), 10000);
+    } catch {
+      setNotice('从产业链同步标签失败');
+      window.setTimeout(() => setNotice(null), 6000);
+    } finally {
+      setSyncTagsBusy(false);
+    }
   }
 
   function openCreate() {
@@ -263,6 +288,16 @@ export default function IndustryChainManageSection() {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
           <Button size="sm" variant="solid" color="primary" className="!text-[12px]" onClick={openCreate}>
             新建产业链
+          </Button>
+          <Button
+            size="sm"
+            variant="outlined"
+            color="primary"
+            className="!text-[12px]"
+            loading={syncTagsBusy}
+            onClick={() => void syncTagsFromIndustryChain()}
+          >
+            从产业链同步标签
           </Button>
           <Typography level="body-sm" textColor="neutral.600">
             已选 {selectedIds.size} 条

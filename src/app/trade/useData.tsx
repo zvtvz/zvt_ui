@@ -6,7 +6,7 @@ import {
 } from 'ahooks';
 import { useRef } from 'react';
 import services from '@/services';
-import { GlobalTag, Pool } from '@/interfaces';
+import type { IndustryChainInfo, MainTagInfo, Pool } from '@/interfaces';
 
 type PoolState = {
   data: Pool[];
@@ -14,10 +14,32 @@ type PoolState = {
 };
 
 type TagState = {
-  data: GlobalTag[];
+  data: MainTagInfo[];
   statses: any[];
-  current?: GlobalTag;
+  current?: MainTagInfo;
 };
+
+type SegmentState = {
+  items: { name: string; desc: string }[];
+  current: string | null;
+};
+
+function segmentsFromIndustryChain(chain: IndustryChainInfo | undefined) {
+  const segments = chain?.segments;
+  if (!segments || typeof segments !== 'object') {
+    return [];
+  }
+  return Object.entries(segments)
+    .map(([name, desc]) => ({
+      name: name.trim(),
+      desc: (desc || '').trim(),
+    }))
+    .filter((row) => row.name);
+}
+
+function isIndustryChainMainTag(tag: MainTagInfo | undefined) {
+  return Boolean(tag?.is_industry_chain);
+}
 
 export default function useData() {
   const [loading, setLoading] = useSetState({
@@ -34,6 +56,10 @@ export default function useData() {
     statses: [],
     current: undefined,
   });
+  const [segments, setSegments] = useSetState<SegmentState>({
+    items: [],
+    current: null,
+  });
   const [stocks, setStocks] = useSetState<{
     data: any[];
     current: any;
@@ -43,7 +69,8 @@ export default function useData() {
     current: undefined,
     events: undefined,
   });
-  const globalTagsRef = useRef<GlobalTag[]>([]);
+  const mainTagsRef = useRef<MainTagInfo[]>([]);
+  const industryChainsRef = useRef<IndustryChainInfo[]>([]);
   const sortRef = useRef<any>({
     field: '',
     type: '',
@@ -61,9 +88,49 @@ export default function useData() {
     pollingInterval: 1000 * 60,
   });
 
+  function resolveSegmentsForMainTag(tag: MainTagInfo | undefined) {
+    if (!isIndustryChainMainTag(tag)) {
+      return [];
+    }
+    const chain = industryChainsRef.current.find((row) => row.name === tag?.name);
+    return segmentsFromIndustryChain(chain);
+  }
+
+  function syncSegmentsForTag(tag: MainTagInfo | undefined) {
+    if (!isIndustryChainMainTag(tag)) {
+      setSegments({ items: [], current: null });
+      return;
+    }
+    const items = resolveSegmentsForMainTag(tag);
+    setSegments({ items, current: null });
+  }
+
+  const buildStockQueryParams = (
+    tag: MainTagInfo | undefined,
+    pool: Pool | undefined,
+    segmentName: string | null
+  ) => {
+    const params: Record<string, string> = {};
+    if (pool?.stock_pool_name) {
+      params.stock_pool_name = pool.stock_pool_name;
+    }
+    if (tag?.name) {
+      params.main_tag = tag.name;
+    }
+    const subTag = (segmentName || '').trim();
+    if (subTag && isIndustryChainMainTag(tag)) {
+      params.sub_tag = subTag;
+    }
+    if (sortRef.current.field) {
+      params.order_by_field = sortRef.current.field;
+      params.order_by_type = sortRef.current.type;
+    }
+    return params;
+  };
+
   const updatePool = async (pool: Pool) => {
     setPools({ current: pool });
-    await changeTags(globalTagsRef.current, pool);
+    await changeTags(mainTagsRef.current, pool);
   };
 
   const changePool = async (value: string) => {
@@ -79,38 +146,50 @@ export default function useData() {
     }
   };
 
-  const changeActiveTag = async (tag: GlobalTag | undefined, pool?: Pool) => {
-    setLoading({ stocks: true });
-    setTags({
-      current: tag,
-    });
-
-    const params: any = {
-      stock_pool_name: pool?.stock_pool_name,
-      main_tag: tag?.name || undefined,
-    };
-    if (sortRef.current.field) {
-      params.order_by_field = sortRef.current.field;
-      params.order_by_type = sortRef.current.type;
-    }
+  const fetchStocksForTag = async (
+    tag: MainTagInfo | undefined,
+    pool: Pool | undefined,
+    segmentName: string | null
+  ) => {
+    const params = buildStockQueryParams(tag, pool, segmentName);
+    clearInterval(intervalId.current.id);
+    const stocksResponse = await services.getPoolStocksByTag(params);
+    const quoteRows = stocksResponse?.quotes ?? [];
 
     clearInterval(intervalId.current.id);
+    intervalId.current.id = setInterval(() => {
+      if (unmountedRef.current) {
+        clearInterval(intervalId.current.id);
+      }
+      services.getPoolStocksByTag(params).then((data) => {
+        updateStocks(data?.quotes ?? [], true);
+      });
+    }, 3000);
+
+    updateStocks(quoteRows);
+  };
+
+  const changeActiveTag = async (tag: MainTagInfo | undefined, pool?: Pool) => {
+    setLoading({ stocks: true });
+    setTags({ current: tag });
+    syncSegmentsForTag(tag);
 
     try {
-      const stocks = await services.getPoolStocksByTag(params);
-      const quoteRows = stocks?.quotes ?? [];
+      await fetchStocksForTag(tag, pool ?? pools.current, null);
+    } finally {
+      setLoading({ stocks: false });
+    }
+  };
 
-      clearInterval(intervalId.current.id);
-      intervalId.current.id = setInterval(() => {
-        if (unmountedRef.current) {
-          clearInterval(intervalId.current.id);
-        }
-        services.getPoolStocksByTag(params).then((data) => {
-          updateStocks(data?.quotes ?? [], true);
-        });
-      }, 3000);
-
-      updateStocks(quoteRows);
+  const changeActiveSegment = async (segmentName: string | null) => {
+    const tag = tags.current;
+    if (!isIndustryChainMainTag(tag)) {
+      return;
+    }
+    setLoading({ stocks: true });
+    setSegments({ current: segmentName });
+    try {
+      await fetchStocksForTag(tag, pools.current, segmentName);
     } finally {
       setLoading({ stocks: false });
     }
@@ -174,7 +253,7 @@ export default function useData() {
     }
   };
 
-  const changeTags = async (newTags: GlobalTag[], pool?: Pool) => {
+  const changeTags = async (newTags: MainTagInfo[], pool?: Pool) => {
     pool = pool || pools.current;
 
     clearInterval(tagsStatusIntervalId.current.id);
@@ -185,7 +264,7 @@ export default function useData() {
 
     const sortedTags = statses
       .map((stats: any) => newTags.find((tag) => tag.name === stats.main_tag))
-      .filter((t: any) => !!t);
+      .filter((t): t is MainTagInfo => Boolean(t));
 
     setTags({
       data: sortedTags,
@@ -208,13 +287,13 @@ export default function useData() {
         });
     }, 5000);
 
-    changeActiveTag(sortedTags[0], pool);
+    await changeActiveTag(sortedTags[0], pool);
   };
 
   const changeSort = async (field: string, type: string) => {
     sortRef.current.field = field;
     sortRef.current.type = type;
-    await changeActiveTag(tags.current as any, pools.current);
+    await fetchStocksForTag(tags.current, pools.current, segments.current);
   };
 
   const refreshPools = async (switchToPoolName?: string) => {
@@ -223,7 +302,7 @@ export default function useData() {
       const next = { ...prev, data: poolsData };
       if (switchToPoolName) {
         const newCurrent = poolsData.find(
-          (p: any) => p.stock_pool_name === switchToPoolName
+          (p: Pool) => p.stock_pool_name === switchToPoolName
         );
         if (newCurrent) next.current = newCurrent;
       }
@@ -231,7 +310,7 @@ export default function useData() {
     });
     if (switchToPoolName) {
       const newCurrent = poolsData.find(
-        (p: any) => p.stock_pool_name === switchToPoolName
+        (p: Pool) => p.stock_pool_name === switchToPoolName
       );
       if (newCurrent) await updatePool(newCurrent as Pool);
     }
@@ -239,16 +318,18 @@ export default function useData() {
 
   useAsyncEffect(async () => {
     setLoading({ stocks: true });
-    const [poolsData, setting, globalTags] = await Promise.all([
+    const [poolsData, setting, mainTags, industryChains] = await Promise.all([
       services.getPools(),
       services.getPoolSetting(),
-      services.getMainTagInfo(),
+      services.getMainTagInfo() as Promise<MainTagInfo[]>,
+      services.getIndustryChain({ active: true }) as Promise<IndustryChainInfo[]>,
     ]);
 
-    globalTagsRef.current = globalTags;
+    mainTagsRef.current = Array.isArray(mainTags) ? mainTags : [];
+    industryChainsRef.current = Array.isArray(industryChains) ? industryChains : [];
 
     const defaultPool = poolsData.find(
-      (p: any) => p.stock_pool_name === setting.stock_pool_name
+      (p: Pool) => p.stock_pool_name === setting.stock_pool_name
     );
 
     setPools({
@@ -260,14 +341,19 @@ export default function useData() {
     setLoading({ stocks: false });
   }, []);
 
+  const showIndustryChainSegments = isIndustryChainMainTag(tags.current);
+
   return {
     pools,
     tags,
+    segments,
+    showIndustryChainSegments,
     stocks,
     loading,
     changePool,
     changeTags,
     changeActiveTag,
+    changeActiveSegment,
     sortState: sortRef.current,
     changeSort,
     selectStock,

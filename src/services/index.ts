@@ -53,6 +53,8 @@ const apis = {
   initConceptInfo: '/api/work/init_concept_info',
   initAreaInfo: '/api/work/init_area_info',
   initSubTagInfoFromConcepts: '/api/work/init_sub_tag_info_from_concepts',
+  buildMainTagSubTagInfoFromIndustryChain:
+    '/api/work/build_main_tag_sub_tag_info_from_industry_chain',
 
   // 根据关系重建 stock_tags
   buildStockMainTagByIndustry: '/api/work/build_stock_main_tag_by_industry',

@@ -182,6 +182,15 @@ export type IgnoredIndustryChainStock = {
 };
 
 /** ``POST /api/work/build_stock_industry_chain`` 成功体 */
+/** ``build_main_tag_sub_tag_info_from_industry_chain`` 统计 */
+export type BuildMainTagSubTagFromIndustryChainResult = {
+  chains_processed: number;
+  main_tag_created: number;
+  main_tag_updated: number;
+  sub_tag_created: number;
+  sub_tag_updated: number;
+};
+
 export type BuildStockIndustryChainResult = {
   industry_chain_id: string;
   industry_chain_name: string;
@@ -230,6 +239,12 @@ export type StockHistoryTag = {
 
 export type GlobalTag = {
   id: string;
+  name: string;
+  desc: string;
+};
+
+/** 交易页产业链主标签下的三级环节 tab */
+export type IndustryChainSegmentTab = {
   name: string;
   desc: string;
 };

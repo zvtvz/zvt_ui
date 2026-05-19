@@ -33,10 +33,13 @@ export default function Workspace() {
   const {
     pools,
     tags,
+    segments,
+    showIndustryChainSegments,
     stocks,
     loading,
     changePool,
     changeActiveTag,
+    changeActiveSegment,
     sortState,
     changeSort,
     selectStock,
@@ -245,6 +248,42 @@ export default function Workspace() {
           ) : null}
         </div>
       </div>
+      {showIndustryChainSegments && segments.items.length > 0 ? (
+        <div className="flex flex-row flex-nowrap overflow-x-auto pb-2 pl-1 min-h-[44px] items-center">
+          <Tooltip title="不按产业链环节筛选" variant="solid">
+            <Chip
+              color="primary"
+              onClick={() => changeActiveSegment(null)}
+              variant={segments.current === null ? 'solid' : 'soft'}
+              className="cursor-pointer mr-2 my-0 !px-4"
+              size="sm"
+              sx={{ borderRadius: 8 }}
+            >
+              <span className="text-[14px] py-1.5">全部</span>
+            </Chip>
+          </Tooltip>
+          {segments.items.map((segment) => {
+            const isSelected = segments.current === segment.name;
+            const tooltipTitle = segment.desc?.trim() || segment.name;
+            return (
+              <Tooltip key={segment.name} title={tooltipTitle} variant="solid">
+                <Chip
+                  color="primary"
+                  onClick={() =>
+                    changeActiveSegment(isSelected ? null : segment.name)
+                  }
+                  variant={isSelected ? 'solid' : 'soft'}
+                  className="cursor-pointer mr-2 my-0 !px-4"
+                  size="sm"
+                  sx={{ borderRadius: 8 }}
+                >
+                  <span className="text-[14px] py-1.5">{segment.name}</span>
+                </Chip>
+              </Tooltip>
+            );
+          })}
+        </div>
+      ) : null}
       {showTradeMain ? (
         <div className="flex flex-row items-stretch gap-2 mt-0 mb-2 min-w-0">
           {hotTopicsSidebarOpen ? (
