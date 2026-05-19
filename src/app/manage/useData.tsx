@@ -16,6 +16,7 @@ import {
   UpdateSubTagInfo,
   UpdateHiddenTagInfo,
   SanitizeStockTagReferencesResult,
+  ChangeStockMainTagResult,
   BuildStockIndustryChainResult,
   BuildStockTagsFromIndustryChainResult,
 } from '@/interfaces';
@@ -387,6 +388,29 @@ export function useManageData() {
     }
   }
 
+  async function changeStockMainTag(currentMainTag: string, newMainTag: string) {
+    const current = currentMainTag.trim();
+    const next = newMainTag.trim();
+    if (!current || !next) {
+      addLog('主标签切换失败：请填写当前展示主标与目标主标');
+      return;
+    }
+    if (current === next) {
+      addLog('主标签切换：当前与目标相同，无需执行');
+      return;
+    }
+    addLog(`主标签切换：「${current}」→「${next}」（含展示列与 main_tags 字典）…`);
+    try {
+      const res = (await services.changeStockMainTag({
+        current_main_tag: current,
+        new_main_tag: next,
+      })) as ChangeStockMainTagResult;
+      addLog(`主标签切换完成：更新 ${res.updated_count ?? 0} 只股票`);
+    } catch {
+      addLog(`主标签切换「${current}」→「${next}」失败`);
+    }
+  }
+
   return {
     mainTags: (mainTags.data ?? []) as MainTagInfo[],
     subTags: (subTags.data ?? []) as SubTagInfo[],
@@ -409,6 +433,7 @@ export function useManageData() {
     buildStockTagsFromIndustryChain,
     deleteStockIndustryChainEntries,
     sanitizeStockTagReferences,
+    changeStockMainTag,
     refreshByType,
     refreshBlockRefs,
   };

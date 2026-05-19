@@ -68,16 +68,14 @@ export function FutureEventsSection() {
   const { data: poolList = [] } = useRequest(services.getPools);
   const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
   const poolNameCandidates = useMemo(
-    () => [...poolNamesFromPools(poolList as Pool[])].sort((a, b) =>
-      a.localeCompare(b, 'zh-Hans-CN')
-    ),
+    () => poolNamesFromPools(poolList as Pool[]),
     [poolList]
   );
   const mainTagNameCandidates = useMemo(
     () =>
-      [...new Set((mainTagList as MainTagInfo[]).map((tag) => tag.name).filter(Boolean))].sort(
-        (a, b) => a.localeCompare(b, 'zh-Hans-CN')
-      ),
+      (mainTagList as MainTagInfo[])
+        .map((tag) => tag.name)
+        .filter((name): name is string => Boolean(name)),
     [mainTagList]
   );
 

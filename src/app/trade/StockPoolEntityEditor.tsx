@@ -59,10 +59,14 @@ export default function StockPoolEntityEditor({
     () => services.getConceptInfo({ active: true }) as Promise<ConceptOption[]>,
     { refreshDeps: [] }
   );
-  const conceptNames = (Array.isArray(conceptList) ? conceptList : [])
-    .map((item) => item?.name)
-    .filter((name): name is string => Boolean(name))
-    .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+  /** 顺序与 ``get_concept_info`` 返回一致，勿按中文名重排。 */
+  const conceptNames = useMemo(
+    () =>
+      (Array.isArray(conceptList) ? conceptList : [])
+        .map((item) => item?.name)
+        .filter((name): name is string => Boolean(name)),
+    [conceptList]
+  );
 
   const conceptNameSet = useMemo(() => new Set(conceptNames), [conceptNames]);
 
@@ -73,10 +77,14 @@ export default function StockPoolEntityEditor({
         : Promise.resolve([] as MainTagInfo[]),
     { refreshDeps: [enableMainTagMerge] }
   );
-  const mainTagNames = (Array.isArray(mainTagList) ? mainTagList : [])
-    .map((item) => item?.name)
-    .filter((name): name is string => Boolean(name))
-    .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+  /** 顺序与 ``get_main_tag_info`` 一致（priority 升序，同优先级按 name），勿按中文名重排。 */
+  const mainTagNames = useMemo(
+    () =>
+      (Array.isArray(mainTagList) ? mainTagList : [])
+        .map((item) => item?.name)
+        .filter((name): name is string => Boolean(name)),
+    [mainTagList]
+  );
   const mainTagNameSet = useMemo(() => new Set(mainTagNames), [mainTagNames]);
 
   const ignoreInIndustryChainParam = useMemo(() => {
@@ -239,7 +247,7 @@ export default function StockPoolEntityEditor({
         : [];
       const message = await mergeEntityIdsIntoRows(
         rawIds,
-        '该主标签下暂无已打标个股，请先构建主标签或手动打标'
+        '该主标签下暂无展示主标为此名的个股，请先构建主标签或手动打标'
       );
       setMainTagSyncMessage(message);
     } catch (err: unknown) {

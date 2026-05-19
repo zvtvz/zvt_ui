@@ -282,15 +282,6 @@ export function titleForAddModal(kind: TagPoolBlockKind | null): string {
   return '';
 }
 
-export function sortMainTagsByPriorityThenName(tags: MainTagInfo[]) {
-  return [...tags].sort((left, right) => {
-    if (left.priority !== right.priority) {
-      return left.priority - right.priority;
-    }
-    return left.name.localeCompare(right.name, 'zh-Hans-CN');
-  });
-}
-
 export function poolNamesFromPools(pools: Pool[]) {
   const names = pools
     .map((pool) => pool.stock_pool_name)

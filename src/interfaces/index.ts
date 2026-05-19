@@ -42,6 +42,11 @@ export type HiddenTagInfo = {
   areas: string[] | null;
 };
 
+/** 主标签切换（change_stock_main_tag） */
+export type ChangeStockMainTagResult = {
+  updated_count: number;
+};
+
 /** 标签补偿接口返回（与后端 SanitizeStockTagReferencesResultModel 一致） */
 export type SanitizeStockTagReferencesResult = {
   stocks_scanned: number;

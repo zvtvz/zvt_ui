@@ -11,7 +11,6 @@ import { RankCircleTitle } from '@/components/energy/RankCircleTitle';
 import {
   buildMainTagDescriptionMap,
   poolNamesFromPools,
-  sortMainTagsByPriorityThenName,
   TagAndPoolFourBlocks,
   type TagPoolBlockKind,
   titleForAddModal,
@@ -21,8 +20,8 @@ import TagPoolRelationAddDialog from '@/components/energy/TagPoolRelationAddDial
 export function EnergyHotTopicsSection() {
   const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
   const { data: poolList = [] } = useRequest(services.getPools);
-  const sortedMainTags = useMemo(
-    () => sortMainTagsByPriorityThenName(mainTagList as MainTagInfo[]),
+  const mainTagsInApiOrder = useMemo(
+    () => (Array.isArray(mainTagList) ? mainTagList : []) as MainTagInfo[],
     [mainTagList]
   );
   const mainTagDescriptionByName = useMemo(
@@ -65,8 +64,8 @@ export function EnergyHotTopicsSection() {
       addKind === 'positive_main'
         ? new Set(addTopic.positive_main_tags || [])
         : new Set(addTopic.negative_main_tags || []);
-    return sortedMainTags.filter((tag) => !current.has(tag.name));
-  }, [addKind, addTopic, sortedMainTags]);
+    return mainTagsInApiOrder.filter((tag) => !current.has(tag.name));
+  }, [addKind, addTopic, mainTagsInApiOrder]);
 
   const addPoolNameCandidates = useMemo(() => {
     if (!addKind || !addTopic) {

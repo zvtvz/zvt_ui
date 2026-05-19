@@ -72,6 +72,7 @@ const apis = {
   deleteStockIndustryChain: '/api/work/delete_stock_industry_chain',
   listEntityIdsFromMainTag: '/api/work/list_entity_ids_from_main_tag',
   sanitizeStockTagReferences: '/api/work/sanitize_stock_tag_references',
+  changeStockMainTag: '/api/work/change_stock_main_tag',
 
   // 手动打标
   getStockTags: 'GET /api/work/get_stock_tags',

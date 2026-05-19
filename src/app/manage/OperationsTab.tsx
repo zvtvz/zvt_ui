@@ -27,6 +27,7 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LocationCityIcon from '@mui/icons-material/LocationCity';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import HealingIcon from '@mui/icons-material/Healing';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import BlockSelectorDialog from './BlockSelectorDialog';
 import BuildStockIndustryChainDialog from './BuildStockIndustryChainDialog';
 import type { BuildStockTagsOptions, StockTagBuildType } from './useData';
@@ -58,6 +59,7 @@ const OPERATION_SECTION_LABELS = [
   '维护主标签',
   '维护次标签',
   '维护隐藏标签',
+  '主标签切换',
   '数据补偿',
 ] as const;
 
@@ -85,6 +87,7 @@ interface Props {
     entityIds: string[];
   }) => Promise<void>;
   onSanitizeStockTags: () => Promise<void>;
+  onChangeStockMainTag: (currentMainTag: string, newMainTag: string) => Promise<void>;
 }
 
 export default function OperationsTab({
@@ -101,9 +104,14 @@ export default function OperationsTab({
   onBuildStockTagsFromIndustryChain,
   onDeleteStockIndustryChainEntries,
   onSanitizeStockTags,
+  onChangeStockMainTag,
 }: Props) {
   const [operationSectionTab, setOperationSectionTab] = useState<number>(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const [switchCurrentMainTag, setSwitchCurrentMainTag] = useState('');
+  const [switchCurrentMainTagInput, setSwitchCurrentMainTagInput] = useState('');
+  const [switchNewMainTag, setSwitchNewMainTag] = useState('');
+  const [switchNewMainTagInput, setSwitchNewMainTagInput] = useState('');
   const [overwriteUserTags, setOverwriteUserTags] = useState(false);
 
   const [targetTagName, setTargetTagName] = useState('');
@@ -952,6 +960,119 @@ export default function OperationsTab({
         )}
 
         {operationSectionTab === 5 && (
+          <Card variant="plain" size="sm" sx={{ mb: 0 }}>
+            <CardContent>
+              <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
+                主标签切换
+              </Typography>
+              <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
+                展示主标为「当前」的股票：切换为目标主标，并同步 main_tags（移除旧键、写入新键）。
+                仅 main_tags 中含「当前」、展示为其他主标的股票：只将字典键改为目标名，理由不变，不改动展示主标。
+                不修改主标签目录名称。
+              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
+                  maxWidth: 420,
+                  mb: 2,
+                }}
+              >
+                <Box>
+                  <FormLabel sx={{ mb: 0.5 }}>当前展示主标</FormLabel>
+                  <Autocomplete
+                    size="sm"
+                    options={mainTagNames}
+                    placeholder="从列表选择"
+                    value={
+                      switchCurrentMainTag && mainTagNames.includes(switchCurrentMainTag)
+                        ? switchCurrentMainTag
+                        : null
+                    }
+                    onChange={(_, newValue) => {
+                      const next = typeof newValue === 'string' ? newValue : '';
+                      setSwitchCurrentMainTag(next);
+                      setSwitchCurrentMainTagInput(next);
+                    }}
+                    inputValue={switchCurrentMainTagInput}
+                    onInputChange={(_, newInputValue, reason) => {
+                      if (reason === 'reset') {
+                        setSwitchCurrentMainTagInput(switchCurrentMainTag);
+                        return;
+                      }
+                      setSwitchCurrentMainTagInput(newInputValue);
+                    }}
+                    sx={{ '--unstable_popup-zIndex': 20000 }}
+                    slotProps={{
+                      listbox: {
+                        placement: 'bottom-start',
+                        sx: { zIndex: 20000, maxHeight: 280 },
+                      },
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <FormLabel sx={{ mb: 0.5 }}>目标主标</FormLabel>
+                  <Autocomplete
+                    size="sm"
+                    options={mainTagNames}
+                    placeholder="从列表选择"
+                    value={
+                      switchNewMainTag && mainTagNames.includes(switchNewMainTag) ? switchNewMainTag : null
+                    }
+                    onChange={(_, newValue) => {
+                      const next = typeof newValue === 'string' ? newValue : '';
+                      setSwitchNewMainTag(next);
+                      setSwitchNewMainTagInput(next);
+                    }}
+                    inputValue={switchNewMainTagInput}
+                    onInputChange={(_, newInputValue, reason) => {
+                      if (reason === 'reset') {
+                        setSwitchNewMainTagInput(switchNewMainTag);
+                        return;
+                      }
+                      setSwitchNewMainTagInput(newInputValue);
+                    }}
+                    sx={{ '--unstable_popup-zIndex': 20000 }}
+                    slotProps={{
+                      listbox: {
+                        placement: 'bottom-start',
+                        sx: { zIndex: 20000, maxHeight: 280 },
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Button
+                  size="sm"
+                  className="!text-[12px]"
+                  startDecorator={<SwapHorizIcon />}
+                  variant="soft"
+                  color="primary"
+                  loading={busy === 'change_stock_main_tag'}
+                  disabled={
+                    !switchCurrentMainTag.trim() ||
+                    !switchNewMainTag.trim() ||
+                    !mainTagNames.includes(switchCurrentMainTag.trim()) ||
+                    !mainTagNames.includes(switchNewMainTag.trim()) ||
+                    switchCurrentMainTag.trim() === switchNewMainTag.trim()
+                  }
+                  onClick={() =>
+                    handle('change_stock_main_tag', () =>
+                      onChangeStockMainTag(switchCurrentMainTag.trim(), switchNewMainTag.trim())
+                    )
+                  }
+                >
+                  执行切换
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {operationSectionTab === 6 && (
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
