@@ -47,7 +47,7 @@ export default function StockDetail({
               className="!text-xs !leading-4 !min-h-[24px] !px-2"
               onClick={() => setCommentaryOpen(true)}
             >
-              点评
+              核心业务
             </Button>
             <Button
               size="sm"

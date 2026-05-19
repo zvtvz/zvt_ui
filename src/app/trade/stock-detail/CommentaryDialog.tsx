@@ -15,7 +15,7 @@ import {
 } from '@mui/joy';
 import { useRequest } from 'ahooks';
 import { useEffect, useMemo, useState } from 'react';
-import { COMMENTARY_MAX_LENGTH } from '@/constants/commentary';
+import { CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH } from '@/constants/coreBusiness';
 
 type StockTagsPayload = {
   main_tag?: string | null;
@@ -24,7 +24,7 @@ type StockTagsPayload = {
   sub_tag?: string | null;
   sub_tag_reason?: string | null;
   active_hidden_tags?: Record<string, string> | null;
-  essence?: string | null;
+  core_business_and_market_position?: string | null;
 };
 
 type Props = {
@@ -48,7 +48,7 @@ export default function CommentaryDialog({ open, stock, onCancel }: Props) {
       return;
     }
     if (stockTags !== undefined) {
-      setDraft(stockTags.essence?.trim() || '');
+      setDraft(stockTags.core_business_and_market_position?.trim() || '');
     }
   }, [open, stockTags]);
 
@@ -59,12 +59,12 @@ export default function CommentaryDialog({ open, stock, onCancel }: Props) {
 
   const canSave = Boolean(stockTags?.main_tag);
 
-  const remaining = COMMENTARY_MAX_LENGTH - [...draft].length;
+  const remaining = CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH - [...draft].length;
 
   const handleSave = async () => {
     const activeMain = stockTags?.main_tag;
     if (!activeMain) return;
-    if ([...draft].length > COMMENTARY_MAX_LENGTH) return;
+    if ([...draft].length > CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH) return;
     setSaving(true);
     try {
       const mainReason =
@@ -76,7 +76,7 @@ export default function CommentaryDialog({ open, stock, onCancel }: Props) {
         sub_tag: stockTags?.sub_tag || undefined,
         sub_tag_reason: stockTags?.sub_tag_reason || undefined,
         active_hidden_tags: activeHiddenTagsPayload,
-        essence: draft.trim() || '',
+        core_business_and_market_position: draft.trim() || '',
         keep_current_selections: false,
       });
       await refresh();
@@ -98,30 +98,30 @@ export default function CommentaryDialog({ open, stock, onCancel }: Props) {
         size="sm"
       >
         <ModalClose size="sm" />
-        <DialogTitle>点评</DialogTitle>
+        <DialogTitle>核心业务与市场地位</DialogTitle>
         <DialogContent sx={{ overflow: 'visible' }}>
           <Loading loading={loading} fixedTop={260}>
             <Stack spacing={1.5}>
               {!canSave ? (
                 <Typography level="body-sm" color="warning">
-                  请先为该股票设置主标签后再编辑点评。
+                  请先为该股票设置主标签后再编辑核心业务与市场地位。
                 </Typography>
               ) : null}
               <Typography level="body-xs" sx={{ opacity: 0.8 }}>
-                记录你对该标的的主观核心观点；当前不会自动生成，需手动维护。
+                描述该公司在所属产业链环节下的核心业务与市场地位（50 字内）；可由产业链构建标签同步，也可手动维护。
               </Typography>
-              <FormLabel>点评内容（最多 {COMMENTARY_MAX_LENGTH} 字）</FormLabel>
+              <FormLabel>内容</FormLabel>
               <Textarea
                 size="sm"
                 minRows={3}
-                placeholder="例如：看好订单兑现节奏，但估值已偏乐观……"
+                placeholder="例如：国内刻蚀设备龙头，先进制程份额持续提升……"
                 value={draft}
                 onChange={(event) => {
                   const next = event.target.value;
                   const chars = [...next];
                   setDraft(
-                    chars.length > COMMENTARY_MAX_LENGTH
-                      ? chars.slice(0, COMMENTARY_MAX_LENGTH).join('')
+                    chars.length > CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH
+                      ? chars.slice(0, CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH).join('')
                       : next
                   );
                 }}
@@ -140,7 +140,9 @@ export default function CommentaryDialog({ open, stock, onCancel }: Props) {
             size="sm"
             className="!ml-2"
             loading={saving}
-            disabled={!canSave || loading || [...draft].length > COMMENTARY_MAX_LENGTH}
+            disabled={
+              !canSave || loading || [...draft].length > CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH
+            }
             onClick={handleSave}
           >
             保存

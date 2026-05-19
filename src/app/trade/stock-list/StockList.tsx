@@ -14,7 +14,7 @@ function isTrendKind(value?: string | null) {
 function isSentimentKind(value?: string | null) {
   return Boolean(value?.startsWith(SENTIMENT_PREFIX));
 }
-function CommentaryCell({ value }: { value?: string | null }) {
+function CoreBusinessCell({ value }: { value?: string | null }) {
   const full = (value || '').trim();
   if (!full) return null;
   const inner = (
@@ -93,7 +93,7 @@ export default function StockList({
               <th>次标签</th>
               <th>隐藏标签</th>
               <th>资金结构</th>
-              <th>点评</th>
+              <th>核心业务与市场地位</th>
             </tr>
           </thead>
           <tbody>
@@ -159,7 +159,7 @@ export default function StockList({
                   <CapitalStructureChip value={stock.capital_structure} />
                 </td>
                 <td>
-                  <CommentaryCell value={stock.essence} />
+                  <CoreBusinessCell value={stock.core_business_and_market_position} />
                 </td>
               </tr>
               );

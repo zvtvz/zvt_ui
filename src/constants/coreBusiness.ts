@@ -1,0 +1,2 @@
+/** 与后端 ``zvt.apps.tag.common.CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH`` 一致（50 字内） */
+export const CORE_BUSINESS_AND_MARKET_POSITION_MAX_LENGTH = 50;
