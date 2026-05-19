@@ -174,6 +174,13 @@ export type StockIndustryChainListItem = {
   pre_core_business_and_market_position?: string | null;
 };
 
+/** 指定标的构建时，模型未写入 JSON 的个股 */
+export type IgnoredIndustryChainStock = {
+  entity_id: string;
+  code?: string | null;
+  name?: string | null;
+};
+
 /** ``POST /api/work/build_stock_industry_chain`` 成功体 */
 export type BuildStockIndustryChainResult = {
   industry_chain_id: string;
@@ -187,6 +194,14 @@ export type BuildStockIndustryChainResult = {
   skipped_stock_not_in_dataset: number;
   skipped_invalid_entries: number;
   skipped_messages: string[];
+  ignored_stocks: IgnoredIndustryChainStock[];
+};
+
+/** ``POST /api/work/delete_stock_industry_chain`` 成功体 */
+export type DeleteStockIndustryChainResult = {
+  industry_chain_name: string;
+  deleted_count: number;
+  requested_count: number;
 };
 
 /** ``POST /api/work/build_stock_tags_from_industry_chain`` 成功体 */

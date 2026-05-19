@@ -15,7 +15,6 @@ import {
   FormLabel,
   Radio,
   RadioGroup,
-  Sheet,
   Table,
   Tooltip,
 } from '@mui/joy';
@@ -29,6 +28,7 @@ import LocationCityIcon from '@mui/icons-material/LocationCity';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import HealingIcon from '@mui/icons-material/Healing';
 import BlockSelectorDialog from './BlockSelectorDialog';
+import BuildStockIndustryChainDialog from './BuildStockIndustryChainDialog';
 import type { BuildStockTagsOptions, StockTagBuildType } from './useData';
 import type { BlockInfo, HiddenTagInfo, IndustryChainInfo, MainTagInfo, StockIndustryChainListItem, SubTagInfo } from '@/interfaces';
 import services from '@/services';
@@ -71,10 +71,18 @@ interface Props {
   areas: BlockInfo[];
   onInit: (type: 'industry' | 'concept' | 'area' | 'sub_tags_from_concepts') => Promise<void>;
   onBuild: (type: StockTagBuildType, options: BuildStockTagsOptions) => Promise<void>;
-  onBuildStockIndustryChain: (options: { industryChainName: string }) => Promise<void>;
+  onBuildStockIndustryChain: (options: {
+    industryChainName: string;
+    entityIds?: string[] | null;
+  }) => Promise<void>;
   onBuildStockTagsFromIndustryChain: (options: {
     industryChainName: string;
+    entityIds?: string[] | null;
     overwriteSetByUser?: boolean;
+  }) => Promise<void>;
+  onDeleteStockIndustryChainEntries: (options: {
+    industryChainName: string;
+    entityIds: string[];
   }) => Promise<void>;
   onSanitizeStockTags: () => Promise<void>;
 }
@@ -91,6 +99,7 @@ export default function OperationsTab({
   onBuild,
   onBuildStockIndustryChain,
   onBuildStockTagsFromIndustryChain,
+  onDeleteStockIndustryChainEntries,
   onSanitizeStockTags,
 }: Props) {
   const [operationSectionTab, setOperationSectionTab] = useState<number>(0);
@@ -124,6 +133,8 @@ export default function OperationsTab({
   );
   const [selectedIndustryChainName, setSelectedIndustryChainName] = useState('');
   const [industryChainOverwriteUser, setIndustryChainOverwriteUser] = useState(true);
+  const [buildIndustryChainDialogOpen, setBuildIndustryChainDialogOpen] = useState(false);
+  const [selectedChainEntityIds, setSelectedChainEntityIds] = useState<Set<string>>(new Set());
 
   const chainRowsForIndustry = useRequest(
     async () => {
@@ -146,6 +157,54 @@ export default function OperationsTab({
       setSelectedIndustryChainName(names[0]);
     }
   }, [industryChainNameOptions, selectedIndustryChainName]);
+
+  useEffect(() => {
+    setSelectedChainEntityIds(new Set());
+  }, [selectedIndustryChainName]);
+
+  const chainTableRows = chainRowsForIndustry.data ?? [];
+
+  const selectableChainEntityIds = useMemo(
+    () =>
+      chainTableRows
+        .map((row) => row.entity_id)
+        .filter((entityId): entityId is string => Boolean(entityId)),
+    [chainTableRows]
+  );
+
+  const allChainRowsSelected =
+    selectableChainEntityIds.length > 0 &&
+    selectableChainEntityIds.every((entityId) => selectedChainEntityIds.has(entityId));
+
+  const chainHeaderCheckboxIndeterminate =
+    selectedChainEntityIds.size > 0 &&
+    !allChainRowsSelected &&
+    selectableChainEntityIds.some((entityId) => selectedChainEntityIds.has(entityId));
+
+  const selectedChainEntityIdList = useMemo(
+    () => [...selectedChainEntityIds],
+    [selectedChainEntityIds]
+  );
+
+  function toggleSelectAllChainRows() {
+    if (allChainRowsSelected) {
+      setSelectedChainEntityIds(new Set());
+      return;
+    }
+    setSelectedChainEntityIds(new Set(selectableChainEntityIds));
+  }
+
+  function toggleChainRow(entityId: string) {
+    setSelectedChainEntityIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(entityId)) {
+        next.delete(entityId);
+      } else {
+        next.add(entityId);
+      }
+      return next;
+    });
+  }
 
   const subTagBlockItems: BlockInfo[] = useMemo(
     () => subTags.map((tag) => ({ name: tag.name, desc: tag.desc })),
@@ -545,72 +604,17 @@ export default function OperationsTab({
                         </div>
                       ))}
                     </Box>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        alignItems: 'center',
-                        gap: 1,
-                        flexShrink: 0,
-                        marginLeft: 'auto',
-                      }}
-                    >
+                    <Box sx={{ flexShrink: 0, marginLeft: 'auto' }}>
                       <Button
                         size="sm"
                         variant="soft"
                         className="!text-[12px] !py-1"
                         loading={busy === 'industry_chain_build_table'}
                         disabled={!selectedIndustryChainName.trim()}
-                        onClick={() =>
-                          handle('industry_chain_build_table', async () => {
-                            await onBuildStockIndustryChain({
-                              industryChainName: selectedIndustryChainName,
-                            });
-                            chainRowsForIndustry.refresh();
-                          })
-                        }
+                        onClick={() => setBuildIndustryChainDialogOpen(true)}
                       >
                         构建个股产业链
                       </Button>
-                      <Sheet
-                        variant="outlined"
-                        sx={{
-                          display: 'inline-flex',
-                          flexDirection: 'row',
-                          flexWrap: 'wrap',
-                          alignItems: 'center',
-                          gap: 1,
-                          px: 1.25,
-                          py: 0.75,
-                          borderRadius: 'sm',
-                        }}
-                      >
-                        <Button
-                          size="sm"
-                          variant="soft"
-                          className="!text-[12px] !py-1"
-                          loading={busy === 'industry_chain_build_tags'}
-                          disabled={!selectedIndustryChainName.trim()}
-                          onClick={() =>
-                            handle('industry_chain_build_tags', async () => {
-                              await onBuildStockTagsFromIndustryChain({
-                                industryChainName: selectedIndustryChainName,
-                                overwriteSetByUser: industryChainOverwriteUser,
-                              });
-                              chainRowsForIndustry.refresh();
-                            })
-                          }
-                        >
-                          由产业链构建标签
-                        </Button>
-                        <Checkbox
-                          label="覆盖手动设置"
-                          checked={industryChainOverwriteUser}
-                          onChange={(event) => setIndustryChainOverwriteUser(event.target.checked)}
-                          size="sm"
-                          sx={{ py: 0, minHeight: 0, '& .MuiCheckbox-label': { fontSize: 12 } }}
-                        />
-                      </Sheet>
                     </Box>
                   </Box>
                   <div className="overflow-auto max-h-[420px]">
@@ -623,6 +627,15 @@ export default function OperationsTab({
                     >
                       <thead className="font-bold">
                         <tr>
+                          <th className="w-[40px]">
+                            <Checkbox
+                              size="sm"
+                              checked={allChainRowsSelected}
+                              indeterminate={chainHeaderCheckboxIndeterminate}
+                              disabled={!selectableChainEntityIds.length}
+                              onChange={toggleSelectAllChainRows}
+                            />
+                          </th>
                           <th className="w-[140px]">股票名称</th>
                           <th className="min-w-[128px] max-w-[180px]">标的 ID</th>
                           <th>产业链</th>
@@ -638,7 +651,7 @@ export default function OperationsTab({
                       <tbody>
                         {chainRowsForIndustry.loading && (
                           <tr>
-                            <td colSpan={10}>
+                            <td colSpan={11}>
                               <Typography level="body-sm" sx={{ p: 1 }}>
                                 加载中…
                               </Typography>
@@ -648,7 +661,7 @@ export default function OperationsTab({
                         {!chainRowsForIndustry.loading &&
                           !(chainRowsForIndustry.data?.length ?? 0) && (
                             <tr>
-                              <td colSpan={10}>
+                              <td colSpan={11}>
                                 <Typography level="body-sm" textColor="neutral.500" sx={{ p: 1 }}>
                                   暂无中间表数据；可先执行「构建个股产业链」。
                                 </Typography>
@@ -656,8 +669,22 @@ export default function OperationsTab({
                             </tr>
                           )}
                         {!chainRowsForIndustry.loading &&
-                          (chainRowsForIndustry.data ?? []).map((row) => (
+                          chainTableRows.map((row) => (
                             <tr key={row.id}>
+                              <td>
+                                <Checkbox
+                                  size="sm"
+                                  checked={Boolean(
+                                    row.entity_id && selectedChainEntityIds.has(row.entity_id)
+                                  )}
+                                  disabled={!row.entity_id}
+                                  onChange={() => {
+                                    if (row.entity_id) {
+                                      toggleChainRow(row.entity_id);
+                                    }
+                                  }}
+                                />
+                              </td>
                               <td>
                                 {(row.name || '').trim() || '—'}|
                                 <span className="opacity-90">{row.code ?? ''}</span>
@@ -690,6 +717,73 @@ export default function OperationsTab({
                       </tbody>
                     </Table>
                   </div>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                      gap: 1,
+                      width: '100%',
+                      mt: 1.5,
+                    }}
+                  >
+                    {selectedChainEntityIds.size > 0 && (
+                      <Typography level="body-xs" sx={{ opacity: 0.85 }}>
+                        已选 {selectedChainEntityIds.size} 只
+                      </Typography>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      className="!text-[12px] !py-1"
+                      loading={busy === 'industry_chain_delete'}
+                      disabled={
+                        !selectedIndustryChainName.trim() || selectedChainEntityIds.size === 0
+                      }
+                      onClick={() =>
+                        handle('industry_chain_delete', async () => {
+                          await onDeleteStockIndustryChainEntries({
+                            industryChainName: selectedIndustryChainName,
+                            entityIds: selectedChainEntityIdList,
+                          });
+                          setSelectedChainEntityIds(new Set());
+                          chainRowsForIndustry.refresh();
+                        })
+                      }
+                    >
+                      删除条目
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      className="!text-[12px] !py-1"
+                      loading={busy === 'industry_chain_build_tags'}
+                      disabled={!selectedIndustryChainName.trim()}
+                      onClick={() =>
+                        handle('industry_chain_build_tags', async () => {
+                          await onBuildStockTagsFromIndustryChain({
+                            industryChainName: selectedIndustryChainName,
+                            entityIds:
+                              selectedChainEntityIdList.length > 0
+                                ? selectedChainEntityIdList
+                                : null,
+                            overwriteSetByUser: industryChainOverwriteUser,
+                          });
+                          chainRowsForIndustry.refresh();
+                        })
+                      }
+                    >
+                      由产业链构建标签
+                    </Button>
+                    <Checkbox
+                      label="覆盖手动设置"
+                      checked={industryChainOverwriteUser}
+                      onChange={(event) => setIndustryChainOverwriteUser(event.target.checked)}
+                      size="sm"
+                      sx={{ py: 0, minHeight: 0, '& .MuiCheckbox-label': { fontSize: 12 } }}
+                    />
+                  </Box>
                 </>
               )}
             </CardContent>
@@ -861,6 +955,27 @@ export default function OperationsTab({
           </Box>
         </CardContent>
       </Card>
+
+      <BuildStockIndustryChainDialog
+        open={buildIndustryChainDialogOpen}
+        industryChainName={selectedIndustryChainName}
+        submitting={busy === 'industry_chain_build_table'}
+        onCancel={() => {
+          if (busy !== 'industry_chain_build_table') {
+            setBuildIndustryChainDialogOpen(false);
+          }
+        }}
+        onConfirm={(entityIds) => {
+          void handle('industry_chain_build_table', async () => {
+            await onBuildStockIndustryChain({
+              industryChainName: selectedIndustryChainName,
+              entityIds,
+            });
+            chainRowsForIndustry.refresh();
+            setBuildIndustryChainDialogOpen(false);
+          });
+        }}
+      />
     </Box>
   );
 }

@@ -38,6 +38,7 @@ export default function ManagePage() {
     buildStockTags,
     buildStockIndustryChain,
     buildStockTagsFromIndustryChain,
+    deleteStockIndustryChainEntries,
     sanitizeStockTagReferences,
     refreshBlockRefs,
   } = useManageData();
@@ -149,6 +150,7 @@ export default function ManagePage() {
             onBuild={buildStockTags}
             onBuildStockIndustryChain={buildStockIndustryChain}
             onBuildStockTagsFromIndustryChain={buildStockTagsFromIndustryChain}
+            onDeleteStockIndustryChainEntries={deleteStockIndustryChainEntries}
             onSanitizeStockTags={sanitizeStockTagReferences}
           />
         )}

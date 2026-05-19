@@ -230,17 +230,30 @@ export function useManageData() {
     concepts.refresh();
   }
 
-  async function buildStockIndustryChain(options: { industryChainName: string }) {
+  async function buildStockIndustryChain(options: {
+    industryChainName: string;
+    entityIds?: string[] | null;
+  }) {
     const trimmed = options.industryChainName.trim();
     if (!trimmed) {
       addLog('构建个股产业链：请先选择产业链');
       return;
     }
-    addLog(`构建个股产业链「${trimmed}」…（依赖本机 Cursor CLI，可能较久）`);
+    const entityIds =
+      options.entityIds?.filter((entityId) => String(entityId).trim()) ?? null;
+    const scopeNote =
+      entityIds && entityIds.length > 0
+        ? `，指定 ${entityIds.length} 只股票`
+        : '，发现模式（各环节由模型举例）';
+    addLog(`构建个股产业链「${trimmed}」${scopeNote}…（依赖本机 Cursor CLI，可能较久）`);
     try {
-      const res = (await services.buildStockIndustryChain({
-        industry_chain_name: trimmed,
-      })) as BuildStockIndustryChainResult | { detail?: unknown };
+      const body: Record<string, unknown> = { industry_chain_name: trimmed };
+      if (entityIds?.length) {
+        body.entity_ids = entityIds;
+      }
+      const res = (await services.buildStockIndustryChain(body)) as
+        | BuildStockIndustryChainResult
+        | { detail?: unknown };
       if (typeof (res as BuildStockIndustryChainResult).applied_entity_count !== 'number') {
         const detail = (res as { detail?: unknown }).detail;
         addLog(
@@ -254,8 +267,18 @@ export function useManageData() {
       const skipTail = ok.skipped_messages?.length
         ? `；提示：${ok.skipped_messages.slice(0, 3).join('；')}${ok.skipped_messages.length > 3 ? '…' : ''}`
         : '';
+      const ignoredTail =
+        ok.ignored_stocks?.length > 0
+          ? `；忽略（未写入 JSON，视为不属于产业链）${ok.ignored_stocks.length} 只：${ok.ignored_stocks
+              .slice(0, 5)
+              .map((stock) => {
+                const label = stock.name?.trim() || stock.code?.trim() || stock.entity_id;
+                return stock.code?.trim() ? `${label}(${stock.code})` : label;
+              })
+              .join('、')}${ok.ignored_stocks.length > 5 ? '…' : ''}`
+          : '';
       addLog(
-        `构建个股产业链「${trimmed}」完成：中间表写入 ${ok.applied_entity_count} 只；跳过（不在 Stock 数据集）${ok.skipped_stock_not_in_dataset}；无效项 ${ok.skipped_invalid_entries}${skipTail}`
+        `构建个股产业链「${trimmed}」完成：中间表写入 ${ok.applied_entity_count} 只；跳过（不在 Stock 数据集）${ok.skipped_stock_not_in_dataset}；无效项 ${ok.skipped_invalid_entries}${ignoredTail}${skipTail}`
       );
     } catch {
       addLog(`构建个股产业链「${trimmed}」失败`);
@@ -264,6 +287,7 @@ export function useManageData() {
 
   async function buildStockTagsFromIndustryChain(options: {
     industryChainName: string;
+    entityIds?: string[] | null;
     overwriteSetByUser?: boolean;
   }) {
     const trimmed = options.industryChainName.trim();
@@ -271,13 +295,25 @@ export function useManageData() {
       addLog('由产业链构建标签：请先选择产业链');
       return;
     }
+    const entityIds = (options.entityIds ?? []).map((id) => id.trim()).filter(Boolean);
     const overwrite = options.overwriteSetByUser ?? true;
-    addLog(`由产业链构建标签「${trimmed}」…`);
+    const scopeLabel = entityIds.length ? `${entityIds.length} 只` : '全部中间表标的';
+    addLog(`由产业链构建标签「${trimmed}」（${scopeLabel}）…`);
     try {
-      const res = (await services.buildStockTagsFromIndustryChain({
+      const requestBody: {
+        industry_chain_name: string;
+        overwrite_set_by_user: boolean;
+        entity_ids?: string[];
+      } = {
         industry_chain_name: trimmed,
         overwrite_set_by_user: overwrite,
-      })) as BuildStockTagsFromIndustryChainResult | { detail?: unknown };
+      };
+      if (entityIds.length) {
+        requestBody.entity_ids = entityIds;
+      }
+      const res = (await services.buildStockTagsFromIndustryChain(requestBody)) as
+        | BuildStockTagsFromIndustryChainResult
+        | { detail?: unknown };
       if (typeof (res as BuildStockTagsFromIndustryChainResult).applied_entity_count !== 'number') {
         const detail = (res as { detail?: unknown }).detail;
         addLog(
@@ -296,6 +332,43 @@ export function useManageData() {
       );
     } catch {
       addLog(`由产业链构建标签「${trimmed}」失败`);
+    }
+  }
+
+  async function deleteStockIndustryChainEntries(options: {
+    industryChainName: string;
+    entityIds: string[];
+  }) {
+    const trimmed = options.industryChainName.trim();
+    if (!trimmed) {
+      addLog('删除产业链条目：请先选择产业链');
+      return;
+    }
+    const entityIds = options.entityIds.map((id) => id.trim()).filter(Boolean);
+    if (!entityIds.length) {
+      addLog('删除产业链条目：请先在列表中勾选个股');
+      return;
+    }
+    addLog(`删除产业链条目「${trimmed}」（${entityIds.length} 只）…`);
+    try {
+      const res = (await services.deleteStockIndustryChain({
+        industry_chain_name: trimmed,
+        entity_ids: entityIds,
+      })) as { deleted_count?: number; requested_count?: number; detail?: unknown };
+      if (typeof res.deleted_count !== 'number') {
+        const detail = res.detail;
+        addLog(
+          `删除产业链条目失败：${
+            typeof detail === 'string' ? detail : JSON.stringify(detail ?? res)
+          }`
+        );
+        return;
+      }
+      addLog(
+        `删除产业链条目完成：已删除 ${res.deleted_count} 条（请求 ${res.requested_count ?? entityIds.length} 只）`
+      );
+    } catch {
+      addLog(`删除产业链条目「${trimmed}」失败`);
     }
   }
 
@@ -334,6 +407,7 @@ export function useManageData() {
     buildStockTags,
     buildStockIndustryChain,
     buildStockTagsFromIndustryChain,
+    deleteStockIndustryChainEntries,
     sanitizeStockTagReferences,
     refreshByType,
     refreshBlockRefs,
