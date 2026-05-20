@@ -76,7 +76,7 @@ interface Props {
   onBuild: (type: StockTagBuildType, options: BuildStockTagsOptions) => Promise<void>;
   onBuildStockIndustryChain: (options: {
     industryChainName: string;
-    entityIds?: string[] | null;
+    entityIds: string[];
   }) => Promise<void>;
   onBuildStockTagsFromIndustryChain: (options: {
     industryChainName: string;

@@ -31,6 +31,10 @@ type Props = {
   industryChainName?: string;
   /** 从概念/主标签并入时排除已在 ``StockIndustryChain`` 中该产业链的个股 */
   ignoreExistingInIndustryChain?: boolean;
+  /** 非空时：搜索、并入、手工添加仅限该集合（股票池限定） */
+  scopeEntityIds?: ReadonlySet<string> | null;
+  /** 限定说明，用于空列表提示 */
+  scopeLabel?: string;
 };
 
 type ConceptOption = { name: string };
@@ -43,6 +47,8 @@ export default function StockPoolEntityEditor({
   enableMainTagMerge = false,
   industryChainName = '',
   ignoreExistingInIndustryChain = false,
+  scopeEntityIds = null,
+  scopeLabel,
 }: Props) {
   const [searchKey, setSearchKey] = useState('');
   const [searchResults, setSearchResults] = useState<StockListItem[]>([]);
@@ -101,9 +107,19 @@ export default function StockPoolEntityEditor({
         return emptyMessage;
       }
       const existing = new Set(rows.map((row) => row.entity_id));
-      const newIds = rawIds.filter((entityId) => entityId && !existing.has(entityId));
-      const duplicateCount = rawIds.length - newIds.length;
+      let candidateIds = rawIds.filter((entityId) => entityId && !existing.has(entityId));
+      const duplicateCount = rawIds.length - candidateIds.length;
+      let outsideScopeCount = 0;
+      if (scopeEntityIds && scopeEntityIds.size > 0) {
+        const beforeScope = candidateIds.length;
+        candidateIds = candidateIds.filter((entityId) => scopeEntityIds.has(entityId));
+        outsideScopeCount = beforeScope - candidateIds.length;
+      }
+      const newIds = candidateIds;
       if (!newIds.length) {
+        if (outsideScopeCount > 0) {
+          return `共 ${rawIds.length} 只，${outsideScopeCount} 只不在${scopeLabel || '股票池'}内，其余已在列表中或无可并入`;
+        }
         return duplicateCount > 0
           ? `共 ${rawIds.length} 只，均已存在于列表中`
           : '没有可并入的标的';
@@ -133,9 +149,13 @@ export default function StockPoolEntityEditor({
       });
       const mergedIds = new Set(additions.map((row) => row.entity_id));
       onChange([...additions, ...rows.filter((row) => !mergedIds.has(row.entity_id))]);
-      return `已并入 ${additions.length} 只${duplicateCount > 0 ? `，跳过与列表重复的 ${duplicateCount} 只` : ''}`;
+      const scopeSuffix =
+        outsideScopeCount > 0
+          ? `，${outsideScopeCount} 只不在${scopeLabel || '股票池'}内已跳过`
+          : '';
+      return `已并入 ${additions.length} 只${duplicateCount > 0 ? `，跳过与列表重复的 ${duplicateCount} 只` : ''}${scopeSuffix}`;
     },
-    [onChange, rows]
+    [onChange, rows, scopeEntityIds, scopeLabel]
   );
 
   const runSearch = useCallback(async () => {
@@ -156,6 +176,13 @@ export default function StockPoolEntityEditor({
   }, [searchKey]);
 
   const addRow = (item: StockListItem) => {
+    if (
+      scopeEntityIds &&
+      scopeEntityIds.size > 0 &&
+      !scopeEntityIds.has(item.entity_id)
+    ) {
+      return;
+    }
     if (rows.some((r) => r.entity_id === item.entity_id)) {
       return;
     }
@@ -261,53 +288,29 @@ export default function StockPoolEntityEditor({
   const chipRows =
     expandAllChips || !hasHiddenChips ? rows : rows.slice(0, MAX_CHIP_PREVIEW);
 
+  const scopeMergeDisabled =
+    scopeEntityIds !== null && scopeEntityIds !== undefined && scopeEntityIds.size === 0;
+
+  const visibleSearchResults = useMemo(() => {
+    if (!scopeEntityIds || scopeEntityIds.size === 0) {
+      return searchResults;
+    }
+    return searchResults.filter((item) => scopeEntityIds.has(item.entity_id));
+  }, [searchResults, scopeEntityIds]);
+
+  const entityFormLabel = scopeLabel ? `A 股标的（限 ${scopeLabel}）` : 'A 股标的';
+
+  const emptyRowsHint = enableMainTagMerge
+    ? scopeLabel
+      ? '未添加标的；可从主标签/概念并入（仅限池内）或搜索池内股票'
+      : '未添加标的；可从主标签/概念并入或搜索后加入'
+    : scopeLabel
+      ? '未添加标的；可从概念并入（仅限池内）或搜索池内股票'
+      : '未添加标的，可从概念并入或搜索后加入';
+
   return (
     <FormControl className="mb-2">
-      <FormLabel>A 股标的</FormLabel>
-      <div className="flex flex-wrap gap-2 mb-3 items-end">
-        <Autocomplete
-          options={conceptNames}
-          size="sm"
-          loading={conceptListLoading}
-          placeholder={conceptListLoading ? '加载概念…' : '输入筛选或选择概念'}
-          value={conceptDraft || null}
-          onChange={(_event, newValue) => {
-            setConceptDraft((newValue as string) || '');
-            setConceptSyncMessage('');
-          }}
-          inputValue={conceptDraft}
-          onInputChange={(_event, newInputValue) => {
-            setConceptDraft(newInputValue);
-            setConceptSyncMessage('');
-          }}
-          sx={{
-            flex: '1 1 220px',
-            minWidth: 200,
-            width: '100%',
-            '--unstable_popup-zIndex': 20000,
-          }}
-          slotProps={{
-            listbox: {
-              placement: 'bottom-start',
-              sx: { zIndex: 20000, maxHeight: 280 },
-            },
-          }}
-        />
-        <Button
-          size="sm"
-          variant="outlined"
-          loading={conceptSyncLoading}
-          disabled={conceptListLoading || !conceptDraft.trim()}
-          onClick={() => void mergeFromConcept()}
-        >
-          从概念并入
-        </Button>
-      </div>
-      {conceptSyncMessage && (
-        <Typography level="body-xs" className="mb-2" sx={{ color: 'neutral.700' }}>
-          {conceptSyncMessage}
-        </Typography>
-      )}
+      <FormLabel>{entityFormLabel}</FormLabel>
       {enableMainTagMerge && (
         <>
           <div className="flex flex-wrap gap-2 mb-3 items-end">
@@ -326,6 +329,7 @@ export default function StockPoolEntityEditor({
                 setMainTagDraft(newInputValue);
                 setMainTagSyncMessage('');
               }}
+              disabled={scopeMergeDisabled}
               sx={{
                 flex: '1 1 220px',
                 minWidth: 200,
@@ -343,7 +347,7 @@ export default function StockPoolEntityEditor({
               size="sm"
               variant="outlined"
               loading={mainTagSyncLoading}
-              disabled={mainTagListLoading || !mainTagDraft.trim()}
+              disabled={scopeMergeDisabled || mainTagListLoading || !mainTagDraft.trim()}
               onClick={() => void mergeFromMainTag()}
             >
               从主标签并入
@@ -355,6 +359,51 @@ export default function StockPoolEntityEditor({
             </Typography>
           )}
         </>
+      )}
+      <div className="flex flex-wrap gap-2 mb-3 items-end">
+        <Autocomplete
+          options={conceptNames}
+          size="sm"
+          loading={conceptListLoading}
+          placeholder={conceptListLoading ? '加载概念…' : '输入筛选或选择概念'}
+          value={conceptDraft || null}
+          onChange={(_event, newValue) => {
+            setConceptDraft((newValue as string) || '');
+            setConceptSyncMessage('');
+          }}
+          inputValue={conceptDraft}
+          onInputChange={(_event, newInputValue) => {
+            setConceptDraft(newInputValue);
+            setConceptSyncMessage('');
+          }}
+          disabled={scopeMergeDisabled}
+          sx={{
+            flex: '1 1 220px',
+            minWidth: 200,
+            width: '100%',
+            '--unstable_popup-zIndex': 20000,
+          }}
+          slotProps={{
+            listbox: {
+              placement: 'bottom-start',
+              sx: { zIndex: 20000, maxHeight: 280 },
+            },
+          }}
+        />
+        <Button
+          size="sm"
+          variant="outlined"
+          loading={conceptSyncLoading}
+          disabled={scopeMergeDisabled || conceptListLoading || !conceptDraft.trim()}
+          onClick={() => void mergeFromConcept()}
+        >
+          从概念并入
+        </Button>
+      </div>
+      {conceptSyncMessage && (
+        <Typography level="body-xs" className="mb-2" sx={{ color: 'neutral.700' }}>
+          {conceptSyncMessage}
+        </Typography>
       )}
       <div className="flex gap-2 mb-2">
         <Input
@@ -374,12 +423,17 @@ export default function StockPoolEntityEditor({
           搜索
         </Button>
       </div>
-      {searchResults.length > 0 && (
+      {searchResults.length > 0 && visibleSearchResults.length === 0 && scopeEntityIds?.size ? (
+        <Typography level="body-xs" className="mb-2" sx={{ color: 'neutral.700' }}>
+          搜索结果均不在{scopeLabel || '股票池'}内
+        </Typography>
+      ) : null}
+      {visibleSearchResults.length > 0 && (
         <Box
           className="mb-2 max-h-[160px] overflow-y-auto rounded-md border border-neutral-200 bg-white p-1 text-sm"
           component="div"
         >
-          {searchResults.map((item) => (
+          {visibleSearchResults.map((item) => (
             <button
               key={item.entity_id}
               type="button"
@@ -410,6 +464,7 @@ export default function StockPoolEntityEditor({
             onChange([]);
             setExpandAllChips(false);
             setConceptSyncMessage('');
+            setMainTagSyncMessage('');
           }}
         >
           清空
@@ -472,9 +527,7 @@ export default function StockPoolEntityEditor({
           </Box>
         ))}
         {rows.length === 0 && (
-          <span className="text-sm text-neutral-500">
-            未添加标的，可从概念并入或搜索后加入
-          </span>
+          <span className="text-sm text-neutral-500">{emptyRowsHint}</span>
         )}
       </div>
     </FormControl>
