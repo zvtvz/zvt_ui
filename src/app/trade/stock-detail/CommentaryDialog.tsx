@@ -98,19 +98,19 @@ export default function CommentaryDialog({ open, stock, onCancel }: Props) {
         size="sm"
       >
         <ModalClose size="sm" />
-        <DialogTitle>核心业务与市场地位</DialogTitle>
+        <DialogTitle>市场地位</DialogTitle>
         <DialogContent sx={{ overflow: 'visible' }}>
           <Loading loading={loading} fixedTop={260}>
             <Stack spacing={1.5}>
               {!canSave ? (
                 <Typography level="body-sm" color="warning">
-                  请先为该股票设置主标签后再编辑核心业务与市场地位。
+                  请先为该股票设置主标签后再编辑市场地位。
                 </Typography>
               ) : null}
               <Typography level="body-xs" sx={{ opacity: 0.8 }}>
-                描述该公司在所属产业链环节下的核心业务与市场地位（50 字内）；可由产业链构建标签同步，也可手动维护。
+                描述该公司在所属产业链环节下的市场地位（50 字内）；可由产业链构建标签同步，也可手动维护。
               </Typography>
-              <FormLabel>内容</FormLabel>
+              <FormLabel>市场地位</FormLabel>
               <Textarea
                 size="sm"
                 minRows={3}

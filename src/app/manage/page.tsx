@@ -16,7 +16,7 @@ import BlockCatalogManageSection from './BlockCatalogManageSection';
 import IndustryChainManageSection from './IndustryChainManageSection';
 import StockPoolsTab from './StockPoolsTab';
 
-const SECTION_LABELS = ['标签信息', '构建标签', '当前热点', '跟踪事件', '股票池'] as const;
+const SECTION_LABELS = ['标签信息', '产业链标签', '当前热点', '跟踪事件', '股票池'] as const;
 const TAG_KIND_LABELS = ['主标签', '次标签', '隐藏标签', '行业信息', '概念信息', '产业链'] as const;
 
 export default function ManagePage() {

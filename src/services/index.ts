@@ -69,6 +69,8 @@ const apis = {
   buildStockIndustryChain: '/api/work/build_stock_industry_chain',
   buildStockTagsFromIndustryChain: '/api/work/build_stock_tags_from_industry_chain',
   listStockIndustryChain: 'GET /api/work/list_stock_industry_chain',
+  getStockIndustryChain: 'GET /api/work/get_stock_industry_chain',
+  updateStockIndustryChain: '/api/work/update_stock_industry_chain',
   deleteStockIndustryChain: '/api/work/delete_stock_industry_chain',
   listEntityIdsFromMainTag: '/api/work/list_entity_ids_from_main_tag',
   sanitizeStockTagReferences: '/api/work/sanitize_stock_tag_references',

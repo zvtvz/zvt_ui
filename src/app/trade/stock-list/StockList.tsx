@@ -82,7 +82,7 @@ export default function StockList({
               <th>主标签</th>
               <th>次标签</th>
               <th>隐藏标签</th>
-              <th>核心业务与市场地位</th>
+              <th>市场地位</th>
             </tr>
           </thead>
           <tbody>

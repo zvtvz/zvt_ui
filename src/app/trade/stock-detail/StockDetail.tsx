@@ -7,6 +7,7 @@ import { useState } from 'react';
 import StockChart from './StockChart';
 import CapitalStructureDialog from './CapitalStructureDialog';
 import CommentaryDialog from './CommentaryDialog';
+import StockIndustryChainDialog from './StockIndustryChainDialog';
 
 type Props = {
   loading: any;
@@ -22,6 +23,7 @@ export default function StockDetail({
   refreshNews,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [industryChainOpen, setIndustryChainOpen] = useState(false);
   const [capitalOpen, setCapitalOpen] = useState(false);
   const [commentaryOpen, setCommentaryOpen] = useState(false);
 
@@ -47,7 +49,7 @@ export default function StockDetail({
               className="!text-xs !leading-4 !min-h-[24px] !px-2"
               onClick={() => setCommentaryOpen(true)}
             >
-              核心业务
+              市场地位
             </Button>
             <Button
               size="sm"
@@ -55,6 +57,13 @@ export default function StockDetail({
               onClick={() => setOpen(true)}
             >
               更新标签
+            </Button>
+            <Button
+              size="sm"
+              className="!text-xs !leading-4 !min-h-[24px] !px-2"
+              onClick={() => setIndustryChainOpen(true)}
+            >
+              更新产业链
             </Button>
           </div>
         </div>
@@ -92,6 +101,13 @@ export default function StockDetail({
           open={commentaryOpen}
           stock={stocks.current}
           onCancel={() => setCommentaryOpen(false)}
+        />
+      )}
+      {industryChainOpen && stocks.current && (
+        <StockIndustryChainDialog
+          open={industryChainOpen}
+          stock={stocks.current}
+          onCancel={() => setIndustryChainOpen(false)}
         />
       )}
     </>

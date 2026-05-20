@@ -30,6 +30,7 @@ import HealingIcon from '@mui/icons-material/Healing';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import BlockSelectorDialog from './BlockSelectorDialog';
 import BuildStockIndustryChainDialog from './BuildStockIndustryChainDialog';
+import SortCell from '@/app/trade/stock-list/SortCell';
 import type { BuildStockTagsOptions, StockTagBuildType } from './useData';
 import type { BlockInfo, HiddenTagInfo, IndustryChainInfo, MainTagInfo, StockIndustryChainListItem, SubTagInfo } from '@/interfaces';
 import services from '@/services';
@@ -145,6 +146,10 @@ export default function OperationsTab({
   const [selectedChainEntityIds, setSelectedChainEntityIds] = useState<Set<string>>(new Set());
   const [chainListFilterSegmentChanged, setChainListFilterSegmentChanged] = useState(false);
   const [chainListFilterPositionChanged, setChainListFilterPositionChanged] = useState(false);
+  const [chainSegmentSort, setChainSegmentSort] = useState<{
+    field: string | undefined;
+    type: 'asc' | 'desc' | undefined;
+  }>({ field: undefined, type: undefined });
 
   const chainRowsForIndustry = useRequest(
     async () => {
@@ -181,9 +186,27 @@ export default function OperationsTab({
     setSelectedChainEntityIds(new Set());
     setChainListFilterSegmentChanged(false);
     setChainListFilterPositionChanged(false);
+    setChainSegmentSort({ field: undefined, type: undefined });
   }, [selectedIndustryChainName]);
 
   const chainTableRows = chainRowsForIndustry.data ?? [];
+
+  const chainTableRowsDisplay = useMemo(() => {
+    const rows = [...chainTableRows];
+    if (chainSegmentSort.field !== 'industry_segment' || !chainSegmentSort.type) {
+      return rows;
+    }
+    const direction = chainSegmentSort.type === 'asc' ? 1 : -1;
+    rows.sort((left, right) => {
+      const leftSegment = (left.industry_segment ?? '').trim();
+      const rightSegment = (right.industry_segment ?? '').trim();
+      if (!leftSegment && !rightSegment) return 0;
+      if (!leftSegment) return 1;
+      if (!rightSegment) return -1;
+      return leftSegment.localeCompare(rightSegment, 'zh-CN') * direction;
+    });
+    return rows;
+  }, [chainTableRows, chainSegmentSort]);
 
   const chainListFiltersActive =
     chainListFilterSegmentChanged || chainListFilterPositionChanged;
@@ -699,13 +722,26 @@ export default function OperationsTab({
                           <th className="w-[140px]">股票名称</th>
                           <th className="min-w-[128px] max-w-[180px]">标的 ID</th>
                           <th>产业链</th>
-                          <th>环节</th>
+                          <th>
+                            <SortCell
+                              sortState={chainSegmentSort}
+                              name="industry_segment"
+                              changeSort={async (field, type) => {
+                                setChainSegmentSort({
+                                  field,
+                                  type: type as 'asc' | 'desc',
+                                });
+                              }}
+                            >
+                              环节
+                            </SortCell>
+                          </th>
                           <th>定位</th>
-                          <th className="min-w-[200px]">核心业务与市场地位</th>
+                          <th className="min-w-[200px]">市场地位</th>
                           <th>上轮产业链</th>
                           <th>上轮环节</th>
                           <th>上轮定位</th>
-                          <th className="min-w-[160px]">上轮核心业务与市场地位</th>
+                          <th className="min-w-[160px]">上轮市场地位</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -730,7 +766,7 @@ export default function OperationsTab({
                           </tr>
                         )}
                         {!chainRowsForIndustry.loading &&
-                          chainTableRows.map((row) => (
+                          chainTableRowsDisplay.map((row) => (
                             <tr key={row.id}>
                               <td>
                                 <Checkbox
