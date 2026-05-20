@@ -1,18 +1,23 @@
 'use client';
 
-import { Chip, Table, Tooltip } from '@mui/joy';
+import { Table, Tooltip } from '@mui/joy';
 import { CircularProgress } from '@mui/joy';
 
 import SortCell from './SortCell';
 import { toMoney } from '@/utils';
 import Blink from './Blink';
-import { TREND_PREFIX, SENTIMENT_PREFIX } from '@/constants/capitalStructure';
+import { SENTIMENT_PREFIX, TREND_PREFIX } from '@/constants/capitalStructure';
 
-function isTrendKind(value?: string | null) {
-  return Boolean(value?.startsWith(TREND_PREFIX));
-}
-function isSentimentKind(value?: string | null) {
-  return Boolean(value?.startsWith(SENTIMENT_PREFIX));
+/** 仅情绪类资金结构用于行背景高亮；趋势类与其它值不做区分。 */
+function stockListRowBackgroundClass(
+  capitalStructure: string | null | undefined,
+  isSelected: boolean
+): string {
+  if (isSelected) return 'bg-[#E3FBE3]';
+  const value = capitalStructure?.trim();
+  if (!value || value.startsWith(TREND_PREFIX)) return '';
+  if (value.startsWith(SENTIMENT_PREFIX)) return 'bg-amber-50';
+  return '';
 }
 function CoreBusinessCell({ value }: { value?: string | null }) {
   const full = (value || '').trim();
@@ -29,21 +34,6 @@ function CoreBusinessCell({ value }: { value?: string | null }) {
     >
       {inner}
     </Tooltip>
-  );
-}
-
-function CapitalStructureChip({ value }: { value?: string | null }) {
-  if (!value) return null;
-  const trend = isTrendKind(value);
-  return (
-    <Chip
-      size="sm"
-      variant="soft"
-      color={trend ? 'primary' : 'warning'}
-      sx={{ fontWeight: 'bold' }}
-    >
-      {value}
-    </Chip>
   );
 }
 
@@ -92,19 +82,16 @@ export default function StockList({
               <th>主标签</th>
               <th>次标签</th>
               <th>隐藏标签</th>
-              <th>资金结构</th>
               <th>核心业务与市场地位</th>
             </tr>
           </thead>
           <tbody>
             {stocks?.data?.map((stock: any) => {
               const isSelected = stock.id === (stocks.current as any)?.id;
-              const isSentiment = isSentimentKind(stock.capital_structure);
-              const rowBg = isSelected
-                ? 'bg-[#E3FBE3]'
-                : isSentiment
-                  ? 'bg-amber-50'
-                  : '';
+              const rowBg = stockListRowBackgroundClass(
+                stock.capital_structure,
+                isSelected
+              );
               return (
               <tr
                 key={stock.id}
@@ -154,9 +141,6 @@ export default function StockList({
                       {(stock.hidden_tags || []).join('、')}
                     </div>
                   </Tooltip>
-                </td>
-                <td>
-                  <CapitalStructureChip value={stock.capital_structure} />
                 </td>
                 <td>
                   <CoreBusinessCell value={stock.core_business_and_market_position} />
