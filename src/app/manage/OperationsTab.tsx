@@ -35,6 +35,17 @@ import type { BuildStockTagsOptions, StockTagBuildType } from './useData';
 import type { BlockInfo, HiddenTagInfo, IndustryChainInfo, MainTagInfo, StockIndustryChainListItem, SubTagInfo } from '@/interfaces';
 import services from '@/services';
 
+function formatIndustryChainBuildTimestamp(value?: string | null): string {
+  if (!value) {
+    return '—';
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+  return parsed.toLocaleString('zh-CN', { hour12: false });
+}
+
 function IndustryChainClampCell({ value }: { value?: string | null }) {
   const full = (value || '').trim();
   if (!full) {
@@ -76,7 +87,7 @@ interface Props {
   onBuild: (type: StockTagBuildType, options: BuildStockTagsOptions) => Promise<void>;
   onBuildStockIndustryChain: (options: {
     industryChainName: string;
-    entityIds: string[];
+    entityIds?: string[] | null;
   }) => Promise<void>;
   onBuildStockTagsFromIndustryChain: (options: {
     industryChainName: string;
@@ -721,6 +732,7 @@ export default function OperationsTab({
                           </th>
                           <th className="w-[140px]">股票名称</th>
                           <th className="min-w-[128px] max-w-[180px]">标的 ID</th>
+                          <th className="w-[150px]">构建时间</th>
                           <th>产业链</th>
                           <th>
                             <SortCell
@@ -747,7 +759,7 @@ export default function OperationsTab({
                       <tbody>
                         {chainRowsForIndustry.loading && (
                           <tr>
-                            <td colSpan={11}>
+                            <td colSpan={12}>
                               <Typography level="body-sm" sx={{ p: 1 }}>
                                 加载中…
                               </Typography>
@@ -756,7 +768,7 @@ export default function OperationsTab({
                         )}
                         {!chainRowsForIndustry.loading && chainTableRows.length === 0 && (
                           <tr>
-                            <td colSpan={11}>
+                            <td colSpan={12}>
                               <Typography level="body-sm" textColor="neutral.500" sx={{ p: 1 }}>
                                 {chainListFiltersActive
                                   ? '当前筛选无匹配记录。'
@@ -796,6 +808,9 @@ export default function OperationsTab({
                                     {row.entity_id}
                                   </div>
                                 </Tooltip>
+                              </td>
+                              <td className="text-xs whitespace-nowrap opacity-90">
+                                {formatIndustryChainBuildTimestamp(row.timestamp)}
                               </td>
                               <td>{row.industry_chain ?? ''}</td>
                               <td>{row.industry_segment ?? ''}</td>

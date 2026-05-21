@@ -30,7 +30,8 @@ type Props = {
   industryChainName: string;
   submitting?: boolean;
   onCancel: () => void;
-  onConfirm: (entityIds: string[]) => void;
+  /** ``null`` 表示发现模式（不指定个股，由 Agent 在各环节自行举例） */
+  onConfirm: (entityIds: string[] | null) => void;
 };
 
 export default function BuildStockIndustryChainDialog({
@@ -93,17 +94,7 @@ export default function BuildStockIndustryChainDialog({
       setConfirmHint('');
       return;
     }
-    const names = stockPoolNameOptions;
-    if (!names.length) {
-      setSelectedStockPoolName('');
-      setStockPoolInput('');
-      return;
-    }
-    if (!selectedStockPoolName || !names.includes(selectedStockPoolName)) {
-      setSelectedStockPoolName(names[0]);
-      setStockPoolInput(names[0]);
-    }
-  }, [open, stockPoolNameOptions, selectedStockPoolName]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -164,43 +155,46 @@ export default function BuildStockIndustryChainDialog({
 
   function handleConfirm() {
     setConfirmHint('');
-    if (!trimmedPoolName) {
-      setConfirmHint('请先选择股票池');
+    if (!trimmedChainName) {
+      setConfirmHint('请先选择产业链');
       return;
     }
-    if (!stockPoolNameSet.has(trimmedPoolName)) {
-      setConfirmHint('请从下拉列表中选择有效的股票池');
+    if (trimmedPoolName && !stockPoolNameSet.has(trimmedPoolName)) {
+      setConfirmHint('请从下拉列表中选择有效的股票池，或清空「限定股票池」');
       return;
     }
-    if (poolEntitiesLoading) {
+    if (trimmedPoolName && poolEntitiesLoading) {
       setConfirmHint('股票池成分加载中，请稍候');
       return;
     }
+
     const fromRows = entityRows
       .map((row) => row.entity_id)
-      .filter((entityId) => entityId && scopeEntityIds.has(entityId));
-    const entityIds = fromRows.length > 0 ? fromRows : [...scopeEntityIds];
-    if (!entityIds.length) {
-      setConfirmHint('所选股票池暂无成分股，请先在「股票池」页维护');
+      .filter((entityId) => {
+        if (!entityId) {
+          return false;
+        }
+        if (trimmedPoolName && scopeEntityIds.size > 0) {
+          return scopeEntityIds.has(entityId);
+        }
+        return true;
+      });
+
+    if (fromRows.length > 0) {
+      onConfirm(fromRows);
       return;
     }
-    onConfirm(entityIds);
+
+    onConfirm(null);
   }
 
   const confirmDisabled =
-    submitting ||
-    !trimmedChainName ||
-    !trimmedPoolName ||
-    poolsLoading ||
-    poolEntitiesLoading ||
-    poolEntityCount === 0;
+    submitting || !trimmedChainName || (Boolean(trimmedPoolName) && poolEntitiesLoading);
 
   const confirmLabel =
     entityRows.length > 0
-      ? `开始构建（已选 ${entityRows.length} 只）`
-      : poolEntityCount > 0
-        ? `开始构建（股票池共 ${poolEntityCount} 只）`
-        : '开始构建';
+      ? `开始构建（${entityRows.length} 只）`
+      : '开始构建（发现模式）';
 
   return (
     <Modal open={open} onClose={submitting ? undefined : onCancel}>
@@ -210,11 +204,11 @@ export default function BuildStockIndustryChainDialog({
         <DialogContent>
           <Typography level="body-sm" className="mb-2 opacity-80">
             {trimmedChainName
-              ? `产业链「${trimmedChainName}」：须先选定股票池，再指定池内 A 股标的后调用 Agent。`
+              ? `产业链「${trimmedChainName}」：可指定 A 股标的；不选任何个股时为发现模式（各环节由模型自行举例）。`
               : '请先选择产业链'}
           </Typography>
-          <FormControl className="mb-2" required>
-            <FormLabel>限定股票池</FormLabel>
+          <FormControl className="mb-2">
+            <FormLabel>限定股票池（可选）</FormLabel>
             {poolsLoading ? (
               <Typography level="body-xs">加载股票池…</Typography>
             ) : !stockPoolNameOptions.length ? (
@@ -225,7 +219,7 @@ export default function BuildStockIndustryChainDialog({
               <Autocomplete
                 options={stockPoolNameOptions}
                 size="sm"
-                placeholder="选择股票池"
+                placeholder="可不选；选定后并入/搜索仅限池内"
                 value={trimmedPoolName || null}
                 inputValue={stockPoolInput}
                 onChange={(_event, newValue) => {
@@ -236,6 +230,9 @@ export default function BuildStockIndustryChainDialog({
                 }}
                 onInputChange={(_event, newInputValue) => {
                   setStockPoolInput(newInputValue);
+                  if (!newInputValue.trim()) {
+                    setSelectedStockPoolName('');
+                  }
                   setConfirmHint('');
                 }}
                 disabled={submitting}
@@ -251,7 +248,7 @@ export default function BuildStockIndustryChainDialog({
             {trimmedPoolName && !poolEntitiesLoading ? (
               <Typography level="body-xs" className="mt-1 opacity-75">
                 池内 {poolEntityCount} 只
-                {poolEntityCount === 0 ? '（无法构建）' : ''}
+                {poolEntityCount === 0 ? '（可先维护股票池或使用发现模式）' : ''}
               </Typography>
             ) : null}
             {poolEntitiesLoading ? (
@@ -292,7 +289,7 @@ export default function BuildStockIndustryChainDialog({
             scopeLabel={trimmedPoolName ? `股票池「${trimmedPoolName}」` : undefined}
           />
           <Typography level="body-xs" className="mt-1 opacity-70">
-            未单独勾选时，将对所选股票池内全部成分构建；从主标签/概念并入仅加入池内标的。
+            已选 {entityRows.length} 只时将仅对这些股票分类；清空列表后确认则走发现模式。选定股票池时，从主标签/概念并入与搜索仅限池内。
           </Typography>
           {confirmHint ? (
             <Typography level="body-xs" className="mt-1" textColor="danger">

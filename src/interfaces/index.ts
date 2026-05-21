@@ -166,6 +166,8 @@ export type UpdateIndustryChain = {
 export type StockIndustryChainListItem = {
   id: string;
   entity_id: string;
+  /** 最近一次 Agent 构建或手动更新时间 */
+  timestamp?: string | null;
   entity_type?: string | null;
   code?: string | null;
   name?: string | null;
