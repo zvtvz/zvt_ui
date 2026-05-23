@@ -81,7 +81,7 @@ export default function StockList({
               </th>
               <th>主标签</th>
               <th>次标签</th>
-              <th>隐藏标签</th>
+              <th>{renderHeaderCell('hidden_tag', '隐藏标签')}</th>
               <th>市场地位</th>
             </tr>
           </thead>
