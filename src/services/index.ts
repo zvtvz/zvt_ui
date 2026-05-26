@@ -44,6 +44,7 @@ const apis = {
   createIndustryChain: '/api/work/create_industry_chain',
   getIndustryChain: 'GET /api/work/get_industry_chain',
   updateIndustryChain: '/api/work/update_industry_chain',
+  addIndustryChainSegment: '/api/work/add_industry_chain_segment',
   deleteIndustryChain: 'DELETE /api/work/delete_industry_chain',
   setIndustryChainActive: '/api/work/set_industry_chain_active',
   batchSetIndustryChainActive: '/api/work/batch_set_industry_chain_active',
@@ -81,6 +82,7 @@ const apis = {
   listStocks: 'GET /api/work/list_stocks',
   getStockTagCatalogOptions: 'GET /api/work/get_stock_tag_catalog_options',
   removeStockTag: '/api/work/remove_stock_tag',
+  updateStockTagReason: '/api/work/update_stock_tag_reason',
   updateStockTags: '/api/work/set_stock_tags',
   batchUpdateStockTags: '/api/work/batch_set_stock_tags',
 

@@ -16,6 +16,7 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 
 import useData, { INDUSTRY_CHAIN_OTHER_SEGMENT } from './useData';
 import CreateStockPoolDialog from './CreateStockPoolDialog';
+import AddIndustryChainSegmentDialog from './AddIndustryChainSegmentDialog';
 import UpdateStockPoolDialog from './UpdateStockPoolDialog';
 import { useCallback, useEffect, useState } from 'react';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
@@ -46,8 +47,10 @@ export default function Workspace() {
     dailyStats,
     updateStockEvents,
     refreshPools,
+    refreshIndustryChainSegments,
   } = useData();
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
+  const [addSegmentOpen, setAddSegmentOpen] = useState(false);
   const [updatePoolOpen, setUpdatePoolOpen] = useState(false);
   const [hotTopicsSidebarOpen, setHotTopicsSidebarOpen] = useState(true);
   const [stockDetailSidebarOpen, setStockDetailSidebarOpen] = useState(true);
@@ -248,7 +251,7 @@ export default function Workspace() {
           ) : null}
         </div>
       </div>
-      {showIndustryChainSegments && segments.items.length > 0 ? (
+      {showIndustryChainSegments ? (
         <div className="flex flex-row flex-nowrap overflow-x-auto pb-2 pl-1 min-h-[44px] items-center">
           <Tooltip title="不按产业链环节筛选" variant="solid">
             <Chip
@@ -304,6 +307,20 @@ export default function Workspace() {
             >
               <span className="text-[14px] py-1.5">其他</span>
             </Chip>
+          </Tooltip>
+          <Tooltip title="添加产业链环节" variant="solid">
+            <span>
+              <Button
+                type="button"
+                variant="plain"
+                size="sm"
+                color="neutral"
+                className="!min-w-0 !px-1.5 h-8 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9] flex-shrink-0"
+                onClick={() => setAddSegmentOpen(true)}
+              >
+                <Add sx={{ fontSize: 18 }} />
+              </Button>
+            </span>
           </Tooltip>
         </div>
       ) : null}
@@ -422,6 +439,14 @@ export default function Workspace() {
               </Card>
             ))}
         </div>
+      ) : null}
+      {tags.current?.is_industry_chain && tags.current?.name ? (
+        <AddIndustryChainSegmentDialog
+          open={addSegmentOpen}
+          industryChainName={tags.current.name}
+          onAdded={refreshIndustryChainSegments}
+          onCancel={() => setAddSegmentOpen(false)}
+        />
       ) : null}
       <CreateStockPoolDialog
         open={createPoolOpen}

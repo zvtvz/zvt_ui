@@ -162,6 +162,12 @@ export type UpdateIndustryChain = {
   active: boolean;
 };
 
+export type AddIndustryChainSegment = {
+  industry_chain_name: string;
+  segment_name: string;
+  segment_desc?: string | null;
+};
+
 /** ``GET /api/work/list_stock_industry_chain`` 单行（不含 ``chain_apply_payload``） */
 export type StockIndustryChainListItem = {
   id: string;

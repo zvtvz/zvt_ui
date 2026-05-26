@@ -22,6 +22,18 @@ type TagKind = 'main_tag' | 'sub_tag' | 'hidden_tag';
 
 type AddKind = 'main' | 'sub' | 'hidden';
 
+type EditTarget = {
+  tagType: TagKind;
+  name: string;
+  reason: string;
+};
+
+function tagKindLabel(tagType: TagKind): string {
+  if (tagType === 'main_tag') return '主标签';
+  if (tagType === 'sub_tag') return '次标签';
+  return '隐藏标签';
+}
+
 type StockTagsResponse = {
   entity_id: string;
   main_tag?: string | null;
@@ -112,8 +124,11 @@ export default function TagUpdateDialog({
   const [actionLoading, setActionLoading] = useState(false);
   const [addKind, setAddKind] = useState<AddKind | null>(null);
   const [draft, setDraft] = useState({ tag: '', reason: '' });
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [editReasonDraft, setEditReasonDraft] = useState('');
 
   const addDialogOpen = addKind !== null;
+  const editDialogOpen = editTarget !== null;
 
   const {
     data: stockTags,
@@ -160,8 +175,38 @@ export default function TagUpdateDialog({
     if (!open) {
       setAddKind(null);
       setDraft({ tag: '', reason: '' });
+      setEditTarget(null);
+      setEditReasonDraft('');
     }
   }, [open]);
+
+  const openEditReason = (tagType: TagKind, name: string, reason: string) => {
+    setEditTarget({ tagType, name, reason });
+    setEditReasonDraft(reason || '');
+  };
+
+  const closeEditReason = () => {
+    setEditTarget(null);
+    setEditReasonDraft('');
+  };
+
+  const handleSaveEditReason = async () => {
+    if (!editTarget) return;
+    setActionLoading(true);
+    try {
+      await services.updateStockTagReason({
+        entity_id: stock.entity_id,
+        tag_type: editTarget.tagType,
+        tag_name: editTarget.name,
+        reason: editReasonDraft,
+      });
+      closeEditReason();
+      await refreshStockTags();
+      if (addDialogOpen) await refreshCatalog();
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const refreshAll = useCallback(async () => {
     await Promise.all([refreshStockTags(), refreshCatalog()]);
@@ -414,6 +459,17 @@ export default function TagUpdateDialog({
                               </Typography>
                             </Box>
                             <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Button
+                                size="sm"
+                                variant="plain"
+                                color="neutral"
+                                loading={actionLoading}
+                                onClick={() =>
+                                  openEditReason('main_tag', name, reason || '')
+                                }
+                              >
+                                编辑
+                              </Button>
                               {!active ? (
                                 <Button
                                   size="sm"
@@ -488,6 +544,17 @@ export default function TagUpdateDialog({
                               </Typography>
                             </Box>
                             <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Button
+                                size="sm"
+                                variant="plain"
+                                color="neutral"
+                                loading={actionLoading}
+                                onClick={() =>
+                                  openEditReason('sub_tag', name, reason || '')
+                                }
+                              >
+                                编辑
+                              </Button>
                               {!active ? (
                                 <Button
                                   size="sm"
@@ -569,6 +636,17 @@ export default function TagUpdateDialog({
                               </Typography>
                             </Box>
                             <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Button
+                                size="sm"
+                                variant="plain"
+                                color="neutral"
+                                loading={actionLoading}
+                                onClick={() =>
+                                  openEditReason('hidden_tag', name, reason || '')
+                                }
+                              >
+                                编辑
+                              </Button>
                               {!active ? (
                                 <Button
                                   size="sm"
@@ -626,6 +704,43 @@ export default function TagUpdateDialog({
           <DialogActions sx={{ justifyContent: 'flex-start' }}>
             <Button size="sm" variant="plain" onClick={onCancel}>
               取消
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+
+      <Modal open={editDialogOpen} onClose={closeEditReason}>
+        <ModalDialog sx={{ maxWidth: 420, width: '100%' }} size="sm">
+          <ModalClose size="sm" />
+          <DialogTitle>
+            编辑原因
+            {editTarget
+              ? ` · ${tagKindLabel(editTarget.tagType)} · ${editTarget.name}`
+              : ''}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={1.5}>
+              <FormLabel>原因</FormLabel>
+              <Textarea
+                size="sm"
+                minRows={3}
+                placeholder="填写该标签的原因"
+                value={editReasonDraft}
+                onChange={(event) => setEditReasonDraft(event.target.value)}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ justifyContent: 'flex-start' }}>
+            <Button size="sm" variant="plain" onClick={closeEditReason}>
+              取消
+            </Button>
+            <Button
+              size="sm"
+              className="!ml-2"
+              loading={actionLoading}
+              onClick={handleSaveEditReason}
+            >
+              保存
             </Button>
           </DialogActions>
         </ModalDialog>

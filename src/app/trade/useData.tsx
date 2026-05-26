@@ -306,6 +306,19 @@ export default function useData() {
     await fetchStocksForTag(tags.current, pools.current, segments.current);
   };
 
+  const refreshIndustryChainSegments = async () => {
+    const industryChains = (await services.getIndustryChain({
+      active: true,
+    })) as IndustryChainInfo[];
+    industryChainsRef.current = Array.isArray(industryChains) ? industryChains : [];
+    const tag = tags.current;
+    if (!isIndustryChainMainTag(tag)) {
+      return;
+    }
+    const items = resolveSegmentsForMainTag(tag);
+    setSegments((previous) => ({ ...previous, items }));
+  };
+
   const refreshPools = async (switchToPoolName?: string) => {
     const poolsData = await services.getPools();
     setPools((prev) => {
@@ -370,5 +383,6 @@ export default function useData() {
     dailyStats,
     updateStockEvents,
     refreshPools,
+    refreshIndustryChainSegments,
   };
 }
