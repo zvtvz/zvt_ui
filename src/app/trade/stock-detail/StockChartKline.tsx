@@ -60,7 +60,7 @@ type Props = {
 };
 
 const CHART_CONTAINER_ID = 'k-line-chart';
-const DEFAULT_VISIBLE_BAR_COUNT = 300;
+const DEFAULT_VISIBLE_BAR_COUNT = 280;
 const KLINE_CHART_HEIGHT_CLASS = 'h-[420px]';
 const KLINE_MA_PERIODS = [5, 10, 20, 30, 60, 120, 250];
 
