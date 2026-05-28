@@ -393,7 +393,7 @@ export default function Workspace() {
           {hasListRows &&
             (stockDetailSidebarOpen ? (
               <Card
-                className="w-[500px] !sticky !top-[56px] flex-shrink-0 min-h-0 flex flex-col overflow-hidden"
+                className="w-[550px] max-w-[550px] shrink-0 grow-0 basis-[550px] !sticky !top-[56px] min-h-0 flex flex-col overflow-hidden"
                 size="sm"
                 variant="plain"
               >
