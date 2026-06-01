@@ -46,6 +46,7 @@ type AgentRunLog = {
   id: string;
   agent_id: string;
   prompt: string;
+  thinking?: string;
   output?: string;
   status: string;
   error_detail?: string;
@@ -482,36 +483,163 @@ function AgentDefinitionSection() {
 
 // ── AgentRunLog section ────────────────────────────────────────────────────
 
+const PAGE_SIZE = 10;
+
+function ConversationEntry({ log }: { log: AgentRunLog }) {
+  const [thinkingOpen, setThinkingOpen] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+
+  const timeLabel = log.started_at ? log.started_at.slice(0, 19).replace('T', ' ') : '';
+  const isError = log.status === 'error';
+
+  return (
+    <Sheet
+      variant="outlined"
+      sx={{ borderRadius: 'md', p: 2, mb: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}
+    >
+      {/* ── header ── */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography level="body-xs" textColor="neutral.400" sx={{ fontFamily: 'monospace' }}>
+          {timeLabel}
+        </Typography>
+        <Typography
+          level="body-xs"
+          color={isError ? 'danger' : 'success'}
+          sx={{ fontWeight: 'md' }}
+        >
+          {isError ? '● 失败' : '● 完成'}
+        </Typography>
+      </Box>
+
+      {/* ── user prompt ── */}
+      <Box>
+        <button
+          type="button"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '2px 0',
+            marginBottom: 4,
+            fontSize: '0.75rem',
+            color: '#555',
+            fontWeight: 600,
+          }}
+          onClick={() => setPromptOpen((v) => !v)}
+        >
+          <span style={{ fontSize: '0.65rem' }}>{promptOpen ? '▼' : '▶'}</span>
+          用户
+        </button>
+        {promptOpen && (
+          <Sheet
+            variant="soft"
+            color="primary"
+            sx={{
+              borderRadius: 'sm',
+              p: 1.5,
+              whiteSpace: 'pre-wrap',
+              fontSize: '0.8125rem',
+              lineHeight: 1.6,
+              maxHeight: 280,
+              overflow: 'auto',
+            }}
+          >
+            {log.prompt}
+          </Sheet>
+        )}
+      </Box>
+
+      {/* ── thinking (collapsible) ── */}
+      {log.thinking && (
+        <Box>
+          <button
+            type="button"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '2px 0',
+              fontSize: '0.75rem',
+              color: '#888',
+            }}
+            onClick={() => setThinkingOpen((v) => !v)}
+          >
+            <span style={{ fontSize: '0.65rem' }}>{thinkingOpen ? '▼' : '▶'}</span>
+            思考过程
+          </button>
+          {thinkingOpen && (
+            <Sheet
+              variant="soft"
+              color="neutral"
+              sx={{
+                borderRadius: 'sm',
+                p: 1.5,
+                mt: 0.5,
+                whiteSpace: 'pre-wrap',
+                fontSize: '0.75rem',
+                lineHeight: 1.6,
+                color: 'neutral.600',
+                maxHeight: 280,
+                overflow: 'auto',
+              }}
+            >
+              {log.thinking}
+            </Sheet>
+          )}
+        </Box>
+      )}
+
+      {/* ── agent output / error ── */}
+      <Box>
+        <Typography level="body-xs" textColor="neutral.500" sx={{ mb: 0.5, fontWeight: 'md' }}>
+          智能体
+        </Typography>
+        <Sheet
+          variant="soft"
+          color={isError ? 'danger' : 'neutral'}
+          sx={{ borderRadius: 'sm', p: 1.5, whiteSpace: 'pre-wrap', fontSize: '0.8125rem', lineHeight: 1.6 }}
+        >
+          {log.error_detail || log.output || '（无输出）'}
+        </Sheet>
+      </Box>
+    </Sheet>
+  );
+}
+
 function AgentRunLogSection() {
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
 
   const { data: agents } = useRequest(() => services.listAgents() as Promise<AgentDefinition[]>, {
     refreshDeps: [],
   });
   const agentRows = agents ?? [];
 
-  const {
-    data: logs,
-    loading,
-    refresh,
-  } = useRequest(
+  const { data: logs, loading, refresh } = useRequest(
     async () => {
       if (!selectedAgentId) return [];
-      return services.listAgentRunLogs({ agent_id: selectedAgentId, limit: 100 }) as Promise<AgentRunLog[]>;
+      return services.listAgentRunLogs({ agent_id: selectedAgentId, limit: 200 }) as Promise<AgentRunLog[]>;
     },
     { refreshDeps: [selectedAgentId] }
   );
   const logRows = logs ?? [];
+  const totalPages = Math.max(1, Math.ceil(logRows.length / PAGE_SIZE));
+  const pageRows = logRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  function statusColor(status: string) {
-    if (status === 'finished') return 'success' as const;
-    if (status === 'error') return 'danger' as const;
-    return 'neutral' as const;
+  function handleSelectAgent(agentId: string) {
+    setSelectedAgentId(agentId);
+    setPage(1);
   }
 
   return (
     <Box>
+      {/* ── agent selector ── */}
       <div className="flex flex-row flex-wrap items-center gap-3 mb-3">
         <Typography level="body-sm" textColor="neutral.600" sx={{ whiteSpace: 'nowrap' }}>
           选择智能体：
@@ -523,11 +651,11 @@ function AgentRunLogSection() {
               role="button"
               tabIndex={0}
               className={`${tradeInnerTabClass} ${selectedAgentId === agent.id ? tradePoolTabActiveClass : ''}`}
-              onClick={() => setSelectedAgentId(agent.id)}
+              onClick={() => handleSelectAgent(agent.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  setSelectedAgentId(agent.id);
+                  handleSelectAgent(agent.id);
                 }
               }}
             >
@@ -542,98 +670,76 @@ function AgentRunLogSection() {
         )}
       </div>
 
+      {/* ── content ── */}
       {!selectedAgentId ? (
         <Typography level="body-sm" textColor="neutral.400">
           请先选择一个智能体查看运行记录
         </Typography>
+      ) : loading ? (
+        <Typography level="body-sm" textColor="neutral.400">
+          加载中...
+        </Typography>
+      ) : logRows.length === 0 ? (
+        <Typography level="body-sm" textColor="neutral.400">
+          暂无运行记录
+        </Typography>
       ) : (
         <>
-          <Typography level="body-sm" textColor="neutral.600" sx={{ mb: 1.5 }}>
-            共 {logRows.length} 条记录
-          </Typography>
-          <div className="overflow-auto">
-            <Table borderAxis="xBetween" size="sm" hoverRow stickyHeader>
-              <thead>
-                <tr>
-                  <th style={{ width: 160 }}>开始时间</th>
-                  <th style={{ width: 80 }}>状态</th>
-                  <th>Prompt</th>
-                  <th>输出 / 错误</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={4}>
-                      <Typography level="body-sm" textColor="neutral.400" sx={{ p: 1.5 }}>
-                        加载中...
-                      </Typography>
-                    </td>
-                  </tr>
-                ) : logRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={4}>
-                      <Typography level="body-sm" textColor="neutral.400" sx={{ p: 1.5 }}>
-                        暂无运行记录
-                      </Typography>
-                    </td>
-                  </tr>
-                ) : (
-                  logRows.map((log) => {
-                    const isExpanded = expandedId === log.id;
-                    return (
-                      <tr
-                        key={log.id}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => setExpandedId(isExpanded ? null : log.id)}
-                      >
-                        <td>
-                          <Typography level="body-xs" textColor="neutral.500" sx={{ fontFamily: 'monospace' }}>
-                            {log.started_at ? log.started_at.slice(0, 19).replace('T', ' ') : '—'}
-                          </Typography>
-                        </td>
-                        <td>
-                          <Typography level="body-xs" color={statusColor(log.status)}>
-                            {log.status}
-                          </Typography>
-                        </td>
-                        <td>
-                          {isExpanded ? (
-                            <Sheet variant="soft" sx={{ p: 1, borderRadius: 'sm', whiteSpace: 'pre-wrap', fontSize: '0.75rem' }}>
-                              {log.prompt}
-                            </Sheet>
-                          ) : (
-                            <Typography level="body-xs" textColor="neutral.600" sx={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {log.prompt}
-                            </Typography>
-                          )}
-                        </td>
-                        <td>
-                          {isExpanded ? (
-                            <Sheet
-                              variant="soft"
-                              color={log.status === 'error' ? 'danger' : 'neutral'}
-                              sx={{ p: 1, borderRadius: 'sm', whiteSpace: 'pre-wrap', fontSize: '0.75rem', maxHeight: 240, overflow: 'auto' }}
-                            >
-                              {log.error_detail || log.output || '—'}
-                            </Sheet>
-                          ) : (
-                            <Typography
-                              level="body-xs"
-                              color={log.status === 'error' ? 'danger' : 'neutral'}
-                              sx={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                            >
-                              {log.error_detail || log.output || '—'}
-                            </Typography>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
-          </div>
+          {/* ── stats + pagination top ── */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography level="body-xs" textColor="neutral.500">
+              共 {logRows.length} 条，第 {page} / {totalPages} 页
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Button
+                size="sm"
+                variant="outlined"
+                color="neutral"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                size="sm"
+                variant="outlined"
+                color="neutral"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                下一页
+              </Button>
+            </Box>
+          </Box>
+
+          {/* ── conversation entries ── */}
+          {pageRows.map((log) => (
+            <ConversationEntry key={log.id} log={log} />
+          ))}
+
+          {/* ── pagination bottom ── */}
+          {totalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mt: 1 }}>
+              <Button
+                size="sm"
+                variant="outlined"
+                color="neutral"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                size="sm"
+                variant="outlined"
+                color="neutral"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                下一页
+              </Button>
+            </Box>
+          )}
         </>
       )}
     </Box>
