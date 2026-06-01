@@ -106,6 +106,22 @@ const apis = {
   getNewsAnalysis: 'GET /api/event/get_stock_news_analysis',
   buildTagSuggestions: '/api/event/build_tag_suggestions',
 
+  // 智能体 — 模型配置 (ModelProvider)
+  listModelProviders: 'GET /api/agent/list_model_providers',
+  createModelProvider: '/api/agent/create_model_provider',
+  updateModelProvider: '/api/agent/update_model_provider',
+  deleteModelProvider: 'DELETE /api/agent/delete_model_provider',
+
+  // 智能体 — 智能体定义 (AgentDefinition)
+  initPresetAgents: '/api/agent/init_preset_agents',
+  listAgents: 'GET /api/agent/list_agents',
+  createAgent: '/api/agent/create_agent',
+  updateAgent: '/api/agent/update_agent',
+  deleteAgent: 'DELETE /api/agent/delete_agent',
+
+  // 智能体 — 智能体活动 (AgentRunLog)
+  listAgentRunLogs: 'GET /api/agent/list_run_logs',
+
   getTimeMessage: 'GET /api/misc/time_message',
 
   getPoolSetting: 'GET /api/trading/get_query_stock_quote_setting',
