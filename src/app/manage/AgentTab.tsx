@@ -403,9 +403,6 @@ function AgentDefinitionSection() {
                       <Button size="sm" variant="plain" color="neutral" onClick={() => openEdit(row)}>
                         编辑
                       </Button>
-                      <Button size="sm" variant="plain" color="danger" onClick={() => handleDelete(row)}>
-                        删除
-                      </Button>
                     </Box>
                   </td>
                 </tr>

@@ -347,6 +347,8 @@ export type FutureEventItem = {
   related_stock_pool?: string | null;
   /** 关联的主标签名称（与主标签 name 一致） */
   related_main_tag?: string | null;
+  /** 是否活跃（false 表示已归档） */
+  active?: boolean | null;
 };
 
 export type CreateFutureEventPayload = {

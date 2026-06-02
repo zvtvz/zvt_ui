@@ -30,6 +30,7 @@ import {
   calendarDaysFromToday,
   formatFutureEventDayOnly,
 } from '@/utils/futureEventDates';
+import { tradeInnerTabClass, tradePoolTabActiveClass } from '@/app/manage/tradeStyleClasses';
 
 /** `<input type="date">` 用的本地日历日 `YYYY-MM-DD` */
 function toDateInputValue(iso: string | null | undefined): string {
@@ -65,6 +66,8 @@ function fromDateInputValue(value: string): string | undefined {
 type EditorMode = 'create' | 'edit';
 
 export function FutureEventsSection() {
+  const [listTab, setListTab] = useState<'active' | 'archived'>('active');
+
   const { data: poolList = [] } = useRequest(services.getPools);
   const { data: mainTagList = [] } = useRequest(services.getMainTagInfo);
   const poolNameCandidates = useMemo(
@@ -79,16 +82,21 @@ export function FutureEventsSection() {
     [mainTagList]
   );
 
+  const isActiveTab = listTab === 'active';
+
   const {
     data: eventRows = [],
     loading,
     refresh,
-  } = useRequest(() =>
-    services.queryFutureEvent({
-      limit: 200,
-      order_by_field: 'rank',
-      order_by_type: 'asc',
-    }) as Promise<FutureEventItem[]>
+  } = useRequest(
+    () =>
+      services.queryFutureEvent({
+        limit: 200,
+        order_by_field: 'rank',
+        order_by_type: 'asc',
+        active: isActiveTab,
+      }) as Promise<FutureEventItem[]>,
+    { refreshDeps: [isActiveTab] }
   );
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -222,18 +230,67 @@ export function FutureEventsSection() {
     [refresh]
   );
 
+  const handleSetActive = useCallback(
+    async (row: FutureEventItem, active: boolean) => {
+      setSaving(true);
+      try {
+        await services.setFutureEventActive({ id: row.id, active });
+        await refresh();
+      } finally {
+        setSaving(false);
+      }
+    },
+    [refresh]
+  );
+
   return (
     <>
-      <div className="flex flex-row justify-between items-center mb-2">
-        <span className="opacity-85 text-sm">共 {eventRows.length} 个</span>
-        <Button
-          size="sm"
-          variant="soft"
-          className="!text-[12px] !py-1"
-          onClick={openCreate}
+      {/* 活跃 / 归档 切换 */}
+      <div className="flex flex-row items-center flex-wrap gap-y-1 mb-3">
+        <div
+          role="button"
+          tabIndex={0}
+          className={`${tradeInnerTabClass} ${listTab === 'active' ? tradePoolTabActiveClass : ''}`}
+          onClick={() => setListTab('active')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setListTab('active');
+            }
+          }}
         >
-          新建跟踪事件
-        </Button>
+          活跃
+        </div>
+        <div
+          role="button"
+          tabIndex={0}
+          className={`${tradeInnerTabClass} ${listTab === 'archived' ? tradePoolTabActiveClass : ''}`}
+          onClick={() => setListTab('archived')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setListTab('archived');
+            }
+          }}
+        >
+          归档
+        </div>
+      </div>
+
+      <div className="flex flex-row justify-between items-center mb-2">
+        <span className="opacity-85 text-sm">
+          共 {(eventRows as FutureEventItem[]).length} 个
+        </span>
+        {isActiveTab && (
+          <Button
+            size="sm"
+            variant="soft"
+            className="!text-[12px] !py-1"
+            onClick={openCreate}
+          >
+            新建跟踪事件
+          </Button>
+        )}
       </div>
 
       {loading && (
@@ -241,9 +298,9 @@ export function FutureEventsSection() {
           加载中…
         </Typography>
       )}
-      {!loading && eventRows.length === 0 && (
+      {!loading && (eventRows as FutureEventItem[]).length === 0 && (
         <Typography level="body-sm" color="neutral">
-          暂无跟踪事件
+          {isActiveTab ? '暂无活跃跟踪事件' : '暂无归档跟踪事件'}
         </Typography>
       )}
 
@@ -275,23 +332,48 @@ export function FutureEventsSection() {
                   <RankCircleTitle rank={row.rank} title={row.name} />
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1, flexShrink: 0 }}>
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    disabled={saving}
-                    onClick={() => openEdit(row)}
-                  >
-                    编辑
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    color="danger"
-                    disabled={saving}
-                    onClick={() => void handleDelete(row)}
-                  >
-                    删除
-                  </Button>
+                  {isActiveTab ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        disabled={saving}
+                        onClick={() => openEdit(row)}
+                      >
+                        编辑
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        color="neutral"
+                        disabled={saving}
+                        onClick={() => void handleSetActive(row, false)}
+                      >
+                        归档
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        color="primary"
+                        disabled={saving}
+                        onClick={() => void handleSetActive(row, true)}
+                      >
+                        恢复
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        color="danger"
+                        disabled={saving}
+                        onClick={() => void handleDelete(row)}
+                      >
+                        删除
+                      </Button>
+                    </>
+                  )}
                 </Box>
               </Box>
               <Typography
