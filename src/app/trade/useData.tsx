@@ -6,6 +6,7 @@ import {
 } from 'ahooks';
 import { useRef } from 'react';
 import services from '@/services';
+import { useAuth } from '@/contexts/AuthContext';
 import type { IndustryChainInfo, MainTagInfo, Pool } from '@/interfaces';
 
 type PoolState = {
@@ -45,6 +46,7 @@ function isIndustryChainMainTag(tag: MainTagInfo | undefined) {
 export const INDUSTRY_CHAIN_OTHER_SEGMENT = '__industry_chain_other__';
 
 export default function useData() {
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useSetState({
     stocks: false,
     setting: false,
@@ -148,9 +150,11 @@ export default function useData() {
     try {
       const current = pools.data.find((pool) => pool.id === value);
       await updatePool(current as Pool);
-      await services.savePoolSetting({
-        stock_pool_name: current?.stock_pool_name,
-      });
+      if (isAdmin) {
+        await services.savePoolSetting({
+          stock_pool_name: current?.stock_pool_name,
+        });
+      }
     } finally {
       setLoading({ stocks: false });
     }
@@ -206,10 +210,11 @@ export default function useData() {
   };
 
   const selectStock = async (stock: any) => {
-    setLoading({ events: true });
     setStocks({
       current: stock,
     });
+
+    setLoading({ events: true });
     try {
       const events = await services.getStockEvents({
         entity_id: stock.entity_id,
@@ -224,6 +229,9 @@ export default function useData() {
   };
 
   const updateStockEvents = async () => {
+    if (!stocks.current?.entity_id) {
+      return;
+    }
     setLoading({ events: true });
     try {
       const events = await services.getStockEvents({
@@ -307,6 +315,9 @@ export default function useData() {
   };
 
   const refreshIndustryChainSegments = async () => {
+    if (!isAdmin) {
+      return;
+    }
     const industryChains = (await services.getIndustryChain({
       active: true,
     })) as IndustryChainInfo[];
@@ -320,6 +331,9 @@ export default function useData() {
   };
 
   const refreshPools = async (switchToPoolName?: string) => {
+    if (!isAdmin) {
+      return;
+    }
     const poolsData = await services.getPools();
     setPools((prev) => {
       const next = { ...prev, data: poolsData };
@@ -341,27 +355,33 @@ export default function useData() {
 
   useAsyncEffect(async () => {
     setLoading({ stocks: true });
-    const [poolsData, setting, mainTags, industryChains] = await Promise.all([
-      services.getPools(),
-      services.getPoolSetting(),
-      services.getMainTagInfo() as Promise<MainTagInfo[]>,
-      services.getIndustryChain({ active: true }) as Promise<IndustryChainInfo[]>,
-    ]);
+    try {
+      const [poolsData, setting, mainTags, industryChains] = await Promise.all([
+        services.getPools(),
+        services.getPoolSetting(),
+        services.getMainTagInfo() as Promise<MainTagInfo[]>,
+        services.getIndustryChain({ active: true }) as Promise<IndustryChainInfo[]>,
+      ]);
+      const poolName = setting?.stock_pool_name || 'A股';
 
-    mainTagsRef.current = Array.isArray(mainTags) ? mainTags : [];
-    industryChainsRef.current = Array.isArray(industryChains) ? industryChains : [];
+      mainTagsRef.current = Array.isArray(mainTags) ? mainTags : [];
+      industryChainsRef.current = Array.isArray(industryChains)
+        ? industryChains
+        : [];
 
-    const defaultPool = poolsData.find(
-      (p: Pool) => p.stock_pool_name === setting.stock_pool_name
-    );
+      const defaultPool = poolsData.find(
+        (pool: Pool) => pool.stock_pool_name === poolName
+      ) ?? poolsData[0];
 
-    setPools({
-      data: poolsData,
-      current: defaultPool,
-    });
+      setPools({
+        data: poolsData,
+        current: defaultPool,
+      });
 
-    await updatePool(defaultPool);
-    setLoading({ stocks: false });
+      await updatePool(defaultPool);
+    } finally {
+      setLoading({ stocks: false });
+    }
   }, []);
 
   const showIndustryChainSegments = isIndustryChainMainTag(tags.current);
@@ -384,5 +404,6 @@ export default function useData() {
     updateStockEvents,
     refreshPools,
     refreshIndustryChainSegments,
+    isAdmin,
   };
 }

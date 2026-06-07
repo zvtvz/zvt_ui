@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 
+import AppShell from '@/components/layout/AppShell';
 import ThemeRegistry from '@/components/ThemeRegistry/ThemeRegistry';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 import './globals.css';
-import Header from '@/components/layout/Header';
 
 export const metadata: Metadata = {
   title: 'zvt-ui',
@@ -26,11 +27,9 @@ export default function RootLayout({
       <body className="">
         <ThemeRegistry>
           <Script src="/config.js" strategy="beforeInteractive" />
-          <Header />
-          <div className="my-4 w-container mx-auto mb-20">{children}</div>
-          {/* <div className="h-[100px] bg-[#f3f3f3] mt-8">
-            <div className="w-container mx-auto pt-[40px]">@2024 zvt-ui</div>
-          </div> */}
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+          </AuthProvider>
         </ThemeRegistry>
       </body>
     </html>

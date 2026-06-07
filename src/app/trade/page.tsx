@@ -48,6 +48,7 @@ export default function Workspace() {
     updateStockEvents,
     refreshPools,
     refreshIndustryChainSegments,
+    isAdmin,
   } = useData();
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
   const [addSegmentOpen, setAddSegmentOpen] = useState(false);
@@ -146,7 +147,7 @@ export default function Workspace() {
               {pool.stock_pool_name}
             </div>
           ))}
-          {pools.current?.stock_pool_type === 'custom' && (
+          {isAdmin && pools.current?.stock_pool_type === 'custom' && (
             <Tooltip title="更新股票池标的" variant="solid">
               <span>
                 <Button
@@ -162,20 +163,22 @@ export default function Workspace() {
               </span>
             </Tooltip>
           )}
-          <Tooltip title="创建股票池" variant="solid">
-            <span>
-              <Button
-                type="button"
-                variant="plain"
-                size="sm"
-                color="neutral"
-                className="!min-w-0 !px-1.5 h-6 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9]"
-                onClick={() => setCreatePoolOpen(true)}
-              >
-                <Add sx={{ fontSize: 18 }} />
-              </Button>
-            </span>
-          </Tooltip>
+          {isAdmin ? (
+            <Tooltip title="创建股票池" variant="solid">
+              <span>
+                <Button
+                  type="button"
+                  variant="plain"
+                  size="sm"
+                  color="neutral"
+                  className="!min-w-0 !px-1.5 h-6 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9]"
+                  onClick={() => setCreatePoolOpen(true)}
+                >
+                  <Add sx={{ fontSize: 18 }} />
+                </Button>
+              </span>
+            </Tooltip>
+          ) : null}
         </div>
       </div>
       <div className="flex flex-row justify-between my-2 mt-2 ">
@@ -308,20 +311,22 @@ export default function Workspace() {
               <span className="text-[14px] py-1.5">其他</span>
             </Chip>
           </Tooltip>
-          <Tooltip title="添加产业链环节" variant="solid">
-            <span>
-              <Button
-                type="button"
-                variant="plain"
-                size="sm"
-                color="neutral"
-                className="!min-w-0 !px-1.5 h-8 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9] flex-shrink-0"
-                onClick={() => setAddSegmentOpen(true)}
-              >
-                <Add sx={{ fontSize: 18 }} />
-              </Button>
-            </span>
-          </Tooltip>
+          {isAdmin ? (
+            <Tooltip title="添加产业链环节" variant="solid">
+              <span>
+                <Button
+                  type="button"
+                  variant="plain"
+                  size="sm"
+                  color="neutral"
+                  className="!min-w-0 !px-1.5 h-8 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9] flex-shrink-0"
+                  onClick={() => setAddSegmentOpen(true)}
+                >
+                  <Add sx={{ fontSize: 18 }} />
+                </Button>
+              </span>
+            </Tooltip>
+          ) : null}
         </div>
       ) : null}
       {showTradeMain ? (
@@ -416,6 +421,7 @@ export default function Workspace() {
                     stocks={stocks}
                     dialog={dialog}
                     refreshNews={updateStockEvents}
+                    isAdmin={isAdmin}
                   />
                 </CardContent>
               </Card>
@@ -440,7 +446,7 @@ export default function Workspace() {
             ))}
         </div>
       ) : null}
-      {tags.current?.is_industry_chain && tags.current?.name ? (
+      {isAdmin && tags.current?.is_industry_chain && tags.current?.name ? (
         <AddIndustryChainSegmentDialog
           open={addSegmentOpen}
           industryChainName={tags.current.name}
@@ -448,30 +454,34 @@ export default function Workspace() {
           onCancel={() => setAddSegmentOpen(false)}
         />
       ) : null}
-      <CreateStockPoolDialog
-        open={createPoolOpen}
-        onSubmit={(poolName) => {
-          refreshPools(poolName);
-          setCreatePoolOpen(false);
-        }}
-        onCancel={() => setCreatePoolOpen(false)}
-      />
-      <UpdateStockPoolDialog
-        open={updatePoolOpen}
-        pool={pools.current?.stock_pool_type === 'custom' ? pools.current : null}
-        onSaved={async () => {
-          setUpdatePoolOpen(false);
-          if (pools.current?.stock_pool_name) {
-            await refreshPools(pools.current.stock_pool_name);
-          }
-        }}
-        onCancel={() => setUpdatePoolOpen(false)}
-        onArchived={async () => {
-          setUpdatePoolOpen(false);
-          const nextPool = pools.data?.find((p) => p.id !== pools.current?.id);
-          await refreshPools(nextPool?.stock_pool_name);
-        }}
-      />
+      {isAdmin ? (
+        <>
+          <CreateStockPoolDialog
+            open={createPoolOpen}
+            onSubmit={(poolName) => {
+              refreshPools(poolName);
+              setCreatePoolOpen(false);
+            }}
+            onCancel={() => setCreatePoolOpen(false)}
+          />
+          <UpdateStockPoolDialog
+            open={updatePoolOpen}
+            pool={pools.current?.stock_pool_type === 'custom' ? pools.current : null}
+            onSaved={async () => {
+              setUpdatePoolOpen(false);
+              if (pools.current?.stock_pool_name) {
+                await refreshPools(pools.current.stock_pool_name);
+              }
+            }}
+            onCancel={() => setUpdatePoolOpen(false)}
+            onArchived={async () => {
+              setUpdatePoolOpen(false);
+              const nextPool = pools.data?.find((p) => p.id !== pools.current?.id);
+              await refreshPools(nextPool?.stock_pool_name);
+            }}
+          />
+        </>
+      ) : null}
       {dialog.open && <Dialog.Info {...dialog.props} />}
     </>
   );

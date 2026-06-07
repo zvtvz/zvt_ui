@@ -14,6 +14,7 @@ type Props = {
   stocks: any;
   dialog: any;
   refreshNews: () => any;
+  isAdmin?: boolean;
 };
 
 export default function StockDetail({
@@ -21,6 +22,7 @@ export default function StockDetail({
   stocks,
   dialog,
   refreshNews,
+  isAdmin = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [industryChainOpen, setIndustryChainOpen] = useState(false);
@@ -36,36 +38,38 @@ export default function StockDetail({
             <span className="ml-1 opacity-55">{stocks.current?.code}</span>
           </div>
 
-          <div className="flex flex-row gap-1 items-center">
-            <Button
-              size="sm"
-              className="!text-xs !leading-4 !min-h-[24px] !px-2"
-              onClick={() => setCapitalOpen(true)}
-            >
-              资金结构
-            </Button>
-            <Button
-              size="sm"
-              className="!text-xs !leading-4 !min-h-[24px] !px-2"
-              onClick={() => setCommentaryOpen(true)}
-            >
-              市场地位
-            </Button>
-            <Button
-              size="sm"
-              className="!text-xs !leading-4 !min-h-[24px] !px-2"
-              onClick={() => setOpen(true)}
-            >
-              更新标签
-            </Button>
-            <Button
-              size="sm"
-              className="!text-xs !leading-4 !min-h-[24px] !px-2"
-              onClick={() => setIndustryChainOpen(true)}
-            >
-              更新产业链
-            </Button>
-          </div>
+          {isAdmin ? (
+            <div className="flex flex-row gap-1 items-center">
+              <Button
+                size="sm"
+                className="!text-xs !leading-4 !min-h-[24px] !px-2"
+                onClick={() => setCapitalOpen(true)}
+              >
+                资金结构
+              </Button>
+              <Button
+                size="sm"
+                className="!text-xs !leading-4 !min-h-[24px] !px-2"
+                onClick={() => setCommentaryOpen(true)}
+              >
+                市场地位
+              </Button>
+              <Button
+                size="sm"
+                className="!text-xs !leading-4 !min-h-[24px] !px-2"
+                onClick={() => setOpen(true)}
+              >
+                更新标签
+              </Button>
+              <Button
+                size="sm"
+                className="!text-xs !leading-4 !min-h-[24px] !px-2"
+                onClick={() => setIndustryChainOpen(true)}
+              >
+                更新产业链
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
       {stocks.current && <StockChart entityId={stocks.current?.entity_id} />}
@@ -79,6 +83,7 @@ export default function StockDetail({
             entityId={stocks.current?.entity_id}
             dialog={dialog}
             refreshNews={refreshNews}
+            isAdmin={isAdmin}
           />
         </>
       </Loading>

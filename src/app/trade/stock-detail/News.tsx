@@ -14,6 +14,7 @@ type Props = {
   dialog: any;
   entityId: string;
   refreshNews: () => any;
+  isAdmin?: boolean;
 };
 
 const tagTypeText = {
@@ -28,6 +29,7 @@ export default function Events({
   refreshNews,
   dialog,
   entityId,
+  isAdmin = false,
 }: Props) {
   news = news || [];
 
@@ -115,14 +117,16 @@ export default function Events({
     <div className="mb-1 pb-1 ">
       <div className="flex flex-row justify-between text-sm font-bold opacity-85">
         {title}
-        <Button
-          size="sm"
-          className="!text-xs !leading-4 !min-h-[24px] !px-2"
-          loading={loading.build}
-          onClick={handleBuildSuggestions}
-        >
-          AI分析
-        </Button>
+        {isAdmin ? (
+          <Button
+            size="sm"
+            className="!text-xs !leading-4 !min-h-[24px] !px-2"
+            loading={loading.build}
+            onClick={handleBuildSuggestions}
+          >
+            AI分析
+          </Button>
+        ) : null}
       </div>
       {news.length == 0 && <span className="text-sm pr-4">暂无</span>}
       <ul className="list-inside list-disc  overflow-auto">
@@ -146,10 +150,12 @@ export default function Events({
                 {item.news_title || ''}
               </span>
             </Tooltip>
-            <AiOutlineClose
-              onClick={() => handleIgnoreNews(item)}
-              className="invisible group-hover:visible absolute right-0 top-[2px] cursor-pointer"
-            />
+            {isAdmin ? (
+              <AiOutlineClose
+                onClick={() => handleIgnoreNews(item)}
+                className="invisible group-hover:visible absolute right-0 top-[2px] cursor-pointer"
+              />
+            ) : null}
             <div>
               {item.news_analysis?.tag_suggestions?.up?.map(
                 (suggestion: any, idx: number) => {
@@ -179,23 +185,25 @@ export default function Events({
                           <span>{stocksText}</span>
                         </Tooltip>
                       </div>
-                      <div>
-                        <Button
-                          variant="plain"
-                          size="sm"
-                          className=" !text-[12px] !min-h-[24px] !leading-none !py-0 !font-normal	"
-                          onClick={() => {
-                            if (suggestion.tag_type === 'new_tag') {
-                              showSelectTagType(item, suggestion);
-                            } else {
-                              batchUpdateTags(item, suggestion, suggestionId);
-                            }
-                          }}
-                          loading={loading[suggestionId]}
-                        >
-                          {tagTypeText[suggestion.tag_type]}
-                        </Button>
-                      </div>
+                      {isAdmin ? (
+                        <div>
+                          <Button
+                            variant="plain"
+                            size="sm"
+                            className=" !text-[12px] !min-h-[24px] !leading-none !py-0 !font-normal	"
+                            onClick={() => {
+                              if (suggestion.tag_type === 'new_tag') {
+                                showSelectTagType(item, suggestion);
+                              } else {
+                                batchUpdateTags(item, suggestion, suggestionId);
+                              }
+                            }}
+                            loading={loading[suggestionId]}
+                          >
+                            {tagTypeText[suggestion.tag_type]}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 }
@@ -228,23 +236,25 @@ export default function Events({
                           <span>{stocksText}</span>
                         </Tooltip>
                       </div>
-                      <div>
-                        <Button
-                          variant="plain"
-                          size="sm"
-                          className=" !text-[12px] !min-h-[24px] !leading-none !py-0 !font-normal	"
-                          onClick={() => {
-                            if (suggestion.tag_type === 'new_tag') {
-                              showSelectTagType(item, suggestion);
-                            } else {
-                              batchUpdateTags(item, suggestion, suggestionId);
-                            }
-                          }}
-                          loading={loading[suggestionId]}
-                        >
-                          {tagTypeText[suggestion.tag_type]}
-                        </Button>
-                      </div>
+                      {isAdmin ? (
+                        <div>
+                          <Button
+                            variant="plain"
+                            size="sm"
+                            className=" !text-[12px] !min-h-[24px] !leading-none !py-0 !font-normal	"
+                            onClick={() => {
+                              if (suggestion.tag_type === 'new_tag') {
+                                showSelectTagType(item, suggestion);
+                              } else {
+                                batchUpdateTags(item, suggestion, suggestionId);
+                              }
+                            }}
+                            loading={loading[suggestionId]}
+                          >
+                            {tagTypeText[suggestion.tag_type]}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 }

@@ -139,6 +139,18 @@ const apis = {
   // monitor
   listMonitorJobs: 'GET /api/monitor/jobs',
   listMonitorRuns: 'GET /api/monitor/runs',
+
+  // sso
+  login: '/api/sso/login',
+  register: '/api/sso/register',
+  refreshToken: '/api/sso/refresh_token',
+  getMe: 'GET /api/sso/me',
+  listUsers: 'GET /api/sso/list_users',
+  extendUserValidity: '/api/sso/extend_user_validity',
+  disableUser: '/api/sso/disable_user',
+  enableUser: '/api/sso/enable_user',
+  createInviteCode: '/api/sso/create_invite_code',
+  listInviteCodes: 'GET /api/sso/list_invite_codes',
 } as const;
 
 const instance = createInstance<keyof typeof apis>({

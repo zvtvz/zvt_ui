@@ -1,5 +1,7 @@
 import qs from 'qs';
 
+import { getAccessToken } from '@/utils/auth-storage';
+
 type InstanceOptions<T extends string> = {
   domain?: string;
   apis: Record<T, string>;
@@ -35,11 +37,13 @@ export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
       domain = (window as any)?.SERVER_HOST || domain;
     }
     let realUrl = domain + url;
+    const accessToken = getAccessToken();
     const options: any = {
       method: config?.method || 'POST',
       mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
     };
 
@@ -68,7 +72,18 @@ export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
     }
 
     const response = await fetch(realUrl, options);
-    return response.json();
+    const payload = await response.json();
+    if (!response.ok) {
+      const detail = payload?.detail;
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((item) => item?.msg || String(item)).join(', ')
+            : '请求失败';
+      throw new Error(message);
+    }
+    return payload;
   };
 
   const serviceInstance = {} as Record<T, IServiceRequestFn>;
