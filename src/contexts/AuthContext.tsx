@@ -31,19 +31,10 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function getInitialAuthState(): { user: AuthUser | null; loading: boolean } {
-  const user = getCachedAuthUser();
-  if (user) {
-    return { user, loading: false };
-  }
-  return { user: null, loading: Boolean(getRefreshToken()) };
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [initialAuth] = useState(getInitialAuthState);
-  const [user, setUser] = useState<AuthUser | null>(initialAuth.user);
-  const [loading, setLoading] = useState(initialAuth.loading);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const refreshSession = useCallback(async () => {
     const refreshToken = getRefreshToken();
@@ -78,13 +69,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      return;
-    }
-
     let cancelled = false;
 
-    async function restoreSession() {
+    async function bootstrapSession() {
+      const cachedUser = getCachedAuthUser();
+      if (cachedUser) {
+        if (!cancelled) {
+          setUser(cachedUser);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) {
+        if (!cancelled) {
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         await refreshSession();
       } catch {
@@ -99,11 +103,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    restoreSession();
+    bootstrapSession();
     return () => {
       cancelled = true;
     };
-  }, [loading, refreshSession]);
+  }, [refreshSession]);
 
   useEffect(() => {
     const handleAuthExpired = () => {
