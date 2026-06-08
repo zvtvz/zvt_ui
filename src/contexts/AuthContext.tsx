@@ -8,6 +8,7 @@ import {
   getRefreshToken,
   setAuthTokens,
 } from '@/utils/auth-storage';
+import { AUTH_EXPIRED_EVENT } from '@/utils/auth-refresh';
 import { useRouter } from 'next/navigation';
 import {
   createContext,
@@ -103,6 +104,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [loading, refreshSession]);
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setUser(null);
+      router.replace('/login');
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => {
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
+  }, [router]);
 
   const value = useMemo(
     () => ({

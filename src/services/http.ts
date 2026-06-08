@@ -1,6 +1,11 @@
 import qs from 'qs';
 
 import { getAccessToken } from '@/utils/auth-storage';
+import {
+  isSsoAuthPath,
+  refreshAccessToken,
+  resolveServerDomain,
+} from '@/utils/auth-refresh';
 
 type InstanceOptions<T extends string> = {
   domain?: string;
@@ -9,6 +14,7 @@ type InstanceOptions<T extends string> = {
 
 type RequestOptions = {
   method: string;
+  retried?: boolean;
 };
 
 interface IServiceRequestFn<T = any> {
@@ -26,62 +32,85 @@ function parseServiceUrl(value: string) {
   return { method: 'POST', url: trimmed };
 }
 
+function buildRequest(
+  url: string,
+  data: any,
+  config?: RequestOptions
+): { realUrl: string; options: RequestInit } {
+  const domain = resolveServerDomain();
+  let realUrl = domain + url;
+  const accessToken = getAccessToken();
+  const method = config?.method || 'POST';
+  const options: RequestInit = {
+    method,
+    mode: 'cors',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  };
+
+  if (data) {
+    if (method === 'GET') {
+      realUrl = `${realUrl}?${qs.stringify(data)}`;
+    } else if (
+      method === 'DELETE' &&
+      typeof data === 'object' &&
+      data !== null &&
+      'record_id' in data &&
+      (data as { record_id: unknown }).record_id != null
+    ) {
+      realUrl = `${realUrl}/${encodeURIComponent(String((data as { record_id: string }).record_id))}`;
+    } else if (
+      method === 'DELETE' &&
+      typeof data === 'object' &&
+      data !== null &&
+      'name' in data &&
+      (data as { name: unknown }).name != null
+    ) {
+      realUrl = `${realUrl}/${encodeURIComponent(String((data as { name: string }).name))}`;
+    } else {
+      options.body = JSON.stringify(data);
+    }
+  }
+
+  return { realUrl, options };
+}
+
+function parseErrorMessage(payload: any): string {
+  const detail = payload?.detail;
+  if (typeof detail === 'string') {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    return detail.map((item) => item?.msg || String(item)).join(', ');
+  }
+  return '请求失败';
+}
+
 export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
   const internalRequest = async (
     url: string,
     data: any,
     config?: RequestOptions
   ) => {
-    let domain = process.env.NEXT_PUBLIC_SERVER as string;
-    if (typeof window !== 'undefined') {
-      domain = (window as any)?.SERVER_HOST || domain;
-    }
-    let realUrl = domain + url;
-    const accessToken = getAccessToken();
-    const options: any = {
-      method: config?.method || 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      },
-    };
+    const { realUrl, options } = buildRequest(url, data, config);
+    const response = await fetch(realUrl, options);
+    const payload = await response.json();
 
-    if (data) {
-      if (options.method === 'GET') {
-        realUrl = realUrl + '?' + qs.stringify(data);
-      } else if (
-        options.method === 'DELETE' &&
-        typeof data === 'object' &&
-        data !== null &&
-        'record_id' in data &&
-        (data as { record_id: unknown }).record_id != null
-      ) {
-        realUrl = `${realUrl}/${encodeURIComponent(String((data as { record_id: string }).record_id))}`;
-      } else if (
-        options.method === 'DELETE' &&
-        typeof data === 'object' &&
-        data !== null &&
-        'name' in data &&
-        (data as { name: unknown }).name != null
-      ) {
-        realUrl = `${realUrl}/${encodeURIComponent(String((data as { name: string }).name))}`;
-      } else {
-        options.body = JSON.stringify(data);
+    if (
+      response.status === 401 &&
+      !config?.retried &&
+      !isSsoAuthPath(url)
+    ) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        return internalRequest(url, data, { ...config, retried: true });
       }
     }
 
-    const response = await fetch(realUrl, options);
-    const payload = await response.json();
     if (!response.ok) {
-      const detail = payload?.detail;
-      const message =
-        typeof detail === 'string'
-          ? detail
-          : Array.isArray(detail)
-            ? detail.map((item) => item?.msg || String(item)).join(', ')
-            : '请求失败';
-      throw new Error(message);
+      throw new Error(parseErrorMessage(payload));
     }
     return payload;
   };
