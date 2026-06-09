@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import services from '@/services';
-import { init, dispose, registerStyles } from 'klinecharts';
+import { init, dispose, registerStyles, PolygonType, LineType, DomPosition } from 'klinecharts';
 
 const KLINE_RISE_COLOR = '#F92855';
 const KLINE_FALL_COLOR = '#2DC08E';
@@ -32,8 +32,8 @@ registerStyles('red_rise_green_fall', {
     },
     bars: [
       {
-        style: 'fill',
-        borderStyle: 'solid',
+        style: PolygonType.Fill,
+        borderStyle: LineType.Solid,
         borderSize: 1,
         borderDashedValue: [2, 2],
         upColor: KLINE_RISE_COLOR_ALPHA,
@@ -43,8 +43,8 @@ registerStyles('red_rise_green_fall', {
     ],
     circles: [
       {
-        style: 'fill',
-        borderStyle: 'solid',
+        style: PolygonType.Fill,
+        borderStyle: LineType.Solid,
         borderSize: 1,
         borderDashedValue: [2, 2],
         upColor: KLINE_RISE_COLOR_ALPHA,
@@ -69,7 +69,7 @@ function fitChartBarSpace(
   dataBarCount: number
 ) {
   if (dataBarCount <= 0) return;
-  const chartSize = chart.getSize(undefined, 'main');
+  const chartSize = chart.getSize(undefined, DomPosition.Main);
   const chartWidth =
     chartSize?.width ??
     document.getElementById(CHART_CONTAINER_ID)?.clientWidth ??

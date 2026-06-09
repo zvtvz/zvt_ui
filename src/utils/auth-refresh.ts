@@ -10,9 +10,12 @@ export const AUTH_EXPIRED_EVENT = 'zvt:auth-expired';
 let refreshInFlight: Promise<boolean> | null = null;
 
 export function resolveServerDomain(): string {
-  let domain = process.env.NEXT_PUBLIC_SERVER as string;
+  let domain = process.env.NEXT_PUBLIC_SERVER ?? '';
   if (typeof window !== 'undefined') {
-    domain = (window as any)?.SERVER_HOST || domain;
+    const runtimeHost = (window as Window & { SERVER_HOST?: string }).SERVER_HOST;
+    if (runtimeHost !== undefined) {
+      domain = runtimeHost;
+    }
   }
   return domain;
 }

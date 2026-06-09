@@ -13,7 +13,7 @@ type InstanceOptions<T extends string> = {
 };
 
 type RequestOptions = {
-  method: string;
+  method?: string;
   retried?: boolean;
 };
 
@@ -93,7 +93,7 @@ export function createInstance<T extends string>({ apis }: InstanceOptions<T>) {
     url: string,
     data: any,
     config?: RequestOptions
-  ) => {
+  ): Promise<any> => {
     const { realUrl, options } = buildRequest(url, data, config);
     const response = await fetch(realUrl, options);
     const payload = await response.json();

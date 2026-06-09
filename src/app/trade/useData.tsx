@@ -282,7 +282,7 @@ export default function useData() {
 
     const sortedTags = statses
       .map((stats: any) => newTags.find((tag) => tag.name === stats.main_tag))
-      .filter((t): t is MainTagInfo => Boolean(t));
+      .filter((tag_info: MainTagInfo | undefined): tag_info is MainTagInfo => Boolean(tag_info));
 
     setTags({
       data: sortedTags,
