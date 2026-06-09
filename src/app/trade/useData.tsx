@@ -7,7 +7,9 @@ import {
 import { useRef } from 'react';
 import services from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTradingSession } from '@/hooks/useTradingSession';
 import type { IndustryChainInfo, MainTagInfo, Pool } from '@/interfaces';
+import { isAshareTradingSession } from '@/utils/trading-session';
 
 type PoolState = {
   data: Pool[];
@@ -88,9 +90,10 @@ export default function useData() {
     id: undefined,
   });
   const unmountedRef = useUnmountedRef();
+  const isTradingSession = useTradingSession();
 
   const { data: dailyStats } = useRequest(services.getDailyQuoteStats, {
-    pollingInterval: 1000 * 60,
+    pollingInterval: isTradingSession ? 1000 * 60 : undefined,
   });
 
   function resolveSegmentsForMainTag(tag: MainTagInfo | undefined) {
@@ -174,6 +177,9 @@ export default function useData() {
     intervalId.current.id = setInterval(() => {
       if (unmountedRef.current) {
         clearInterval(intervalId.current.id);
+      }
+      if (!isAshareTradingSession()) {
+        return;
       }
       services.getPoolStocksByTag(params).then((data) => {
         updateStocks(data?.quotes ?? [], true);
@@ -293,6 +299,9 @@ export default function useData() {
     tagsStatusIntervalId.current.id = setInterval(() => {
       if (unmountedRef.current) {
         clearInterval(tagsStatusIntervalId.current.id);
+      }
+      if (!isAshareTradingSession()) {
+        return;
       }
       services
         .getTagsStats({

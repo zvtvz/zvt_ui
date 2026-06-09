@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import services from '@/services';
 import { init, dispose, registerStyles, PolygonType, LineType, DomPosition } from 'klinecharts';
+import { isAshareTradingSession } from '@/utils/trading-session';
 
 const KLINE_RISE_COLOR = '#F92855';
 const KLINE_FALL_COLOR = '#2DC08E';
@@ -110,6 +111,9 @@ export default function StockChartKline({ entityId }: Props) {
     };
     loadKData();
     const intervalId = setInterval(() => {
+      if (!isAshareTradingSession()) {
+        return;
+      }
       loadKData();
     }, 60 * 1000);
     return () => {

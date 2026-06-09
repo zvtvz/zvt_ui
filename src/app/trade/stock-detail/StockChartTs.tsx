@@ -1,6 +1,7 @@
 import { useAsyncEffect } from 'ahooks';
 import { useRef, useEffect } from 'react';
 import services from '@/services';
+import { isAshareTradingSession } from '@/utils/trading-session';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 
@@ -77,7 +78,12 @@ export default function StockChartTs({ entityId }: Props) {
       });
     };
     loadTsData();
-    const intervalId = setInterval(loadTsData, 60 * 1000);
+    const intervalId = setInterval(() => {
+      if (!isAshareTradingSession()) {
+        return;
+      }
+      loadTsData();
+    }, 60 * 1000);
     return () => {
       clearInterval(intervalId);
     };
