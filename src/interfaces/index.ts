@@ -362,6 +362,19 @@ export type CreateFutureEventPayload = {
   related_main_tag?: string | null;
 };
 
+export type DiscoverAndTrackFutureEventsResult = {
+  created: number;
+  updated: number;
+  skipped: number;
+  results: Array<{
+    name: string;
+    action: string;
+    reason?: string;
+    event_id?: string | null;
+    related_stocks?: string[];
+  }>;
+};
+
 /** 创建后 ``created_timestamp`` / ``due_date`` 不可改，不在此载荷中提供 */
 export type UpdateFutureEventPayload = {
   id: string;

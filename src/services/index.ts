@@ -92,6 +92,7 @@ const apis = {
   updateFutureEvent: '/api/event/update_future_event',
   deleteFutureEvent: '/api/event/delete_future_event',
   setFutureEventActive: '/api/event/set_future_event_active',
+  discoverAndTrackFutureEvents: '/api/event/discover_and_track_future_events',
   listStockHotTopic: 'GET /api/event/list_stock_hot_topic',
   updateStockHotTopic: '/api/event/update_stock_hot_topic',
   addStockHotTopicPositiveMainTag: '/api/event/stock_hot_topic/add_positive_main_tag',

@@ -22,7 +22,12 @@ import {
 } from '@mui/joy';
 
 import services from '@/services';
-import type { FutureEventItem, MainTagInfo, Pool } from '@/interfaces';
+import type {
+  DiscoverAndTrackFutureEventsResult,
+  FutureEventItem,
+  MainTagInfo,
+  Pool,
+} from '@/interfaces';
 
 import { RankCircleTitle } from '@/components/energy/RankCircleTitle';
 import { poolNamesFromPools } from '@/components/energy/TagAndPoolFourBlocks';
@@ -102,6 +107,7 @@ export function FutureEventsSection() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>('create');
   const [saving, setSaving] = useState(false);
+  const [aiSearching, setAiSearching] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [nameInput, setNameInput] = useState('');
@@ -112,6 +118,26 @@ export function FutureEventsSection() {
   const [rankInput, setRankInput] = useState('');
   const [relatedStockPool, setRelatedStockPool] = useState<string>('');
   const [relatedMainTag, setRelatedMainTag] = useState<string>('');
+
+  const handleAiDiscover = useCallback(async () => {
+    if (
+      !window.confirm(
+        '将调用事件跟踪大师 Agent 搜索近期重大事件并写入跟踪列表，可能耗时数分钟，是否继续？'
+      )
+    ) {
+      return;
+    }
+    setAiSearching(true);
+    try {
+      const result = (await services.discoverAndTrackFutureEvents()) as DiscoverAndTrackFutureEventsResult;
+      await refresh();
+      window.alert(
+        `AI搜索完成：新建 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`
+      );
+    } finally {
+      setAiSearching(false);
+    }
+  }, [refresh]);
 
   const openCreate = useCallback(() => {
     setEditorMode('create');
@@ -282,14 +308,28 @@ export function FutureEventsSection() {
           共 {(eventRows as FutureEventItem[]).length} 个
         </span>
         {isActiveTab && (
-          <Button
-            size="sm"
-            variant="soft"
-            className="!text-[12px] !py-1"
-            onClick={openCreate}
-          >
-            新建跟踪事件
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              size="sm"
+              variant="soft"
+              color="primary"
+              className="!text-[12px] !py-1"
+              loading={aiSearching}
+              disabled={aiSearching || saving}
+              onClick={handleAiDiscover}
+            >
+              AI搜索跟踪
+            </Button>
+            <Button
+              size="sm"
+              variant="soft"
+              className="!text-[12px] !py-1"
+              disabled={aiSearching || saving}
+              onClick={openCreate}
+            >
+              新建跟踪事件
+            </Button>
+          </Box>
         )}
       </div>
 
