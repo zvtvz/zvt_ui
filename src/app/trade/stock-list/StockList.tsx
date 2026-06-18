@@ -5,6 +5,7 @@ import { CircularProgress } from '@mui/joy';
 
 import SortCell from './SortCell';
 import { toMoney } from '@/utils';
+import { formatProfitSummaryDisplay } from '@/utils/profitSummary';
 import Blink from './Blink';
 import { SENTIMENT_PREFIX, TREND_PREFIX } from '@/constants/capitalStructure';
 
@@ -32,6 +33,25 @@ function CoreBusinessCell({ value }: { value?: string | null }) {
       title={<div className="max-w-[320px] whitespace-pre-wrap">{full}</div>}
       variant="solid"
     >
+      {inner}
+    </Tooltip>
+  );
+}
+
+function ProfitSummaryCell({ value }: { value?: string | null }) {
+  const full = formatProfitSummaryDisplay(value);
+  if (!full) return null;
+  const raw = (value || '').trim();
+  const inner = (
+    <div className="max-w-[200px] text-left leading-snug line-clamp-2 break-words text-xs">
+      {full}
+    </div>
+  );
+  if (raw === full) {
+    return inner;
+  }
+  return (
+    <Tooltip title={<div className="max-w-[320px] whitespace-pre-wrap">{raw}</div>} variant="solid">
       {inner}
     </Tooltip>
   );
@@ -81,6 +101,7 @@ export default function StockList({
               </th>
               <th>主标签</th>
               <th>次标签</th>
+              <th>{renderHeaderCell('profit_summary', '业绩')}</th>
               <th>{renderHeaderCell('hidden_tag', '隐藏标签')}</th>
               <th>市场地位</th>
             </tr>
@@ -128,6 +149,9 @@ export default function StockList({
                 </td>
                 <td>{stock.main_tag}</td>
                 <td>{stock.sub_tag}</td>
+                <td>
+                  <ProfitSummaryCell value={stock.profit_summary} />
+                </td>
                 <td>
                   <Tooltip
                     title={
