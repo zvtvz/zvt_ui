@@ -28,4 +28,5 @@ echo "Building static export (NEXT_PUBLIC_SERVER=${NEXT_PUBLIC_SERVER:-<same-ori
 ./node_modules/.bin/next build
 
 echo "Done. Static files: ${SCRIPT_DIR}/out/"
-echo "Deploy with: ../env/deploy.sh   (or ../env/deploy-frontend.sh aliyun | windows)"
+echo "Deploy with (zvt_vip root): ../../deploy/deploy.sh"
+echo "  or: ../../deploy/deploy-frontend.sh aliyun | windows"
