@@ -168,7 +168,7 @@ export type AddIndustryChainSegment = {
   segment_desc?: string | null;
 };
 
-/** ``GET /api/work/list_stock_industry_chain`` 单行（不含 ``chain_apply_payload``） */
+/** ``GET /api/tag/list_stock_industry_chain`` 单行（不含 ``chain_apply_payload``） */
 export type StockIndustryChainListItem = {
   id: string;
   entity_id: string;
@@ -194,7 +194,7 @@ export type IgnoredIndustryChainStock = {
   name?: string | null;
 };
 
-/** ``POST /api/work/build_stock_industry_chain`` 成功体 */
+/** ``POST /api/tag/build_stock_industry_chain`` 成功体 */
 /** ``build_main_tag_sub_tag_info_from_industry_chain`` 统计 */
 export type BuildMainTagSubTagFromIndustryChainResult = {
   chains_processed: number;
@@ -219,14 +219,14 @@ export type BuildStockIndustryChainResult = {
   ignored_stocks: IgnoredIndustryChainStock[];
 };
 
-/** ``POST /api/work/delete_stock_industry_chain`` 成功体 */
+/** ``POST /api/tag/delete_stock_industry_chain`` 成功体 */
 export type DeleteStockIndustryChainResult = {
   industry_chain_name: string;
   deleted_count: number;
   requested_count: number;
 };
 
-/** ``POST /api/work/build_stock_tags_from_industry_chain`` 成功体 */
+/** ``POST /api/tag/build_stock_tags_from_industry_chain`` 成功体 */
 export type BuildStockTagsFromIndustryChainResult = {
   industry_chain_name: string;
   applied_entity_count: number;
@@ -292,7 +292,7 @@ export type Stock = {
   }[];
 };
 
-/** ``GET /api/work/list_stocks`` 单行；可选 ``key``：含中文至少 2 字、否则至少 4 字符，按 code/name 子串匹配 */
+/** ``GET /api/tag/list_stocks`` 单行；可选 ``key``：含中文至少 2 字、否则至少 4 字符，按 code/name 子串匹配 */
 export type StockListItem = {
   entity_id: string;
   code: string;
