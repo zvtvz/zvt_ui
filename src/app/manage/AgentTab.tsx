@@ -21,12 +21,11 @@ import { tradeInnerTabClass, tradePoolTabActiveClass } from './tradeStyleClasses
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type ModelProvider = {
-  id: string;
+type LlmProvider = {
   provider_name: string;
-  model_name: string;
+  model_names: string[];
   base_url?: string;
-  api_key: string;
+  configured: boolean;
 };
 
 type AgentDefinition = {
@@ -54,88 +53,36 @@ type AgentRunLog = {
   finished_at?: string;
 };
 
-const AGENT_SUB_TABS = ['智能体定义', '智能体活动', '模型配置'] as const;
+const AGENT_SUB_TABS = ['智能体定义', '智能体活动', 'LLM 提供商'] as const;
 type AgentSubTab = (typeof AGENT_SUB_TABS)[number];
 
-// ── ModelProvider section ──────────────────────────────────────────────────
+// ── LLM providers section (read-only) ─────────────────────────────────────
 
-function ModelProviderSection() {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<ModelProvider | null>(null);
-  const [formError, setFormError] = useState('');
-
-  const { data, loading, refresh } = useRequest(() => services.listModelProviders() as Promise<ModelProvider[]>, {
+function LlmProvidersSection() {
+  const { data, loading } = useRequest(() => services.listLlmProviders() as Promise<LlmProvider[]>, {
     refreshDeps: [],
   });
   const rows = data ?? [];
 
-  function openCreate() {
-    setEditTarget(null);
-    setFormError('');
-    setDialogOpen(true);
-  }
-
-  function openEdit(row: ModelProvider) {
-    setEditTarget(row);
-    setFormError('');
-    setDialogOpen(true);
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const provider_name = (formData.get('provider_name') as string).trim();
-    const model_name = (formData.get('model_name') as string).trim();
-    const base_url = (formData.get('base_url') as string).trim() || undefined;
-    const api_key = (formData.get('api_key') as string).trim();
-
-    if (!provider_name || !model_name || !api_key) {
-      setFormError('Provider、模型名称和 API Key 为必填项');
-      return;
-    }
-    setFormError('');
-
-    if (editTarget) {
-      await services.updateModelProvider({ id: editTarget.id, provider_name, model_name, base_url, api_key });
-    } else {
-      await services.createModelProvider({ provider_name, model_name, base_url, api_key });
-    }
-    setDialogOpen(false);
-    refresh();
-  }
-
-  async function handleDelete(row: ModelProvider) {
-    if (!window.confirm(`确认删除 ${row.provider_name} / ${row.model_name}？`)) return;
-    await services.deleteModelProvider({ record_id: row.id });
-    refresh();
-  }
-
   return (
     <Box>
-      <div className="flex items-center justify-between mb-3">
-        <Typography level="body-sm" textColor="neutral.600">
-          共 {rows.length} 条
-        </Typography>
-        <Button size="sm" variant="soft" color="primary" onClick={openCreate}>
-          新增
-        </Button>
-      </div>
-
+      <Typography level="body-sm" textColor="neutral.600" sx={{ mb: 2 }}>
+        凭证在服务端 <Typography component="code">$ZVT_HOME/llm_providers.json</Typography> 中配置；此处仅展示元数据（不含密钥）。
+      </Typography>
       <div className="overflow-auto">
         <Table borderAxis="xBetween" size="sm" hoverRow stickyHeader>
           <thead>
             <tr>
-              <th style={{ minWidth: 100 }}>Provider</th>
-              <th style={{ minWidth: 160 }}>模型名称</th>
-              <th style={{ minWidth: 200 }}>Base URL</th>
-              <th style={{ minWidth: 120 }}>API Key</th>
-              <th style={{ width: 120 }}>操作</th>
+              <th style={{ minWidth: 120 }}>Provider</th>
+              <th style={{ minWidth: 220 }}>参考模型</th>
+              <th style={{ minWidth: 240 }}>Base URL</th>
+              <th style={{ minWidth: 80 }}>已配置</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={4}>
                   <Typography level="body-sm" textColor="neutral.400" sx={{ p: 1.5 }}>
                     加载中...
                   </Typography>
@@ -143,7 +90,7 @@ function ModelProviderSection() {
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={4}>
                   <Typography level="body-sm" textColor="neutral.400" sx={{ p: 1.5 }}>
                     暂无数据
                   </Typography>
@@ -151,12 +98,14 @@ function ModelProviderSection() {
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.provider_name}>
                   <td>
                     <Typography level="body-sm">{row.provider_name}</Typography>
                   </td>
                   <td>
-                    <Typography level="body-sm">{row.model_name}</Typography>
+                    <Typography level="body-xs" textColor="neutral.500">
+                      {row.model_names.length > 0 ? row.model_names.join(', ') : '—'}
+                    </Typography>
                   </td>
                   <td>
                     <Typography level="body-xs" textColor="neutral.500">
@@ -164,19 +113,9 @@ function ModelProviderSection() {
                     </Typography>
                   </td>
                   <td>
-                    <Typography level="body-xs" textColor="neutral.500" sx={{ fontFamily: 'monospace' }}>
-                      {row.api_key ? `${row.api_key.slice(0, 6)}…` : '—'}
+                    <Typography level="body-sm" color={row.configured ? 'success' : 'neutral'}>
+                      {row.configured ? '是' : '否'}
                     </Typography>
-                  </td>
-                  <td>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <Button size="sm" variant="plain" color="neutral" onClick={() => openEdit(row)}>
-                        编辑
-                      </Button>
-                      <Button size="sm" variant="plain" color="danger" onClick={() => handleDelete(row)}>
-                        删除
-                      </Button>
-                    </Box>
                   </td>
                 </tr>
               ))
@@ -184,41 +123,6 @@ function ModelProviderSection() {
           </tbody>
         </Table>
       </div>
-
-      <Modal open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <ModalDialog sx={{ width: 440 }}>
-          <ModalClose />
-          <Typography level="title-md">{editTarget ? '编辑模型配置' : '新增模型配置'}</Typography>
-          <form onSubmit={handleSubmit}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
-              <FormControl required>
-                <FormLabel>Provider</FormLabel>
-                <Input name="provider_name" placeholder="如 cursor、openai、deepseek" defaultValue={editTarget?.provider_name ?? ''} />
-              </FormControl>
-              <FormControl required>
-                <FormLabel>模型名称</FormLabel>
-                <Input name="model_name" placeholder="如 claude-sonnet-4-5、gpt-4o-mini" defaultValue={editTarget?.model_name ?? ''} />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Base URL（可选）</FormLabel>
-                <Input name="base_url" placeholder="留空则使用默认 host" defaultValue={editTarget?.base_url ?? ''} />
-              </FormControl>
-              <FormControl required>
-                <FormLabel>API Key</FormLabel>
-                <Input name="api_key" type="password" placeholder="Bearer API Key" defaultValue={editTarget?.api_key ?? ''} />
-              </FormControl>
-              {formError && (
-                <Typography level="body-xs" color="danger">
-                  {formError}
-                </Typography>
-              )}
-              <Button type="submit" size="sm">
-                保存
-              </Button>
-            </Box>
-          </form>
-        </ModalDialog>
-      </Modal>
     </Box>
   );
 }
@@ -772,7 +676,7 @@ export default function AgentTab() {
 
       {subTab === '智能体定义' && <AgentDefinitionSection />}
       {subTab === '智能体活动' && <AgentRunLogSection />}
-      {subTab === '模型配置' && <ModelProviderSection />}
+      {subTab === 'LLM 提供商' && <LlmProvidersSection />}
     </Box>
   );
 }

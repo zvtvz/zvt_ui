@@ -108,11 +108,8 @@ const apis = {
   getNewsAnalysis: 'GET /api/event/get_stock_news_analysis',
   buildTagSuggestions: '/api/event/build_tag_suggestions',
 
-  // 智能体 — 模型配置 (ModelProvider)
-  listModelProviders: 'GET /api/agent/list_model_providers',
-  createModelProvider: '/api/agent/create_model_provider',
-  updateModelProvider: '/api/agent/update_model_provider',
-  deleteModelProvider: 'DELETE /api/agent/delete_model_provider',
+  // 智能体 — LLM 提供商（只读，来自 llm_providers.json）
+  listLlmProviders: 'GET /api/agent/list_llm_providers',
 
   // 智能体 — 智能体定义 (AgentDefinition)
   initPresetAgents: '/api/agent/init_preset_agents',
