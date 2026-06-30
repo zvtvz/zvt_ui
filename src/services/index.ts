@@ -104,9 +104,6 @@ const apis = {
   addStockHotTopicNegativeStockPool: '/api/event/stock_hot_topic/add_negative_stock_pool',
   removeStockHotTopicNegativeStockPool: '/api/event/stock_hot_topic/remove_negative_stock_pool',
   ignoreStockNews: '/api/event/ignore_stock_news',
-  getSuggestionStats: 'GET /api/event/get_tag_suggestions_stats',
-  getNewsAnalysis: 'GET /api/event/get_stock_news_analysis',
-  buildTagSuggestions: '/api/event/build_tag_suggestions',
 
   // 智能体 — LLM 提供商（只读，来自 llm_providers.json）
   listLlmProviders: 'GET /api/agent/list_llm_providers',
