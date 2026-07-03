@@ -9,7 +9,10 @@ export type MainTagInfo = {
   industries: string[] | null;
   concepts: string[] | null;
   areas: string[] | null;
+  /** 用于按「sub_tag → main_tag」关系反推个股主标签的次标签目录，与 active_sub_tags 语义独立 */
   sub_tags: string[];
+  /** 当前市场认可的次标签（细分主题）子集，由「题材大师」等动态维护 */
+  active_sub_tags?: string[] | null;
   /** 与 ``industry_chain.name`` 对应的主标签目录 */
   is_industry_chain?: boolean;
 };
@@ -67,6 +70,7 @@ export type CreateMainTagInfo = {
   desc?: string | null;
   priority?: number;
   sub_tags?: string[] | null;
+  active_sub_tags?: string[] | null;
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
@@ -100,10 +104,22 @@ export type UpdateMainTagInfo = {
   desc?: string | null;
   priority: number;
   sub_tags?: string[] | null;
+  active_sub_tags?: string[] | null;
   industries?: string[] | null;
   concepts?: string[] | null;
   areas?: string[] | null;
   is_industry_chain?: boolean;
+};
+
+/** 向主标签 active_sub_tags 追加次标签 */
+export type AddActiveSubTagsToMainTag = {
+  main_tag_name: string;
+  sub_tag_names: string[];
+};
+
+export type AddActiveSubTagsToMainTagResult = {
+  main_tag: MainTagInfo;
+  created_sub_tags: string[];
 };
 
 /** 更新次标签请求体（全量更新，归属由主标签侧管理）*/

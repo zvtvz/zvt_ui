@@ -16,7 +16,7 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 
 import useData, { INDUSTRY_CHAIN_OTHER_SEGMENT } from './useData';
 import CreateStockPoolDialog from './CreateStockPoolDialog';
-import AddIndustryChainSegmentDialog from './AddIndustryChainSegmentDialog';
+import AddActiveSubTagDialog from './AddActiveSubTagDialog';
 import UpdateStockPoolDialog from './UpdateStockPoolDialog';
 import { useCallback, useEffect, useState } from 'react';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
@@ -35,7 +35,7 @@ export default function Workspace() {
     pools,
     tags,
     segments,
-    showIndustryChainSegments,
+    showSubTagSegments,
     stocks,
     loading,
     changePool,
@@ -47,11 +47,11 @@ export default function Workspace() {
     dailyStats,
     updateStockEvents,
     refreshPools,
-    refreshIndustryChainSegments,
+    refreshActiveSubTags,
     isAdmin,
   } = useData();
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
-  const [addSegmentOpen, setAddSegmentOpen] = useState(false);
+  const [addActiveSubTagOpen, setAddActiveSubTagOpen] = useState(false);
   const [updatePoolOpen, setUpdatePoolOpen] = useState(false);
   const [hotTopicsSidebarOpen, setHotTopicsSidebarOpen] = useState(true);
   const [stockDetailSidebarOpen, setStockDetailSidebarOpen] = useState(true);
@@ -254,9 +254,9 @@ export default function Workspace() {
           ) : null}
         </div>
       </div>
-      {showIndustryChainSegments ? (
+      {showSubTagSegments ? (
         <div className="flex flex-row flex-nowrap overflow-x-auto pb-2 pl-1 min-h-[44px] items-center">
-          <Tooltip title="不按产业链环节筛选" variant="solid">
+          <Tooltip title="不按次标签筛选" variant="solid">
             <Chip
               color="primary"
               onClick={() => changeActiveSegment(null)}
@@ -289,7 +289,7 @@ export default function Workspace() {
             );
           })}
           <Tooltip
-            title="主标签下次标签不属于任一产业链环节的个股"
+            title="主标签下次标签不属于当前次标签列表的个股"
             variant="solid"
           >
             <Chip
@@ -311,8 +311,8 @@ export default function Workspace() {
               <span className="text-[14px] py-1.5">其他</span>
             </Chip>
           </Tooltip>
-          {isAdmin ? (
-            <Tooltip title="添加产业链环节" variant="solid">
+          {isAdmin && tags.current?.name ? (
+            <Tooltip title="添加活跃子标签" variant="solid">
               <span>
                 <Button
                   type="button"
@@ -320,7 +320,7 @@ export default function Workspace() {
                   size="sm"
                   color="neutral"
                   className="!min-w-0 !px-1.5 h-8 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9] flex-shrink-0"
-                  onClick={() => setAddSegmentOpen(true)}
+                  onClick={() => setAddActiveSubTagOpen(true)}
                 >
                   <Add sx={{ fontSize: 18 }} />
                 </Button>
@@ -446,12 +446,12 @@ export default function Workspace() {
             ))}
         </div>
       ) : null}
-      {isAdmin && tags.current?.is_industry_chain && tags.current?.name ? (
-        <AddIndustryChainSegmentDialog
-          open={addSegmentOpen}
-          industryChainName={tags.current.name}
-          onAdded={refreshIndustryChainSegments}
-          onCancel={() => setAddSegmentOpen(false)}
+      {isAdmin && tags.current?.name ? (
+        <AddActiveSubTagDialog
+          open={addActiveSubTagOpen}
+          mainTag={tags.current}
+          onAdded={refreshActiveSubTags}
+          onCancel={() => setAddActiveSubTagOpen(false)}
         />
       ) : null}
       {isAdmin ? (

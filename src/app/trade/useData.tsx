@@ -8,7 +8,7 @@ import { useRef } from 'react';
 import services from '@/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTradingSession } from '@/hooks/useTradingSession';
-import type { IndustryChainInfo, MainTagInfo, Pool } from '@/interfaces';
+import type { MainTagInfo, Pool } from '@/interfaces';
 import { isAshareTradingSession } from '@/utils/trading-session';
 
 type PoolState = {
@@ -27,24 +27,18 @@ type SegmentState = {
   current: string | null;
 };
 
-function segmentsFromIndustryChain(chain: IndustryChainInfo | undefined) {
-  const segments = chain?.segments;
-  if (!segments || typeof segments !== 'object') {
+/** 主标签下当前市场认可的次标签子集（``active_sub_tags``），驱动交易页三级 tab */
+function segmentsFromMainTag(tag: MainTagInfo | undefined) {
+  const activeSubTags = tag?.active_sub_tags;
+  if (!Array.isArray(activeSubTags)) {
     return [];
   }
-  return Object.entries(segments)
-    .map(([name, desc]) => ({
-      name: name.trim(),
-      desc: (desc || '').trim(),
-    }))
+  return activeSubTags
+    .map((name) => ({ name: (name || '').trim(), desc: '' }))
     .filter((row) => row.name);
 }
 
-function isIndustryChainMainTag(tag: MainTagInfo | undefined) {
-  return Boolean(tag?.is_industry_chain);
-}
-
-/** 三级 tab「其他」：非产业链环节 sub_tag 的个股 */
+/** 三级 tab「其他」：不在 active_sub_tags 列表中的 sub_tag 个股 */
 export const INDUSTRY_CHAIN_OTHER_SEGMENT = '__industry_chain_other__';
 
 export default function useData() {
@@ -77,7 +71,6 @@ export default function useData() {
     events: undefined,
   });
   const mainTagsRef = useRef<MainTagInfo[]>([]);
-  const industryChainsRef = useRef<IndustryChainInfo[]>([]);
   const sortRef = useRef<any>({
     field: '',
     type: '',
@@ -96,21 +89,8 @@ export default function useData() {
     pollingInterval: isTradingSession ? 1000 * 60 : undefined,
   });
 
-  function resolveSegmentsForMainTag(tag: MainTagInfo | undefined) {
-    if (!isIndustryChainMainTag(tag)) {
-      return [];
-    }
-    const chain = industryChainsRef.current.find((row) => row.name === tag?.name);
-    return segmentsFromIndustryChain(chain);
-  }
-
   function syncSegmentsForTag(tag: MainTagInfo | undefined) {
-    if (!isIndustryChainMainTag(tag)) {
-      setSegments({ items: [], current: null });
-      return;
-    }
-    const items = resolveSegmentsForMainTag(tag);
-    setSegments({ items, current: null });
+    setSegments({ items: segmentsFromMainTag(tag), current: null });
   }
 
   const buildStockQueryParams = (
@@ -125,14 +105,14 @@ export default function useData() {
     if (tag?.name) {
       params.main_tag = tag.name;
     }
-    if (isIndustryChainMainTag(tag) && segmentName === INDUSTRY_CHAIN_OTHER_SEGMENT) {
-      const segmentNames = resolveSegmentsForMainTag(tag).map((row) => row.name);
+    if (segmentName === INDUSTRY_CHAIN_OTHER_SEGMENT) {
+      const segmentNames = segmentsFromMainTag(tag).map((row) => row.name);
       if (segmentNames.length) {
         params.sub_tag_not_in = segmentNames;
       }
     } else {
       const subTag = (segmentName || '').trim();
-      if (subTag && isIndustryChainMainTag(tag)) {
+      if (subTag) {
         params.sub_tag = subTag;
       }
     }
@@ -203,7 +183,7 @@ export default function useData() {
 
   const changeActiveSegment = async (segmentName: string | null) => {
     const tag = tags.current;
-    if (!isIndustryChainMainTag(tag)) {
+    if (!segments.items.length) {
       return;
     }
     setLoading({ stocks: true });
@@ -323,20 +303,25 @@ export default function useData() {
     await fetchStocksForTag(tags.current, pools.current, segments.current);
   };
 
-  const refreshIndustryChainSegments = async () => {
+  /** 添加活跃子标签后刷新：重新拉取主标签目录以更新 active_sub_tags */
+  const refreshActiveSubTags = async () => {
     if (!isAdmin) {
       return;
     }
-    const industryChains = (await services.getIndustryChain({
-      active: true,
-    })) as IndustryChainInfo[];
-    industryChainsRef.current = Array.isArray(industryChains) ? industryChains : [];
-    const tag = tags.current;
-    if (!isIndustryChainMainTag(tag)) {
+    const mainTags = (await services.getMainTagInfo()) as MainTagInfo[];
+    const nextMainTags = Array.isArray(mainTags) ? mainTags : [];
+    mainTagsRef.current = nextMainTags;
+    const currentName = tags.current?.name;
+    const updatedTag = nextMainTags.find((row) => row.name === currentName);
+    if (!updatedTag) {
       return;
     }
-    const items = resolveSegmentsForMainTag(tag);
-    setSegments((previous) => ({ ...previous, items }));
+    setTags((previous) => ({
+      ...previous,
+      current: updatedTag,
+      data: previous.data.map((row) => (row.name === updatedTag.name ? updatedTag : row)),
+    }));
+    setSegments((previous) => ({ ...previous, items: segmentsFromMainTag(updatedTag) }));
   };
 
   const refreshPools = async (switchToPoolName?: string) => {
@@ -365,18 +350,14 @@ export default function useData() {
   useAsyncEffect(async () => {
     setLoading({ stocks: true });
     try {
-      const [poolsData, setting, mainTags, industryChains] = await Promise.all([
+      const [poolsData, setting, mainTags] = await Promise.all([
         services.getPools(),
         services.getPoolSetting(),
         services.getMainTagInfo() as Promise<MainTagInfo[]>,
-        services.getIndustryChain({ active: true }) as Promise<IndustryChainInfo[]>,
       ]);
       const poolName = setting?.stock_pool_name || 'A股';
 
       mainTagsRef.current = Array.isArray(mainTags) ? mainTags : [];
-      industryChainsRef.current = Array.isArray(industryChains)
-        ? industryChains
-        : [];
 
       const defaultPool = poolsData.find(
         (pool: Pool) => pool.stock_pool_name === poolName
@@ -393,13 +374,14 @@ export default function useData() {
     }
   }, []);
 
-  const showIndustryChainSegments = isIndustryChainMainTag(tags.current);
+  // 有次标签 tab 时展示；管理员选中主标签时也展示（便于添加首个活跃子标签）
+  const showSubTagSegments = segments.items.length > 0 || (isAdmin && Boolean(tags.current));
 
   return {
     pools,
     tags,
     segments,
-    showIndustryChainSegments,
+    showSubTagSegments,
     stocks,
     loading,
     changePool,
@@ -412,7 +394,7 @@ export default function useData() {
     dailyStats,
     updateStockEvents,
     refreshPools,
-    refreshIndustryChainSegments,
+    refreshActiveSubTags,
     isAdmin,
   };
 }

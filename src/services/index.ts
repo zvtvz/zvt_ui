@@ -17,6 +17,7 @@ const apis = {
   createMainTagInfo: '/api/tag/create_main_tag_info',
   getMainTagInfo: 'GET /api/tag/get_main_tag_info',
   updateMainTagInfo: '/api/tag/update_main_tag_info',
+  addActiveSubTagsToMainTag: '/api/tag/add_active_sub_tags_to_main_tag',
   deleteMainTagInfo: 'DELETE /api/tag/delete_main_tag_info',
 
   // 次标签 CRUD
