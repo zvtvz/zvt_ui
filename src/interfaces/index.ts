@@ -13,6 +13,8 @@ export type MainTagInfo = {
   sub_tags: string[];
   /** 当前市场认可的次标签（细分主题）子集，由「题材大师」等动态维护 */
   active_sub_tags?: string[] | null;
+  /** 互斥主标签；题材大师将其 sub_tags 并集作为 exclude_sub_tags */
+  exclusive_main_tags?: string[] | null;
   /** 与 ``industry_chain.name`` 对应的主标签目录 */
   is_industry_chain?: boolean;
 };
@@ -75,6 +77,7 @@ export type CreateMainTagInfo = {
   concepts?: string[] | null;
   areas?: string[] | null;
   is_industry_chain?: boolean;
+  exclusive_main_tags?: string[] | null;
 };
 
 /** 创建次标签请求体（独立创建，不指定所属主标签；归属由主标签侧管理） */
@@ -109,6 +112,7 @@ export type UpdateMainTagInfo = {
   concepts?: string[] | null;
   areas?: string[] | null;
   is_industry_chain?: boolean;
+  exclusive_main_tags?: string[] | null;
 };
 
 /** 向主标签 active_sub_tags 追加次标签 */
