@@ -57,6 +57,21 @@ function ProfitSummaryCell({ value }: { value?: string | null }) {
   );
 }
 
+function RiseReasonCell({ value }: { value?: string | null }) {
+  const full = (value || '').trim();
+  if (!full) return null;
+  const inner = (
+    <div className="max-w-[200px] text-left leading-snug line-clamp-2 break-words text-xs">
+      {full}
+    </div>
+  );
+  return (
+    <Tooltip title={<div className="max-w-[320px] whitespace-pre-wrap">{full}</div>} variant="solid">
+      {inner}
+    </Tooltip>
+  );
+}
+
 type Props = any;
 
 export default function StockList({
@@ -102,7 +117,8 @@ export default function StockList({
               <th>主标签</th>
               <th>次标签</th>
               <th>{renderHeaderCell('profit_summary', '业绩')}</th>
-              <th>{renderHeaderCell('hidden_tag', '隐藏标签')}</th>
+              <th>上涨原因</th>
+              {/* 隐藏标签列保留排序能力于后端 hidden_tag，前端暂改展示上涨原因 */}
               <th>市场地位</th>
             </tr>
           </thead>
@@ -153,6 +169,10 @@ export default function StockList({
                   <ProfitSummaryCell value={stock.profit_summary} />
                 </td>
                 <td>
+                  <RiseReasonCell value={stock.rise_reason} />
+                </td>
+                {/* hidden_tags 仍由后端返回，便于后续恢复展示：
+                <td>
                   <Tooltip
                     title={
                       <div className="">
@@ -166,6 +186,7 @@ export default function StockList({
                     </div>
                   </Tooltip>
                 </td>
+                */}
                 <td>
                   <CoreBusinessCell value={stock.core_business_and_market_position} />
                 </td>
