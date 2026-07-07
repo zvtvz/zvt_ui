@@ -16,7 +16,7 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 
 import useData, { INDUSTRY_CHAIN_OTHER_SEGMENT } from './useData';
 import CreateStockPoolDialog from './CreateStockPoolDialog';
-import AddActiveSubTagDialog from './AddActiveSubTagDialog';
+import EditActiveSubTagsDialog from './EditActiveSubTagsDialog';
 import UpdateStockPoolDialog from './UpdateStockPoolDialog';
 import { useCallback, useEffect, useState } from 'react';
 import { toMoney, toPercent, toTradePercent } from '@/utils';
@@ -46,12 +46,13 @@ export default function Workspace() {
     selectStock,
     dailyStats,
     updateStockEvents,
+    patchStockRiseReason,
     refreshPools,
     refreshActiveSubTags,
     isAdmin,
   } = useData();
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
-  const [addActiveSubTagOpen, setAddActiveSubTagOpen] = useState(false);
+  const [editActiveSubTagsOpen, setEditActiveSubTagsOpen] = useState(false);
   const [updatePoolOpen, setUpdatePoolOpen] = useState(false);
   const [hotTopicsSidebarOpen, setHotTopicsSidebarOpen] = useState(true);
   const [stockDetailSidebarOpen, setStockDetailSidebarOpen] = useState(true);
@@ -312,7 +313,7 @@ export default function Workspace() {
             </Chip>
           </Tooltip>
           {isAdmin && tags.current?.name ? (
-            <Tooltip title="添加活跃子标签" variant="solid">
+            <Tooltip title="编辑活跃子标签" variant="solid">
               <span>
                 <Button
                   type="button"
@@ -320,9 +321,9 @@ export default function Workspace() {
                   size="sm"
                   color="neutral"
                   className="!min-w-0 !px-1.5 h-8 rounded-md hover:bg-[rgba(65,109,249,.1)] hover:text-[#416df9] flex-shrink-0"
-                  onClick={() => setAddActiveSubTagOpen(true)}
+                  onClick={() => setEditActiveSubTagsOpen(true)}
                 >
-                  <Add sx={{ fontSize: 18 }} />
+                  <EditOutlined sx={{ fontSize: 18 }} />
                 </Button>
               </span>
             </Tooltip>
@@ -422,6 +423,7 @@ export default function Workspace() {
                     dialog={dialog}
                     refreshNews={updateStockEvents}
                     isAdmin={isAdmin}
+                    onRiseReasonSaved={patchStockRiseReason}
                   />
                 </CardContent>
               </Card>
@@ -447,11 +449,11 @@ export default function Workspace() {
         </div>
       ) : null}
       {isAdmin && tags.current?.name ? (
-        <AddActiveSubTagDialog
-          open={addActiveSubTagOpen}
+        <EditActiveSubTagsDialog
+          open={editActiveSubTagsOpen}
           mainTag={tags.current}
-          onAdded={refreshActiveSubTags}
-          onCancel={() => setAddActiveSubTagOpen(false)}
+          onSaved={refreshActiveSubTags}
+          onCancel={() => setEditActiveSubTagsOpen(false)}
         />
       ) : null}
       {isAdmin ? (

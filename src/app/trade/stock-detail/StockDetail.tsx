@@ -5,7 +5,7 @@ import { Button } from '@mui/joy';
 import TagUpdateDialog from './TagUpdateDialog';
 import { useState } from 'react';
 import StockChart from './StockChart';
-import CapitalStructureDialog from './CapitalStructureDialog';
+import RiseReasonDialog from './RiseReasonDialog';
 import CommentaryDialog from './CommentaryDialog';
 import StockIndustryChainDialog from './StockIndustryChainDialog';
 
@@ -15,6 +15,7 @@ type Props = {
   dialog: any;
   refreshNews: () => any;
   isAdmin?: boolean;
+  onRiseReasonSaved?: (entityId: string, riseReason: string | null) => void;
 };
 
 export default function StockDetail({
@@ -23,10 +24,11 @@ export default function StockDetail({
   dialog,
   refreshNews,
   isAdmin = false,
+  onRiseReasonSaved,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [industryChainOpen, setIndustryChainOpen] = useState(false);
-  const [capitalOpen, setCapitalOpen] = useState(false);
+  const [riseReasonOpen, setRiseReasonOpen] = useState(false);
   const [commentaryOpen, setCommentaryOpen] = useState(false);
 
   return (
@@ -43,9 +45,9 @@ export default function StockDetail({
               <Button
                 size="sm"
                 className="!text-xs !leading-4 !min-h-[24px] !px-2"
-                onClick={() => setCapitalOpen(true)}
+                onClick={() => setRiseReasonOpen(true)}
               >
-                资金结构
+                上涨原因
               </Button>
               <Button
                 size="sm"
@@ -94,11 +96,14 @@ export default function StockDetail({
           onCancel={() => setOpen(false)}
         />
       )}
-      {capitalOpen && stocks.current && (
-        <CapitalStructureDialog
-          open={capitalOpen}
+      {riseReasonOpen && stocks.current && (
+        <RiseReasonDialog
+          open={riseReasonOpen}
           stock={stocks.current}
-          onCancel={() => setCapitalOpen(false)}
+          onCancel={() => setRiseReasonOpen(false)}
+          onSaved={(riseReason) => {
+            onRiseReasonSaved?.(stocks.current.entity_id, riseReason);
+          }}
         />
       )}
       {commentaryOpen && stocks.current && (

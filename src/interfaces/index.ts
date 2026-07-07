@@ -121,6 +121,12 @@ export type AddActiveSubTagsToMainTag = {
   sub_tag_names: string[];
 };
 
+/** 全量设置主标签 active_sub_tags（可增删） */
+export type SetActiveSubTagsOnMainTag = {
+  main_tag_name: string;
+  active_sub_tags: string[];
+};
+
 export type AddActiveSubTagsToMainTagResult = {
   main_tag: MainTagInfo;
   created_sub_tags: string[];

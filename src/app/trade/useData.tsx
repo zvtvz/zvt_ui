@@ -231,6 +231,18 @@ export default function useData() {
     }
   };
 
+  const patchStockRiseReason = (entityId: string, riseReason: string | null) => {
+    setStocks({
+      data: stocks.data.map((row: { entity_id?: string; rise_reason?: string | null }) =>
+        row.entity_id === entityId ? { ...row, rise_reason: riseReason } : row
+      ),
+      current:
+        stocks.current?.entity_id === entityId
+          ? { ...stocks.current, rise_reason: riseReason }
+          : stocks.current,
+    });
+  };
+
   const updateStocks = (rows: any, onlyUpdateData = false) => {
     const list = Array.isArray(rows) ? rows : [];
     const first = list[0];
@@ -303,7 +315,7 @@ export default function useData() {
     await fetchStocksForTag(tags.current, pools.current, segments.current);
   };
 
-  /** 添加活跃子标签后刷新：重新拉取主标签目录以更新 active_sub_tags */
+  /** 编辑活跃子标签后刷新：重新拉取主标签目录以更新 active_sub_tags */
   const refreshActiveSubTags = async () => {
     if (!isAdmin) {
       return;
@@ -321,7 +333,27 @@ export default function useData() {
       current: updatedTag,
       data: previous.data.map((row) => (row.name === updatedTag.name ? updatedTag : row)),
     }));
-    setSegments((previous) => ({ ...previous, items: segmentsFromMainTag(updatedTag) }));
+    const nextItems = segmentsFromMainTag(updatedTag);
+    let nextCurrent: string | null = segments.current;
+    const segmentStillValid =
+      nextCurrent === null ||
+      nextCurrent === INDUSTRY_CHAIN_OTHER_SEGMENT ||
+      nextItems.some((item) => item.name === nextCurrent);
+    if (!segmentStillValid) {
+      nextCurrent = null;
+    }
+    setSegments({
+      items: nextItems,
+      current: nextCurrent,
+    });
+    if (!segmentStillValid) {
+      setLoading({ stocks: true });
+      try {
+        await fetchStocksForTag(updatedTag, pools.current, null);
+      } finally {
+        setLoading({ stocks: false });
+      }
+    }
   };
 
   const refreshPools = async (switchToPoolName?: string) => {
@@ -393,6 +425,7 @@ export default function useData() {
     selectStock,
     dailyStats,
     updateStockEvents,
+    patchStockRiseReason,
     refreshPools,
     refreshActiveSubTags,
     isAdmin,

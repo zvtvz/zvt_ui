@@ -18,6 +18,7 @@ const apis = {
   getMainTagInfo: 'GET /api/tag/get_main_tag_info',
   updateMainTagInfo: '/api/tag/update_main_tag_info',
   addActiveSubTagsToMainTag: '/api/tag/add_active_sub_tags_to_main_tag',
+  setActiveSubTagsOnMainTag: '/api/tag/set_active_sub_tags_on_main_tag',
   deleteMainTagInfo: 'DELETE /api/tag/delete_main_tag_info',
 
   // 次标签 CRUD
@@ -84,6 +85,7 @@ const apis = {
   getStockTagCatalogOptions: 'GET /api/tag/get_stock_tag_catalog_options',
   removeStockTag: '/api/tag/remove_stock_tag',
   updateStockTagReason: '/api/tag/update_stock_tag_reason',
+  updateStockRiseReason: '/api/tag/update_stock_rise_reason',
   updateStockTags: '/api/tag/set_stock_tags',
   batchUpdateStockTags: '/api/tag/batch_set_stock_tags',
 
