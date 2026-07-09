@@ -87,41 +87,6 @@ export default function StockChartKline({ entityId }: Props) {
   const dataBarCountRef = useRef(0);
 
   useEffect(() => {
-    const loadKData = async () => {
-      if (!chartRef.current) return;
-      const [kdata] = await services.getKData({ entity_ids: [entityId] });
-      const datas = kdata.datas.map((item: any) => {
-        return {
-          close: item[4],
-          high: item[2],
-          low: item[3],
-          open: item[1],
-          timestamp: item[0] * 1000,
-          volume: item[5],
-        };
-      });
-      if (!chartRef.current) return;
-      dataBarCountRef.current = datas.length;
-      chartRef.current.applyNewData(datas);
-      requestAnimationFrame(() => {
-        if (chartRef.current) {
-          fitChartBarSpace(chartRef.current, dataBarCountRef.current);
-        }
-      });
-    };
-    loadKData();
-    const intervalId = setInterval(() => {
-      if (!isAshareTradingSession()) {
-        return;
-      }
-      loadKData();
-    }, 60 * 1000);
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [entityId]);
-
-  useEffect(() => {
     chartRef.current = init(CHART_CONTAINER_ID);
     chartRef.current.setStyles({
       candle: {
@@ -157,6 +122,40 @@ export default function StockChartKline({ entityId }: Props) {
       dispose(CHART_CONTAINER_ID);
     };
   }, []);
+
+  useEffect(() => {
+    const loadKData = async () => {
+      const [kdata] = await services.getKData({ entity_ids: [entityId] });
+      const datas = kdata.datas.map((item: any) => {
+        return {
+          close: item[4],
+          high: item[2],
+          low: item[3],
+          open: item[1],
+          timestamp: item[0] * 1000,
+          volume: item[5],
+        };
+      });
+      if (!chartRef.current) return;
+      dataBarCountRef.current = datas.length;
+      chartRef.current.applyNewData(datas);
+      requestAnimationFrame(() => {
+        if (chartRef.current) {
+          fitChartBarSpace(chartRef.current, dataBarCountRef.current);
+        }
+      });
+    };
+    loadKData();
+    const intervalId = setInterval(() => {
+      if (!isAshareTradingSession()) {
+        return;
+      }
+      loadKData();
+    }, 60 * 1000);
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [entityId]);
 
   return <div id={CHART_CONTAINER_ID} className={KLINE_CHART_HEIGHT_CLASS}></div>;
 }
