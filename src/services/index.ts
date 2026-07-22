@@ -123,14 +123,14 @@ const apis = {
 
   getTimeMessage: 'GET /api/misc/time_message',
 
-  getPoolSetting: 'GET /api/trading/get_query_stock_quote_setting',
-  savePoolSetting: '/api/trading/build_query_stock_quote_setting',
-  getPoolStocksByTag: '/api/trading/query_stock_quotes',
-  getTagsStats: '/api/trading/query_tag_quotes',
+  getPoolSetting: 'GET /api/quote/get_query_stock_quote_setting',
+  savePoolSetting: '/api/quote/build_query_stock_quote_setting',
+  getPoolStocksByTag: '/api/quote/query_stock_quotes',
+  getTagsStats: '/api/quote/query_tag_quotes',
 
-  getDailyQuoteStats: 'GET /api/trading/get_quote_stats',
-  getKData: '/api/trading/query_kdata',
-  getTData: '/api/trading/query_ts',
+  getDailyQuoteStats: 'GET /api/quote/get_quote_stats',
+  getKData: '/api/quote/query_kdata',
+  getTData: '/api/quote/query_ts',
   buyStocks: '/api/trading/buy',
   sellStocks: '/api/trading/sell',
 
