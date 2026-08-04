@@ -9,12 +9,10 @@ export type MainTagInfo = {
   industries: string[] | null;
   concepts: string[] | null;
   areas: string[] | null;
-  /** 用于按「sub_tag → main_tag」关系反推个股主标签的次标签目录，与 active_sub_tags 语义独立 */
+  /** 用于按「sub_tag → main_tag」关系反推个股主标签的次标签目录 */
   sub_tags: string[];
   /** 当前市场认可的次标签（细分主题）子集，由「题材大师」等动态维护 */
   active_sub_tags?: string[] | null;
-  /** 互斥主标签；题材大师将其 sub_tags 并集作为 exclude_sub_tags */
-  exclusive_main_tags?: string[] | null;
   /** 与 ``industry_chain.name`` 对应的主标签目录 */
   is_industry_chain?: boolean;
 };
@@ -61,6 +59,7 @@ export type SanitizeStockTagReferencesResult = {
   orphan_hidden_tag_keys_removed: number;
   tag_catalog_rows_updated: number;
   catalog_sub_tag_links_removed: number;
+  catalog_active_sub_tags_synced: number;
   catalog_industry_links_removed: number;
   catalog_concept_links_removed: number;
   catalog_area_links_removed: number;
@@ -77,7 +76,6 @@ export type CreateMainTagInfo = {
   concepts?: string[] | null;
   areas?: string[] | null;
   is_industry_chain?: boolean;
-  exclusive_main_tags?: string[] | null;
 };
 
 /** 创建次标签请求体（独立创建，不指定所属主标签；归属由主标签侧管理） */
@@ -112,7 +110,6 @@ export type UpdateMainTagInfo = {
   concepts?: string[] | null;
   areas?: string[] | null;
   is_industry_chain?: boolean;
-  exclusive_main_tags?: string[] | null;
 };
 
 /** 向主标签 active_sub_tags 追加次标签 */

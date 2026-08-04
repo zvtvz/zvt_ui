@@ -30,8 +30,6 @@ interface Props {
   initial?: AnyTagInfo | null;
   /** 用于主标签表单选择关联次标签 */
   subTagOptions?: SubTagInfo[];
-  /** 用于主标签表单选择互斥主标签 */
-  mainTagOptions?: MainTagInfo[];
   industries: BlockInfo[];
   concepts: BlockInfo[];
   areas: BlockInfo[];
@@ -40,7 +38,6 @@ interface Props {
     desc: string;
     priority: number;
     sub_tags: string[];
-    exclusive_main_tags: string[];
     industries: string[];
     concepts: string[];
     areas: string[];
@@ -48,7 +45,7 @@ interface Props {
   onClose: () => void;
 }
 
-type SelectorState = 'sub_tags' | 'exclusive_main_tags' | 'industries' | 'concepts' | 'areas' | null;
+type SelectorState = 'sub_tags' | 'industries' | 'concepts' | 'areas' | null;
 
 export default function TagEditDialog({
   open,
@@ -56,7 +53,6 @@ export default function TagEditDialog({
   tagType,
   initial,
   subTagOptions = [],
-  mainTagOptions = [],
   industries,
   concepts,
   areas,
@@ -67,7 +63,6 @@ export default function TagEditDialog({
   const [desc, setDesc] = useState('');
   const [priority, setPriority] = useState(0);
   const [selSubTags, setSelSubTags] = useState<string[]>([]);
-  const [selExclusiveMainTags, setSelExclusiveMainTags] = useState<string[]>([]);
   const [selIndustries, setSelIndustries] = useState<string[]>([]);
   const [selConcepts, setSelConcepts] = useState<string[]>([]);
   const [selAreas, setSelAreas] = useState<string[]>([]);
@@ -80,7 +75,6 @@ export default function TagEditDialog({
       setDesc(initial.desc ?? '');
       setPriority(initial.priority ?? 0);
       setSelSubTags((initial as MainTagInfo).sub_tags ?? []);
-      setSelExclusiveMainTags((initial as MainTagInfo).exclusive_main_tags ?? []);
       setSelIndustries(initial.industries ?? []);
       setSelConcepts(initial.concepts ?? []);
       setSelAreas(initial.areas ?? []);
@@ -89,7 +83,6 @@ export default function TagEditDialog({
       setDesc('');
       setPriority(0);
       setSelSubTags([]);
-      setSelExclusiveMainTags([]);
       setSelIndustries([]);
       setSelConcepts([]);
       setSelAreas([]);
@@ -103,16 +96,11 @@ export default function TagEditDialog({
       desc: desc.trim(),
       priority,
       sub_tags: selSubTags,
-      exclusive_main_tags: selExclusiveMainTags,
       industries: selIndustries,
       concepts: selConcepts,
       areas: selAreas,
     });
   }
-
-  const exclusiveMainTagItems: BlockInfo[] = mainTagOptions
-    .filter((tag) => tag.name !== name.trim())
-    .map((tag) => ({ name: tag.name, desc: tag.desc }));
 
   const subTagItems: BlockInfo[] = subTagOptions.map((t) => ({ name: t.name, desc: t.desc }));
 
@@ -121,12 +109,6 @@ export default function TagEditDialog({
     { title: string; items: BlockInfo[]; selected: string[]; onConfirm: (v: string[]) => void }
   > = {
     sub_tags: { title: '选择次标签', items: subTagItems, selected: selSubTags, onConfirm: setSelSubTags },
-    exclusive_main_tags: {
-      title: '选择互斥主标签',
-      items: exclusiveMainTagItems,
-      selected: selExclusiveMainTags,
-      onConfirm: setSelExclusiveMainTags,
-    },
     industries: { title: '选择行业', items: industries, selected: selIndustries, onConfirm: setSelIndustries },
     concepts: { title: '选择概念', items: concepts, selected: selConcepts, onConfirm: setSelConcepts },
     areas: { title: '选择地域', items: areas, selected: selAreas, onConfirm: setSelAreas },
@@ -206,42 +188,6 @@ export default function TagEditDialog({
                     sx={{ cursor: 'pointer' }}
                   >
                     添加次标签
-                  </Chip>
-                </Box>
-              </FormControl>
-            )}
-
-            {tagType === 'main_tag' && (
-              <FormControl>
-                <FormLabel>互斥主标签</FormLabel>
-                <Typography level="body-xs" textColor="neutral.500" sx={{ mb: 0.5 }}>
-                  题材大师运行时，将这些主标签的次标签并集作为排除项
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
-                  {selExclusiveMainTags.map((n) => (
-                    <Chip
-                      key={n}
-                      size="sm"
-                      variant="soft"
-                      color="danger"
-                      endDecorator={
-                        <ChipDelete
-                          onDelete={() => setSelExclusiveMainTags((p) => p.filter((x) => x !== n))}
-                        />
-                      }
-                    >
-                      {n}
-                    </Chip>
-                  ))}
-                  <Chip
-                    size="sm"
-                    variant="outlined"
-                    color="neutral"
-                    startDecorator={<AddIcon fontSize="small" />}
-                    onClick={() => setSelector('exclusive_main_tags')}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    添加互斥主标签
                   </Chip>
                 </Box>
               </FormControl>

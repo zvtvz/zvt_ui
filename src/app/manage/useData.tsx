@@ -378,7 +378,8 @@ export function useManageData() {
     try {
       const res = (await services.sanitizeStockTagReferences()) as SanitizeStockTagReferencesResult;
       addLog(
-        `标签补偿完成：目录更新 ${res.tag_catalog_rows_updated} 行（剔除次标签关联 ${res.catalog_sub_tag_links_removed}、` +
+        `标签补偿完成：目录更新 ${res.tag_catalog_rows_updated} 行（同步活跃次标签 ${res.catalog_active_sub_tags_synced}、` +
+          `剔除无效次标签关联 ${res.catalog_sub_tag_links_removed}、` +
           `行业 ${res.catalog_industry_links_removed}、概念 ${res.catalog_concept_links_removed}、地域 ${res.catalog_area_links_removed}）；` +
           `股票扫描 ${res.stocks_scanned} 条、更新 ${res.stocks_updated} 条；` +
           `股票孤儿键 主 ${res.orphan_main_tag_keys_removed} / 次 ${res.orphan_sub_tag_keys_removed} / 隐藏 ${res.orphan_hidden_tag_keys_removed}`

@@ -76,7 +76,7 @@ export default function TagSection(props: TagSectionProps) {
 
   const [dialog, setDialog] = useState<{ mode: 'create' | 'edit'; tag?: AnyTagInfo } | null>(null);
   const confirmDialog = useConfirmDialog();
-  const columnCount = tagType === 'main_tag' ? 8 : 6;
+  const columnCount = tagType === 'main_tag' ? 7 : 6;
 
   const tagTypeLabel: Record<TagType, string> = {
     main_tag: '主标签',
@@ -89,7 +89,6 @@ export default function TagSection(props: TagSectionProps) {
     desc: string;
     priority: number;
     sub_tags: string[];
-    exclusive_main_tags: string[];
     industries: string[];
     concepts: string[];
     areas: string[];
@@ -110,9 +109,6 @@ export default function TagSection(props: TagSectionProps) {
             sub_tags: data.sub_tags.length ? data.sub_tags : null,
             active_sub_tags: editingMainTag?.active_sub_tags?.length
               ? editingMainTag.active_sub_tags
-              : null,
-            exclusive_main_tags: data.exclusive_main_tags.length
-              ? data.exclusive_main_tags
               : null,
             is_industry_chain:
               dialog?.mode === 'edit' && dialog.tag
@@ -168,7 +164,6 @@ export default function TagSection(props: TagSectionProps) {
             <tr>
               <th style={{ minWidth: 200, width: '18%' }}>名称</th>
               {tagType === 'main_tag' && <th>关联次标签</th>}
-              {tagType === 'main_tag' && <th>互斥主标签</th>}
               <th style={{ width: 48, textAlign: 'center' }}>优先级</th>
               <th>关联行业</th>
               <th>关联概念</th>
@@ -254,16 +249,6 @@ export default function TagSection(props: TagSectionProps) {
                     </td>
                   )}
 
-                  {tagType === 'main_tag' && (
-                    <td>
-                      <ChipList
-                        items={(tag as MainTagInfo).exclusive_main_tags}
-                        color="danger"
-                        max={3}
-                      />
-                    </td>
-                  )}
-
                   <td style={{ textAlign: 'center' }}>
                     <Typography level="body-xs" textColor="neutral.500">
                       {tag.priority ?? 0}
@@ -309,7 +294,6 @@ export default function TagSection(props: TagSectionProps) {
           tagType={tagType}
           initial={dialog.tag ?? null}
           subTagOptions={subTagOptions}
-          mainTagOptions={tagType === 'main_tag' ? (props as MainTagSectionProps).tags : []}
           industries={industries}
           concepts={concepts}
           areas={areas}
