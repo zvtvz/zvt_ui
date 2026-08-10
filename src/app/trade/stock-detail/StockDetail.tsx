@@ -16,6 +16,7 @@ type Props = {
   refreshNews: () => any;
   isAdmin?: boolean;
   onRiseReasonSaved?: (entityId: string, riseReason: string | null) => void;
+  onTagsUpdated?: () => void | Promise<void>;
 };
 
 export default function StockDetail({
@@ -25,6 +26,7 @@ export default function StockDetail({
   refreshNews,
   isAdmin = false,
   onRiseReasonSaved,
+  onTagsUpdated,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [industryChainOpen, setIndustryChainOpen] = useState(false);
@@ -94,6 +96,7 @@ export default function StockDetail({
           open={open}
           stock={stocks.current}
           onCancel={() => setOpen(false)}
+          onTagsUpdated={onTagsUpdated}
         />
       )}
       {riseReasonOpen && stocks.current && (

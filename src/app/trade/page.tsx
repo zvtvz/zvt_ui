@@ -47,6 +47,7 @@ export default function Workspace() {
     dailyStats,
     updateStockEvents,
     patchStockRiseReason,
+    refreshCurrentStocks,
     refreshPools,
     refreshActiveSubTags,
     isAdmin,
@@ -424,6 +425,7 @@ export default function Workspace() {
                     refreshNews={updateStockEvents}
                     isAdmin={isAdmin}
                     onRiseReasonSaved={patchStockRiseReason}
+                    onTagsUpdated={refreshCurrentStocks}
                   />
                 </CardContent>
               </Card>

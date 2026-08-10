@@ -243,6 +243,47 @@ export default function useData() {
     });
   };
 
+  /** 改个股标签后立刻重拉列表（不依赖交易时段轮询）。保留当前选中若仍在结果中。 */
+  const refreshCurrentStocks = async () => {
+    const tag = tags.current;
+    const pool = pools.current;
+    const segmentName = segments.current;
+    const previousEntityId = stocks.current?.entity_id as string | undefined;
+    const params = buildStockQueryParams(tag, pool, segmentName);
+
+    const [stocksResponse, statses] = await Promise.all([
+      services.getPoolStocksByTag(params),
+      pool?.stock_pool_name
+        ? services.getTagsStats({ stock_pool_name: pool.stock_pool_name })
+        : Promise.resolve(null),
+    ]);
+    const list = Array.isArray(stocksResponse?.quotes) ? stocksResponse.quotes : [];
+    if (statses) {
+      setTags({ statses });
+    }
+
+    const stillSelected = previousEntityId
+      ? list.find((row: { entity_id?: string }) => row.entity_id === previousEntityId)
+      : undefined;
+    if (stillSelected) {
+      setStocks({
+        data: list,
+        current: stillSelected,
+      });
+      return;
+    }
+    if (list[0]) {
+      setStocks({ data: list });
+      await selectStock(list[0]);
+      return;
+    }
+    setStocks({
+      data: list,
+      current: undefined,
+      events: undefined,
+    });
+  };
+
   const updateStocks = (rows: any, onlyUpdateData = false) => {
     const list = Array.isArray(rows) ? rows : [];
     const first = list[0];
@@ -426,6 +467,7 @@ export default function useData() {
     dailyStats,
     updateStockEvents,
     patchStockRiseReason,
+    refreshCurrentStocks,
     refreshPools,
     refreshActiveSubTags,
     isAdmin,

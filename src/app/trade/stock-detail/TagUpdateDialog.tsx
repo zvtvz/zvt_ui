@@ -58,6 +58,8 @@ type Props = {
   open: boolean;
   stock: { entity_id: string };
   onCancel: () => void;
+  /** 个股标签变更成功后回调（用于盘后等无轮询时刷新交易页列表） */
+  onTagsUpdated?: () => void | Promise<void>;
 };
 
 function tagOptionNames(options: TagOptionItem[]): string[] {
@@ -120,6 +122,7 @@ export default function TagUpdateDialog({
   open,
   stock,
   onCancel,
+  onTagsUpdated,
 }: Props) {
   const [actionLoading, setActionLoading] = useState(false);
   const [addKind, setAddKind] = useState<AddKind | null>(null);
@@ -190,6 +193,14 @@ export default function TagUpdateDialog({
     setEditReasonDraft('');
   };
 
+  const afterTagsMutation = useCallback(async () => {
+    await refreshStockTags();
+    if (addDialogOpen) {
+      await refreshCatalog();
+    }
+    await onTagsUpdated?.();
+  }, [refreshStockTags, refreshCatalog, addDialogOpen, onTagsUpdated]);
+
   const handleSaveEditReason = async () => {
     if (!editTarget) return;
     setActionLoading(true);
@@ -201,16 +212,11 @@ export default function TagUpdateDialog({
         reason: editReasonDraft,
       });
       closeEditReason();
-      await refreshStockTags();
-      if (addDialogOpen) await refreshCatalog();
+      await afterTagsMutation();
     } finally {
       setActionLoading(false);
     }
   };
-
-  const refreshAll = useCallback(async () => {
-    await Promise.all([refreshStockTags(), refreshCatalog()]);
-  }, [refreshStockTags, refreshCatalog]);
 
   const mainTagEntries = useMemo(
     () => sortMainEntries(Object.entries(stockTags?.main_tags || {}), stockTags?.main_tag),
@@ -237,8 +243,7 @@ export default function TagUpdateDialog({
         tag_type: tagType,
         tag_name: tagName,
       });
-      await refreshStockTags();
-      if (addDialogOpen) await refreshCatalog();
+      await afterTagsMutation();
     } finally {
       setActionLoading(false);
     }
@@ -262,8 +267,7 @@ export default function TagUpdateDialog({
         active_hidden_tags: activeHiddenTagsPayload,
         keep_current_selections: false,
       });
-      await refreshStockTags();
-      if (addDialogOpen) await refreshCatalog();
+      await afterTagsMutation();
     } finally {
       setActionLoading(false);
     }
@@ -285,8 +289,7 @@ export default function TagUpdateDialog({
         active_hidden_tags: activeHiddenTagsPayload,
         keep_current_selections: false,
       });
-      await refreshStockTags();
-      if (addDialogOpen) await refreshCatalog();
+      await afterTagsMutation();
     } finally {
       setActionLoading(false);
     }
@@ -308,8 +311,7 @@ export default function TagUpdateDialog({
         active_hidden_tags: { [name]: reason },
         keep_current_selections: true,
       });
-      await refreshStockTags();
-      if (addDialogOpen) await refreshCatalog();
+      await afterTagsMutation();
     } finally {
       setActionLoading(false);
     }
@@ -334,8 +336,7 @@ export default function TagUpdateDialog({
         active_hidden_tags: nextActive,
         keep_current_selections: false,
       });
-      await refreshStockTags();
-      if (addDialogOpen) await refreshCatalog();
+      await afterTagsMutation();
     } finally {
       setActionLoading(false);
     }
@@ -387,7 +388,7 @@ export default function TagUpdateDialog({
         });
       }
       closeAddDialog();
-      await refreshAll();
+      await afterTagsMutation();
     } finally {
       setActionLoading(false);
     }
