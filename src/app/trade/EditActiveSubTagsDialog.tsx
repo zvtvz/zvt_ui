@@ -40,7 +40,7 @@ function uniqueSubTagNames(names: string[]) {
   return result;
 }
 
-function SubTagChip({
+function RemovableChip({
   name,
   tone,
   onRemove,
@@ -51,49 +51,76 @@ function SubTagChip({
   onRemove: () => void;
   onActivate?: () => void;
 }) {
-  const softBg = tone === 'primary' ? 'primary.softBg' : 'neutral.softBg';
-  const softColor = tone === 'primary' ? 'primary.softColor' : 'neutral.softColor';
-
   return (
     <Box
       component="span"
+      role={onActivate ? 'button' : undefined}
+      tabIndex={onActivate ? 0 : undefined}
+      onClick={onActivate}
+      onKeyDown={
+        onActivate
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onActivate();
+              }
+            }
+          : undefined
+      }
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: 0.25,
         maxWidth: '100%',
         borderRadius: 'sm',
-        bgcolor: softBg,
-        color: softColor,
+        bgcolor: tone === 'primary' ? 'primary.softBg' : 'background.level1',
+        color: tone === 'primary' ? 'primary.softColor' : 'text.primary',
+        border: '1px solid',
+        borderColor: tone === 'primary' ? 'primary.outlinedBorder' : 'neutral.outlinedBorder',
         pl: 1,
         pr: 0.25,
         py: 0.25,
         fontSize: '0.875rem',
         lineHeight: 1.35,
         fontWeight: 500,
+        cursor: onActivate ? 'pointer' : 'default',
+        '&:hover': onActivate
+          ? {
+              bgcolor: 'primary.softHoverBg',
+            }
+          : undefined,
       }}
     >
-      {onActivate ? (
-        <button
-          type="button"
-          className="cursor-pointer border-none bg-transparent p-0 text-left font-inherit text-inherit hover:underline"
-          onClick={onActivate}
-        >
-          {name}
-        </button>
-      ) : (
-        <Typography component="span" level="body-sm">
-          {name}
-        </Typography>
-      )}
-      <button
+      <Typography component="span" level="body-sm">
+        {name}
+      </Typography>
+      <Box
+        component="button"
         type="button"
-        className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded p-0.5 text-neutral-600 hover:bg-[rgba(0,0,0,0.06)] hover:text-neutral-900"
         aria-label={`移除 ${name}`}
-        onClick={onRemove}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onRemove();
+        }}
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          borderRadius: 'xs',
+          p: 0.25,
+          color: 'neutral.600',
+          '&:hover': {
+            bgcolor: 'rgba(0,0,0,0.06)',
+            color: 'neutral.900',
+          },
+        }}
       >
         <CloseRounded sx={{ fontSize: 16, opacity: 0.75 }} />
-      </button>
+      </Box>
     </Box>
   );
 }
@@ -132,7 +159,9 @@ export default function EditActiveSubTagsDialog({
     setDraftRelationSubTags(relationNames);
     setNewSubTagName('');
     setError('');
-  }, [open, mainTag?.active_sub_tags, mainTag?.sub_tags, mainTag?.name]);
+    // Re-seed only when dialog opens / main tag switches; keep in-dialog edits stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mainTag?.name]);
 
   const addToActive = (name: string) => {
     const trimmed = (name || '').trim();
@@ -195,10 +224,10 @@ export default function EditActiveSubTagsDialog({
           </Typography>
           <FormControl className="mb-3">
             <FormLabel>当前活跃子标签</FormLabel>
-            <div className="flex flex-wrap gap-1 min-h-[32px]">
+            <div className="flex flex-wrap gap-1.5 min-h-[32px]">
               {draftActiveSubTags.length ? (
                 draftActiveSubTags.map((name) => (
-                  <SubTagChip
+                  <RemovableChip
                     key={name}
                     name={name}
                     tone="primary"
@@ -215,14 +244,14 @@ export default function EditActiveSubTagsDialog({
           <FormControl className="mb-3">
             <FormLabel>关系次标签</FormLabel>
             <Typography level="body-xs" className="mb-1 opacity-70">
-              点击名称加入活跃；× 从关系目录删除（同时移出活跃）
+              点击未活跃项加入活跃；× 从关系目录删除（同时移出活跃）
             </Typography>
-            <div className="flex flex-wrap gap-1 min-h-[32px]">
+            <div className="flex flex-wrap gap-1.5 min-h-[32px]">
               {draftRelationSubTags.length ? (
                 draftRelationSubTags.map((name) => {
                   const alreadyActive = activeSubTagSet.has(name);
                   return (
-                    <SubTagChip
+                    <RemovableChip
                       key={name}
                       name={name}
                       tone={alreadyActive ? 'primary' : 'neutral'}
