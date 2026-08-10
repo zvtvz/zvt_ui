@@ -16,7 +16,7 @@ import {
   Box,
 } from '@mui/joy';
 import { useRequest } from 'ahooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type TagKind = 'main_tag' | 'sub_tag' | 'hidden_tag';
 
@@ -58,7 +58,7 @@ type Props = {
   open: boolean;
   stock: { entity_id: string };
   onCancel: () => void;
-  /** 个股标签变更成功后回调（用于盘后等无轮询时刷新交易页列表） */
+  /** 对话框关闭且期间有标签变更时回调（刷新交易页列表，避免操作中途切选中标的） */
   onTagsUpdated?: () => void | Promise<void>;
 };
 
@@ -129,6 +129,7 @@ export default function TagUpdateDialog({
   const [draft, setDraft] = useState({ tag: '', reason: '' });
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [editReasonDraft, setEditReasonDraft] = useState('');
+  const tagsDirtyRef = useRef(false);
 
   const addDialogOpen = addKind !== null;
   const editDialogOpen = editTarget !== null;
@@ -180,6 +181,7 @@ export default function TagUpdateDialog({
       setDraft({ tag: '', reason: '' });
       setEditTarget(null);
       setEditReasonDraft('');
+      tagsDirtyRef.current = false;
     }
   }, [open]);
 
@@ -198,8 +200,17 @@ export default function TagUpdateDialog({
     if (addDialogOpen) {
       await refreshCatalog();
     }
-    await onTagsUpdated?.();
-  }, [refreshStockTags, refreshCatalog, addDialogOpen, onTagsUpdated]);
+    tagsDirtyRef.current = true;
+  }, [refreshStockTags, refreshCatalog, addDialogOpen]);
+
+  const handleClose = useCallback(() => {
+    const shouldRefreshList = tagsDirtyRef.current;
+    tagsDirtyRef.current = false;
+    onCancel();
+    if (shouldRefreshList) {
+      void onTagsUpdated?.();
+    }
+  }, [onCancel, onTagsUpdated]);
 
   const handleSaveEditReason = async () => {
     if (!editTarget) return;
@@ -415,7 +426,7 @@ export default function TagUpdateDialog({
 
   return (
     <>
-      <Modal open={open} onClose={onCancel}>
+      <Modal open={open} onClose={handleClose}>
         <ModalDialog className="w-[520px]" size="sm">
           <ModalClose size="sm" />
           <DialogTitle>修改标签</DialogTitle>
@@ -703,7 +714,7 @@ export default function TagUpdateDialog({
             </Loading>
           </DialogContent>
           <DialogActions sx={{ justifyContent: 'flex-start' }}>
-            <Button size="sm" variant="plain" onClick={onCancel}>
+            <Button size="sm" variant="plain" onClick={handleClose}>
               取消
             </Button>
           </DialogActions>
