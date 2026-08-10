@@ -6,7 +6,6 @@ import type { MainTagInfo } from '@/interfaces';
 import {
   Box,
   Button,
-  Chip,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -41,6 +40,64 @@ function uniqueSubTagNames(names: string[]) {
   return result;
 }
 
+function SubTagChip({
+  name,
+  tone,
+  onRemove,
+  onActivate,
+}: {
+  name: string;
+  tone: 'primary' | 'neutral';
+  onRemove: () => void;
+  onActivate?: () => void;
+}) {
+  const softBg = tone === 'primary' ? 'primary.softBg' : 'neutral.softBg';
+  const softColor = tone === 'primary' ? 'primary.softColor' : 'neutral.softColor';
+
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.25,
+        maxWidth: '100%',
+        borderRadius: 'sm',
+        bgcolor: softBg,
+        color: softColor,
+        pl: 1,
+        pr: 0.25,
+        py: 0.25,
+        fontSize: '0.875rem',
+        lineHeight: 1.35,
+        fontWeight: 500,
+      }}
+    >
+      {onActivate ? (
+        <button
+          type="button"
+          className="cursor-pointer border-none bg-transparent p-0 text-left font-inherit text-inherit hover:underline"
+          onClick={onActivate}
+        >
+          {name}
+        </button>
+      ) : (
+        <Typography component="span" level="body-sm">
+          {name}
+        </Typography>
+      )}
+      <button
+        type="button"
+        className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded p-0.5 text-neutral-600 hover:bg-[rgba(0,0,0,0.06)] hover:text-neutral-900"
+        aria-label={`移除 ${name}`}
+        onClick={onRemove}
+      >
+        <CloseRounded sx={{ fontSize: 16, opacity: 0.75 }} />
+      </button>
+    </Box>
+  );
+}
+
 export default function EditActiveSubTagsDialog({
   open,
   mainTag,
@@ -50,6 +107,7 @@ export default function EditActiveSubTagsDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [draftActiveSubTags, setDraftActiveSubTags] = useState<string[]>([]);
+  const [draftRelationSubTags, setDraftRelationSubTags] = useState<string[]>([]);
   const [newSubTagName, setNewSubTagName] = useState('');
 
   const activeSubTagSet = useMemo(
@@ -57,37 +115,42 @@ export default function EditActiveSubTagsDialog({
     [draftActiveSubTags]
   );
 
-  const selectableRelationSubTags = useMemo(() => {
-    const relationSubTags = mainTag?.sub_tags ?? [];
-    return relationSubTags.filter((name) => {
-      const trimmed = (name || '').trim();
-      return trimmed && !activeSubTagSet.has(trimmed);
-    });
-  }, [mainTag?.sub_tags, activeSubTagSet]);
-
   useEffect(() => {
     if (!open) {
       setDraftActiveSubTags([]);
+      setDraftRelationSubTags([]);
       setNewSubTagName('');
       setError('');
       return;
     }
-    setDraftActiveSubTags(uniqueSubTagNames(mainTag?.active_sub_tags ?? []));
+    const activeNames = uniqueSubTagNames(mainTag?.active_sub_tags ?? []);
+    const relationNames = uniqueSubTagNames([
+      ...(mainTag?.sub_tags ?? []),
+      ...activeNames,
+    ]);
+    setDraftActiveSubTags(activeNames);
+    setDraftRelationSubTags(relationNames);
     setNewSubTagName('');
     setError('');
-  }, [open, mainTag?.active_sub_tags, mainTag?.name]);
+  }, [open, mainTag?.active_sub_tags, mainTag?.sub_tags, mainTag?.name]);
 
-  const addSubTagName = (name: string) => {
+  const addToActive = (name: string) => {
     const trimmed = (name || '').trim();
     if (!trimmed) {
       return;
     }
     setDraftActiveSubTags((previous) => uniqueSubTagNames([...previous, trimmed]));
+    setDraftRelationSubTags((previous) => uniqueSubTagNames([...previous, trimmed]));
     setNewSubTagName('');
     setError('');
   };
 
-  const removeSubTagName = (name: string) => {
+  const removeFromActive = (name: string) => {
+    setDraftActiveSubTags((previous) => previous.filter((item) => item !== name));
+  };
+
+  const removeFromRelation = (name: string) => {
+    setDraftRelationSubTags((previous) => previous.filter((item) => item !== name));
     setDraftActiveSubTags((previous) => previous.filter((item) => item !== name));
   };
 
@@ -104,6 +167,7 @@ export default function EditActiveSubTagsDialog({
       await services.setActiveSubTagsOnMainTag({
         main_tag_name: mainTagName,
         active_sub_tags: draftActiveSubTags,
+        sub_tags: draftRelationSubTags,
       });
       await onSaved();
       onCancel();
@@ -120,13 +184,13 @@ export default function EditActiveSubTagsDialog({
 
   return (
     <Modal open={open} onClose={onCancel}>
-      <ModalDialog className="w-[480px] !text-[14px]" size="sm">
+      <ModalDialog className="w-[520px] !text-[14px]" size="sm">
         <ModalClose size="sm" />
         <DialogTitle>编辑活跃子标签</DialogTitle>
         <DialogContent>
           <Typography level="body-sm" className="mb-2 opacity-80">
             {mainTag?.name
-              ? `「${mainTag.name}」下交易页三级 tab 展示的活跃次标签，可从关系目录添加或点击标签删除`
+              ? `「${mainTag.name}」下可统一管理活跃次标签与关系次标签：活跃用于交易页三级 tab，关系用于个股主标签反推`
               : ''}
           </Typography>
           <FormControl className="mb-3">
@@ -134,64 +198,48 @@ export default function EditActiveSubTagsDialog({
             <div className="flex flex-wrap gap-1 min-h-[32px]">
               {draftActiveSubTags.length ? (
                 draftActiveSubTags.map((name) => (
-                  <Box
+                  <SubTagChip
                     key={name}
-                    component="span"
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.25,
-                      maxWidth: '100%',
-                      borderRadius: 'sm',
-                      bgcolor: 'primary.softBg',
-                      color: 'primary.softColor',
-                      pl: 1,
-                      pr: 0.25,
-                      py: 0.25,
-                      fontSize: '0.875rem',
-                      lineHeight: 1.35,
-                      fontWeight: 500,
-                    }}
-                  >
-                    <Typography component="span" level="body-sm">
-                      {name}
-                    </Typography>
-                    <button
-                      type="button"
-                      className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded p-0.5 text-neutral-600 hover:bg-[rgba(0,0,0,0.06)] hover:text-neutral-900"
-                      aria-label={`移除 ${name}`}
-                      onClick={() => removeSubTagName(name)}
-                    >
-                      <CloseRounded sx={{ fontSize: 16, opacity: 0.75 }} />
-                    </button>
-                  </Box>
+                    name={name}
+                    tone="primary"
+                    onRemove={() => removeFromActive(name)}
+                  />
                 ))
               ) : (
                 <span className="text-sm text-neutral-500">
-                  暂无活跃子标签，可从下方关系目录添加或输入新名称
+                  暂无活跃子标签，可从下方关系目录点选或输入新名称
                 </span>
               )}
             </div>
           </FormControl>
-          {selectableRelationSubTags.length ? (
-            <FormControl className="mb-3">
-              <FormLabel>从关系次标签添加</FormLabel>
-              <div className="flex flex-wrap gap-1.5">
-                {selectableRelationSubTags.map((name) => (
-                  <Chip
-                    key={name}
-                    size="sm"
-                    variant="outlined"
-                    color="neutral"
-                    onClick={() => addSubTagName(name)}
-                    className="cursor-pointer"
-                  >
-                    {name}
-                  </Chip>
-                ))}
-              </div>
-            </FormControl>
-          ) : null}
+          <FormControl className="mb-3">
+            <FormLabel>关系次标签</FormLabel>
+            <Typography level="body-xs" className="mb-1 opacity-70">
+              点击名称加入活跃；× 从关系目录删除（同时移出活跃）
+            </Typography>
+            <div className="flex flex-wrap gap-1 min-h-[32px]">
+              {draftRelationSubTags.length ? (
+                draftRelationSubTags.map((name) => {
+                  const alreadyActive = activeSubTagSet.has(name);
+                  return (
+                    <SubTagChip
+                      key={name}
+                      name={name}
+                      tone={alreadyActive ? 'primary' : 'neutral'}
+                      onRemove={() => removeFromRelation(name)}
+                      onActivate={
+                        alreadyActive ? undefined : () => addToActive(name)
+                      }
+                    />
+                  );
+                })
+              ) : (
+                <span className="text-sm text-neutral-500">
+                  暂无关系次标签，可在下方输入新名称
+                </span>
+              )}
+            </div>
+          </FormControl>
           <FormControl>
             <FormLabel>或输入新次标签</FormLabel>
             <div className="flex gap-2">
@@ -203,7 +251,7 @@ export default function EditActiveSubTagsDialog({
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
                     event.preventDefault();
-                    addSubTagName(newSubTagName);
+                    addToActive(newSubTagName);
                   }
                 }}
                 placeholder="输入新的次标签名称"
@@ -213,7 +261,7 @@ export default function EditActiveSubTagsDialog({
                 size="sm"
                 variant="outlined"
                 disabled={!newSubTagName.trim()}
-                onClick={() => addSubTagName(newSubTagName)}
+                onClick={() => addToActive(newSubTagName)}
               >
                 添加
               </Button>
