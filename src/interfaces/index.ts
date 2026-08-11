@@ -300,6 +300,10 @@ export type Pool = {
   active?: boolean;
   /** 关联概念名（与 concept_info / 板块概念同名）；未配置时为 null/undefined */
   related_concept?: string | null;
+  /** 风格：趋势大票 / 连板小票 / 综合（后端字段；前端过滤暂未启用） */
+  style?: string | null;
+  /** 展示优先级，数值越小越高；默认 100 */
+  priority?: number;
 };
 
 export type Stock = {

@@ -1,12 +1,87 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRequest } from 'ahooks';
-import { Button, Chip, Typography } from '@mui/joy';
+import { Button, Chip, Input, Typography } from '@mui/joy';
 import services from '@/services';
 import type { Pool } from '@/interfaces';
 import CreateStockPoolDialog from '@/app/trade/CreateStockPoolDialog';
 import UpdateStockPoolDialog from '@/app/trade/UpdateStockPoolDialog';
+
+const DEFAULT_PRIORITY = 100;
+
+function PoolPriorityEditor({
+  pool,
+  onSaved,
+}: {
+  pool: Pool;
+  onSaved: () => void;
+}) {
+  const [draft, setDraft] = useState(String(pool.priority ?? DEFAULT_PRIORITY));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setDraft(String(pool.priority ?? DEFAULT_PRIORITY));
+    setError('');
+  }, [pool.id, pool.priority]);
+
+  const currentPriority = pool.priority ?? DEFAULT_PRIORITY;
+  const parsed = Number.parseInt(draft, 10);
+  const dirty = !Number.isNaN(parsed) && parsed !== currentPriority;
+
+  const handleSave = async () => {
+    if (Number.isNaN(parsed) || parsed < 1) {
+      setError('优先级须为 >= 1 的整数');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await services.setStockPoolPriority({
+        stock_pool_name: pool.stock_pool_name,
+        priority: parsed,
+      });
+      onSaved();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '保存优先级失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <Typography level="body-xs" textColor="neutral.500">
+        优先级
+      </Typography>
+      <Input
+        size="sm"
+        type="number"
+        slotProps={{ input: { min: 1, step: 1 } }}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        sx={{ width: 72 }}
+      />
+      <Button
+        size="sm"
+        variant="soft"
+        disabled={!dirty}
+        loading={saving}
+        onClick={() => {
+          void handleSave();
+        }}
+      >
+        保存
+      </Button>
+      {error ? (
+        <Typography level="body-xs" textColor="danger.600">
+          {error}
+        </Typography>
+      ) : null}
+    </div>
+  );
+}
 
 export default function StockPoolsTab() {
   const [createPoolOpen, setCreatePoolOpen] = useState(false);
@@ -57,7 +132,9 @@ export default function StockPoolsTab() {
   return (
     <div>
       <div className="flex flex-row justify-between items-center mb-2">
-        <span className="opacity-85 text-sm">共 {poolList.length} 个</span>
+        <span className="opacity-85 text-sm">
+          共 {poolList.length} 个（按优先级升序；数值越小越高）
+        </span>
         <Button
           size="sm"
           variant="soft"
@@ -89,7 +166,7 @@ export default function StockPoolsTab() {
           return (
             <div
               key={pool.id}
-              className="flex items-center justify-between px-3 py-2 rounded-lg border border-neutral-200 bg-white"
+              className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-neutral-200 bg-white"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <Typography level="body-sm" className="font-medium truncate">
@@ -109,66 +186,69 @@ export default function StockPoolsTab() {
                 )}
               </div>
 
-              {isCustom && (
-                <div className="flex items-center gap-2 ml-2 shrink-0">
-                  {isConfirmingDelete ? (
-                    <>
-                      <Typography level="body-xs" textColor="danger.600">
-                        确认删除？
-                      </Typography>
-                      <Button
-                        size="sm"
-                        variant="soft"
-                        color="danger"
-                        loading={deletingName === pool.stock_pool_name}
-                        onClick={() => handleDelete(pool)}
-                      >
-                        确认
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="plain"
-                        onClick={() => setConfirmDeleteName(null)}
-                      >
-                        取消
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      {isArchived ? (
+              <div className="flex items-center gap-3 ml-2 shrink-0">
+                <PoolPriorityEditor pool={pool} onSaved={refresh} />
+                {isCustom && (
+                  <div className="flex items-center gap-2">
+                    {isConfirmingDelete ? (
+                      <>
+                        <Typography level="body-xs" textColor="danger.600">
+                          确认删除？
+                        </Typography>
                         <Button
                           size="sm"
                           variant="soft"
-                          color="success"
-                          loading={restoringName === pool.stock_pool_name}
-                          onClick={() => handleRestore(pool)}
+                          color="danger"
+                          loading={deletingName === pool.stock_pool_name}
+                          onClick={() => handleDelete(pool)}
                         >
-                          恢复
+                          确认
                         </Button>
-                      ) : (
                         <Button
                           size="sm"
                           variant="plain"
-                          onClick={() => setEditingPool(pool)}
+                          onClick={() => setConfirmDeleteName(null)}
                         >
-                          编辑
+                          取消
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="plain"
-                        color="danger"
-                        onClick={() => {
-                          setConfirmDeleteName(pool.stock_pool_name);
-                          setActionError('');
-                        }}
-                      >
-                        删除
-                      </Button>
-                    </>
-                  )}
-                </div>
-              )}
+                      </>
+                    ) : (
+                      <>
+                        {isArchived ? (
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            color="success"
+                            loading={restoringName === pool.stock_pool_name}
+                            onClick={() => handleRestore(pool)}
+                          >
+                            恢复
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="plain"
+                            onClick={() => setEditingPool(pool)}
+                          >
+                            编辑
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="plain"
+                          color="danger"
+                          onClick={() => {
+                            setConfirmDeleteName(pool.stock_pool_name);
+                            setActionError('');
+                          }}
+                        >
+                          删除
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

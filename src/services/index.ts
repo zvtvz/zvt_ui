@@ -12,6 +12,7 @@ const apis = {
   restoreStockPool: '/api/stockpool/restore_stock_pool',
   deleteStockPool: '/api/stockpool/delete_stock_pool',
   setStockPoolRelatedConcept: '/api/stockpool/set_stock_pool_related_concept',
+  setStockPoolPriority: '/api/stockpool/set_stock_pool_priority',
 
   // 主标签 CRUD
   createMainTagInfo: '/api/tag/create_main_tag_info',
