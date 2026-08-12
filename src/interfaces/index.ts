@@ -306,6 +306,19 @@ export type Pool = {
   priority?: number;
 };
 
+/** ``query_tag_quotes`` 返回的主标签行情聚合 */
+export type TagQuoteStats = {
+  main_tag: string;
+  limit_up_count: number;
+  limit_down_count: number;
+  up_count: number;
+  down_count: number;
+  change_pct: number;
+  turnover: number;
+  /** MainTagInfo.priority，越小越靠前；默认 100 */
+  priority?: number | null;
+};
+
 export type Stock = {
   entity_id: string;
   name: string;

@@ -202,6 +202,9 @@ export default function Workspace() {
                       <p>下跌数：{stats?.down_count}</p>
                       <p>涨幅：{toPercent(stats?.change_pct)}</p>
                       <p>成交额：{toMoney(stats?.turnover)}</p>
+                      {typeof stats?.priority === 'number' ? (
+                        <p>优先级：{stats.priority}</p>
+                      ) : null}
                     </div>
                   }
                   variant="solid"
@@ -222,8 +225,22 @@ export default function Workspace() {
                     }}
                   >
                     <div className="flex items-center py-2">
-                      <div className="text-center mr-2 text-[14px]">
-                        {tag.name}
+                      <div className="text-center mr-2 text-[14px] flex items-baseline justify-center gap-0.5">
+                        <span>{tag.name}</span>
+                        {typeof stats?.priority === 'number' &&
+                        stats.priority > 0 &&
+                        stats.priority < 100 ? (
+                          <span
+                            className={
+                              isSelected
+                                ? 'text-[10px] leading-none opacity-80 font-semibold'
+                                : 'text-[10px] leading-none text-neutral-500 font-semibold'
+                            }
+                            title={`主标签优先级 ${stats.priority}`}
+                          >
+                            {stats.priority}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="text-[12px] leading-none">
                         <div>{toMoney(stats?.turnover)}</div>
