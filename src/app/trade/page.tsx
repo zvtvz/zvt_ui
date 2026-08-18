@@ -130,8 +130,12 @@ export default function Workspace() {
               交易量:{toMoney(dailyStats.turnover, 0)}
             </span>
             <span className="ml-6 mr-2">
-              同比{dailyStats.turnover_change > 0 ? '放量' : '缩量'}:
+              全天{dailyStats.turnover_change > 0 ? '放量' : '缩量'}:
               {toMoney(dailyStats.turnover_change, 0)}
+            </span>
+            <span className="ml-6 mr-2">
+              同比30分钟{dailyStats.turnover_30min_change > 0 ? '放量' : '缩量'}:
+              {toMoney(dailyStats.turnover_30min_change, 0)}
             </span>
           </div>
         )}
