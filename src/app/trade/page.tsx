@@ -134,7 +134,7 @@ export default function Workspace() {
               {toMoney(dailyStats.turnover_change, 0)}
             </span>
             <span className="ml-6 mr-2">
-              同比30分钟{dailyStats.turnover_30min_change > 0 ? '放量' : '缩量'}:
+              30分钟{dailyStats.turnover_30min_change > 0 ? '放量' : '缩量'}:
               {toMoney(dailyStats.turnover_30min_change, 0)}
             </span>
           </div>
