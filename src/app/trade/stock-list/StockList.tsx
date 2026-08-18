@@ -5,7 +5,6 @@ import { CircularProgress } from '@mui/joy';
 
 import SortCell from './SortCell';
 import { toMoney } from '@/utils';
-import { formatProfitSummaryDisplay } from '@/utils/profitSummary';
 import Blink from './Blink';
 import { SENTIMENT_PREFIX, TREND_PREFIX } from '@/constants/capitalStructure';
 
@@ -38,23 +37,10 @@ function CoreBusinessCell({ value }: { value?: string | null }) {
   );
 }
 
-function ProfitSummaryCell({ value }: { value?: string | null }) {
-  const full = formatProfitSummaryDisplay(value);
+function HighDaysCell({ value }: { value?: string | null }) {
+  const full = (value || '').trim();
   if (!full) return null;
-  const raw = (value || '').trim();
-  const inner = (
-    <div className="max-w-[200px] text-left leading-snug line-clamp-2 break-words text-xs">
-      {full}
-    </div>
-  );
-  if (raw === full) {
-    return inner;
-  }
-  return (
-    <Tooltip title={<div className="max-w-[320px] whitespace-pre-wrap">{raw}</div>} variant="solid">
-      {inner}
-    </Tooltip>
-  );
+  return <div className="text-left text-xs">{full}</div>;
 }
 
 function RiseReasonCell({ value }: { value?: string | null }) {
@@ -116,7 +102,7 @@ export default function StockList({
               </th>
               <th>主标签</th>
               <th>次标签</th>
-              <th>{renderHeaderCell('profit_summary', '业绩')}</th>
+              <th>{renderHeaderCell('high_days', '高度')}</th>
               <th>上涨原因</th>
               {/* 隐藏标签列保留排序能力于后端 hidden_tag，前端暂改展示上涨原因 */}
               <th>市场地位</th>
@@ -166,7 +152,7 @@ export default function StockList({
                 <td>{stock.main_tag}</td>
                 <td>{stock.sub_tag}</td>
                 <td>
-                  <ProfitSummaryCell value={stock.profit_summary} />
+                  <HighDaysCell value={stock.high_days} />
                 </td>
                 <td>
                   <RiseReasonCell value={stock.rise_reason} />
