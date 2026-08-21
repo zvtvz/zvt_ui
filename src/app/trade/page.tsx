@@ -24,6 +24,7 @@ import { toMoney, toPercent, toTradePercent } from '@/utils';
 import StockList from './stock-list/StockList';
 import StockDetail from './stock-detail/StockDetail';
 import TradeHotTopicsPanel from './TradeHotTopicsPanel';
+import MarketStyleEvolution from './MarketStyleEvolution';
 import Dialog from '@/components/Dialog';
 import useDialog from '@/components/Dialog/useDialog';
 
@@ -139,6 +140,7 @@ export default function Workspace() {
             </span>
           </div>
         )}
+        <MarketStyleEvolution />
       </div>
       <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center">

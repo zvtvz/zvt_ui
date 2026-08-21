@@ -130,6 +130,7 @@ const apis = {
   getTagsStats: '/api/quote/query_tag_quotes',
 
   getDailyQuoteStats: 'GET /api/quote/get_quote_stats',
+  getMarketStyleEvolution: 'GET /api/factor/get_market_style_evolution',
   getKData: '/api/quote/query_kdata',
   getTData: '/api/quote/query_ts',
   buyStocks: '/api/trading/buy',
