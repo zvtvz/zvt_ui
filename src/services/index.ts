@@ -131,6 +131,7 @@ const apis = {
 
   getDailyQuoteStats: 'GET /api/quote/get_quote_stats',
   getMarketStyleEvolution: 'GET /api/factor/get_market_style_evolution',
+  listMarketStyles: 'GET /api/factor/list_market_styles',
   getKData: '/api/quote/query_kdata',
   getTData: '/api/quote/query_ts',
   buyStocks: '/api/trading/buy',
