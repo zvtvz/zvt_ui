@@ -45,7 +45,9 @@ function MarketStyleTooltipContent({
   showTime: boolean;
 }) {
   const timeLabel = showTime
-    ? dayjs(item.timestamp).format('HH:mm')
+    ? item.is_close
+      ? '收盘'
+      : dayjs(item.timestamp).format('HH:mm')
     : getDate(item.timestamp);
 
   return (
@@ -79,7 +81,9 @@ function StyleChipList({
           MARKET_STYLE_VISUAL[item.market_style] ??
           MARKET_STYLE_VISUAL.positive_chaos;
         const label = showTime
-          ? dayjs(item.timestamp).format('HH:mm')
+          ? item.is_close
+            ? '收盘'
+            : dayjs(item.timestamp).format('HH:mm')
           : item.market_style_label;
 
         return (
