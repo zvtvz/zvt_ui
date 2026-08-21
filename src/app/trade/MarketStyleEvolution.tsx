@@ -54,7 +54,7 @@ function MarketStyleTooltipContent({
       <p>晋级率：{toPercent(item.promotion_rate ?? 0)}</p>
       <p>小市值占比：{toPercent(item.small_cap_dominance ?? 0)}</p>
       <p>大市值占比：{toPercent(item.change_top_large_cap_ratio ?? 0)}</p>
-      <p>大容量涨幅：{toTradePercent(item.turnover_top_avg_change_pct ?? 0)}</p>
+      <p>容量涨幅：{toTradePercent(item.turnover_top_avg_change_pct ?? 0)}</p>
       <p>跌停数：{item.limit_down_count ?? '-'}</p>
       <p>最高连板：{item.max_height ?? '-'}</p>
     </div>

@@ -128,6 +128,9 @@ export default function Workspace() {
               平均涨幅:{toTradePercent(dailyStats.change_pct)}
             </span>
             <span className="ml-6">
+              容量涨幅:{toTradePercent(dailyStats.turnover_top_avg_change_pct ?? 0)}
+            </span>
+            <span className="ml-6">
               交易量:{toMoney(dailyStats.turnover, 0)}
             </span>
             <span className="ml-6 mr-2">
