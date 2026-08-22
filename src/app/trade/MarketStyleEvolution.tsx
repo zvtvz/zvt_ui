@@ -13,6 +13,7 @@ import {
 } from './marketStyleShared';
 import MarketStyleHistoryDialog from './MarketStyleHistoryDialog';
 import MarketStyleTooltipContent from './MarketStyleTooltipContent';
+import MarketModeGuide from './MarketModeGuide';
 
 function StyleChipList({ items, detail }: { items: MarketStyleSnapshot[]; detail: 'day' | 'intraday' }) {
   if (!items.length) {
@@ -57,30 +58,30 @@ export default function MarketStyleEvolution() {
   const evolution = data as MarketStyleEvolutionResponse | undefined;
   const recentDays = evolution?.recent_days ?? [];
   const todayItems = evolution?.today ?? [];
-
-  if (!recentDays.length && !todayItems.length) {
-    return null;
-  }
+  const hasStyleEvolution = recentDays.length > 0 || todayItems.length > 0;
 
   return (
     <>
-      <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
-        <span>风格演变：</span>
-        <span className="text-neutral-500">最近10日</span>
-        <StyleChipList items={recentDays} detail="day" />
-        <span className="text-neutral-300 mx-1">|</span>
-        <span className="text-neutral-500">当日</span>
-        <StyleChipList items={todayItems} detail="intraday" />
-        <Button
-          size="sm"
-          variant="plain"
-          color="neutral"
-          className="!min-h-0 !px-1.5 !py-0.5 !text-xs"
-          onClick={() => setHistoryOpen(true)}
-        >
-          历史
-        </Button>
-      </div>
+      {hasStyleEvolution ? (
+        <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+          <span>风格演变：</span>
+          <span className="text-neutral-500">最近10日</span>
+          <StyleChipList items={recentDays} detail="day" />
+          <span className="text-neutral-300 mx-1">|</span>
+          <span className="text-neutral-500">当日</span>
+          <StyleChipList items={todayItems} detail="intraday" />
+          <Button
+            size="sm"
+            variant="plain"
+            color="neutral"
+            className="!min-h-0 !px-1.5 !py-0.5 !text-xs"
+            onClick={() => setHistoryOpen(true)}
+          >
+            历史
+          </Button>
+        </div>
+      ) : null}
+      <MarketModeGuide />
       <MarketStyleHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </>
   );

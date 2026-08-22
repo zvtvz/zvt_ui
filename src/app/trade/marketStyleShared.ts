@@ -26,3 +26,22 @@ export type MarketStyleEvolutionResponse = {
   recent_days: MarketStyleSnapshot[];
   today: MarketStyleSnapshot[];
 };
+
+export type TradingModeItem = {
+  mode: string;
+  label: string;
+};
+
+export type ModeGuideResponse = {
+  market_style: string;
+  market_style_label: string;
+  primary: TradingModeItem[];
+  secondary: TradingModeItem[];
+  forbidden: TradingModeItem[];
+  cash: boolean;
+  note: string;
+};
+
+export function formatModeLabels(items: TradingModeItem[]): string {
+  return items.map((item) => item.label).join('、');
+}
