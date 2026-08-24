@@ -115,9 +115,9 @@ export default function StockList({
               </th>
               <th>主标签</th>
               <th>次标签</th>
+              <th>{renderHeaderCell('hidden_tag', '隐藏标签')}</th>
               <th>{renderHeaderCell('high_days', '高度')}</th>
               <th>上涨原因</th>
-              <th>{renderHeaderCell('hidden_tag', '隐藏标签')}</th>
               <th>市场地位</th>
             </tr>
           </thead>
@@ -165,13 +165,13 @@ export default function StockList({
                 <td>{stock.main_tag}</td>
                 <td>{stock.sub_tag}</td>
                 <td>
+                  <HiddenTagsCell value={stock.hidden_tags} />
+                </td>
+                <td>
                   <HighDaysCell value={stock.high_days} />
                 </td>
                 <td>
                   <RiseReasonCell value={stock.rise_reason} />
-                </td>
-                <td>
-                  <HiddenTagsCell value={stock.hidden_tags} />
                 </td>
                 <td>
                   <CoreBusinessCell value={stock.core_business_and_market_position} />
