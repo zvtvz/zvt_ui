@@ -32,7 +32,7 @@ export type SubTagInfo = {
   is_industry_chain_segment?: boolean;
 };
 
-/** 隐藏标签：暗线特征，与主/次标签共同起作用 */
+/** 隐藏标签：情绪载体（与后端 SENTIMENT_CARRIER_LABELS 同步） */
 export type HiddenTagInfo = {
   id: string;
   entity_id: string;
@@ -40,9 +40,6 @@ export type HiddenTagInfo = {
   name: string;
   desc: string | null;
   priority: number;
-  industries: string[] | null;
-  concepts: string[] | null;
-  areas: string[] | null;
 };
 
 /** 主标签切换（change_stock_main_tag） */
@@ -89,14 +86,17 @@ export type CreateSubTagInfo = {
   is_industry_chain_segment?: boolean;
 };
 
-/** 创建隐藏标签请求体 */
+/** 创建隐藏标签请求体（一般由系统 sync，勿手建） */
 export type CreateHiddenTagInfo = {
   name: string;
   desc?: string | null;
   priority?: number;
-  industries?: string[] | null;
-  concepts?: string[] | null;
-  areas?: string[] | null;
+};
+
+/** 更新隐藏标签请求体（仅描述；priority 由 SentimentCarrier 同步） */
+export type UpdateHiddenTagInfo = {
+  tag_name: string;
+  desc?: string | null;
 };
 
 /** 更新主标签请求体（全量更新，调用方须传入所有字段的期望值）*/
@@ -139,16 +139,6 @@ export type UpdateSubTagInfo = {
   concepts?: string[] | null;
   areas?: string[] | null;
   is_industry_chain_segment?: boolean;
-};
-
-/** 更新隐藏标签请求体（全量更新）*/
-export type UpdateHiddenTagInfo = {
-  tag_name: string;
-  desc?: string | null;
-  priority: number;
-  industries?: string[] | null;
-  concepts?: string[] | null;
-  areas?: string[] | null;
 };
 
 export type BlockInfo = {

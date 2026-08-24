@@ -73,10 +73,12 @@ export default function TagSection(props: TagSectionProps) {
   const { tagType, industries, concepts, areas, loading, onCreate, onUpdate, onDelete } = props;
   const tags = props.tags as AnyTagInfo[];
   const subTagOptions = tagType === 'main_tag' ? (props as MainTagSectionProps).subTagOptions : [];
+  const isReadOnlyHiddenCatalog = tagType === 'hidden_tag';
 
   const [dialog, setDialog] = useState<{ mode: 'create' | 'edit'; tag?: AnyTagInfo } | null>(null);
   const confirmDialog = useConfirmDialog();
-  const columnCount = tagType === 'main_tag' ? 7 : 6;
+  const columnCount =
+    tagType === 'main_tag' ? 7 : tagType === 'hidden_tag' ? 2 : 6;
 
   const tagTypeLabel: Record<TagType, string> = {
     main_tag: '主标签',
@@ -147,15 +149,21 @@ export default function TagSection(props: TagSectionProps) {
   return (
     <Box>
       <div className="flex flex-row justify-between items-center mb-2">
-        <span className="opacity-85 text-sm">共 {tags.length} 个</span>
-        <Button
-          size="sm"
-          variant="soft"
-          className="!text-[12px] !py-1"
-          onClick={() => setDialog({ mode: 'create' })}
-        >
-          新增{tagTypeLabel[tagType]}
-        </Button>
+        <span className="opacity-85 text-sm">
+          {isReadOnlyHiddenCatalog
+            ? '由情绪载体自动同步；priority 按最新 SentimentCarrier 收盘快照 Top50 命中数排名'
+            : `共 ${tags.length} 个`}
+        </span>
+        {!isReadOnlyHiddenCatalog ? (
+          <Button
+            size="sm"
+            variant="soft"
+            className="!text-[12px] !py-1"
+            onClick={() => setDialog({ mode: 'create' })}
+          >
+            新增{tagTypeLabel[tagType]}
+          </Button>
+        ) : null}
       </div>
 
       <div className="overflow-auto">
@@ -165,10 +173,12 @@ export default function TagSection(props: TagSectionProps) {
               <th style={{ minWidth: 200, width: '18%' }}>名称</th>
               {tagType === 'main_tag' && <th>关联次标签</th>}
               <th style={{ width: 48, textAlign: 'center' }}>优先级</th>
-              <th>关联行业</th>
-              <th>关联概念</th>
-              <th>关联地域</th>
-              <th style={{ width: 140, whiteSpace: 'nowrap' }}>操作</th>
+              {!isReadOnlyHiddenCatalog && <th>关联行业</th>}
+              {!isReadOnlyHiddenCatalog && <th>关联概念</th>}
+              {!isReadOnlyHiddenCatalog && <th>关联地域</th>}
+              {!isReadOnlyHiddenCatalog && (
+                <th style={{ width: 140, whiteSpace: 'nowrap' }}>操作</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -189,7 +199,10 @@ export default function TagSection(props: TagSectionProps) {
                 </td>
               </tr>
             ) : (
-              tags.map((tag) => (
+              (isReadOnlyHiddenCatalog
+                ? [...tags].sort((left, right) => (left.priority ?? 0) - (right.priority ?? 0))
+                : tags
+              ).map((tag) => (
                 <tr key={tag.id || tag.name}>
                   <td style={{ minWidth: 200, verticalAlign: 'top' }}>
                     <Box
@@ -254,32 +267,35 @@ export default function TagSection(props: TagSectionProps) {
                       {tag.priority ?? 0}
                     </Typography>
                   </td>
-                  <td><ChipList items={tag.industries} color="primary" /></td>
-                  <td><ChipList items={tag.concepts} color="success" /></td>
-                  <td><ChipList items={tag.areas} color="warning" /></td>
-
-                  <td>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0.75 }}>
-                      <Button
-                        size="sm"
-                        variant="outlined"
-                        color="primary"
-                        onClick={() => setDialog({ mode: 'edit', tag })}
-                        sx={{ minWidth: 0, fontSize: 12, px: 1.25, py: 0.25 }}
-                      >
-                        编辑
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outlined"
-                        color="danger"
-                        onClick={() => confirmDeleteTag(tag)}
-                        sx={{ minWidth: 0, fontSize: 12, px: 1.25, py: 0.25 }}
-                      >
-                        删除
-                      </Button>
-                    </Box>
-                  </td>
+                  {!isReadOnlyHiddenCatalog && (
+                    <>
+                      <td><ChipList items={tag.industries} color="primary" /></td>
+                      <td><ChipList items={tag.concepts} color="success" /></td>
+                      <td><ChipList items={tag.areas} color="warning" /></td>
+                      <td>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0.75 }}>
+                          <Button
+                            size="sm"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => setDialog({ mode: 'edit', tag })}
+                            sx={{ minWidth: 0, fontSize: 12, px: 1.25, py: 0.25 }}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outlined"
+                            color="danger"
+                            onClick={() => confirmDeleteTag(tag)}
+                            sx={{ minWidth: 0, fontSize: 12, px: 1.25, py: 0.25 }}
+                          >
+                            删除
+                          </Button>
+                        </Box>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))
             )}
@@ -287,7 +303,7 @@ export default function TagSection(props: TagSectionProps) {
         </Table>
       </div>
 
-      {dialog && (
+      {dialog && !isReadOnlyHiddenCatalog && (
         <TagEditDialog
           open={!!dialog}
           mode={dialog.mode}

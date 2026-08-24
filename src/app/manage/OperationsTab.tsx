@@ -32,7 +32,7 @@ import BlockSelectorDialog from './BlockSelectorDialog';
 import BuildStockIndustryChainDialog from './BuildStockIndustryChainDialog';
 import SortCell from '@/app/trade/stock-list/SortCell';
 import type { BuildStockTagsOptions, StockTagBuildType } from './useData';
-import type { BlockInfo, HiddenTagInfo, IndustryChainInfo, MainTagInfo, StockIndustryChainListItem, SubTagInfo } from '@/interfaces';
+import type { BlockInfo, IndustryChainInfo, MainTagInfo, StockIndustryChainListItem, SubTagInfo } from '@/interfaces';
 import services from '@/services';
 
 function formatIndustryChainBuildTimestamp(value?: string | null): string {
@@ -70,7 +70,6 @@ const OPERATION_SECTION_LABELS = [
   '数据初始化',
   '维护主标签',
   '维护次标签',
-  '维护隐藏标签',
   '主标签切换',
   '数据补偿',
 ] as const;
@@ -79,7 +78,6 @@ interface Props {
   opLog: string[];
   mainTags: MainTagInfo[];
   subTags: SubTagInfo[];
-  hiddenTags: HiddenTagInfo[];
   industries: BlockInfo[];
   concepts: BlockInfo[];
   areas: BlockInfo[];
@@ -106,7 +104,6 @@ export default function OperationsTab({
   opLog,
   mainTags,
   subTags,
-  hiddenTags,
   industries,
   concepts,
   areas,
@@ -141,7 +138,6 @@ export default function OperationsTab({
 
   const [mainBuildAxis, setMainBuildAxis] = useState<MainBuildAxis>('industry');
   const [subBuildAxis, setSubBuildAxis] = useState<BlockAxis>('industry');
-  const [hiddenBuildAxis, setHiddenBuildAxis] = useState<BlockAxis>('industry');
 
   const industryChainsForAgent = useRequest(
     async () => (await services.getIndustryChain({ active: true })) as IndustryChainInfo[],
@@ -348,7 +344,6 @@ export default function OperationsTab({
 
   const mainTagNames = useMemo(() => mainTags.map((tag) => tag.name), [mainTags]);
   const subTagNames = useMemo(() => subTags.map((tag) => tag.name), [subTags]);
-  const hiddenTagNames = useMemo(() => hiddenTags.map((tag) => tag.name), [hiddenTags]);
 
   function renderRebuildLimitsCard(sourceAxis: SourceAxis, tagNameOptions: string[]) {
     const names =
@@ -975,42 +970,6 @@ export default function OperationsTab({
         )}
 
         {operationSectionTab === 4 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Card variant="plain" size="sm">
-            <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Typography level="title-sm" className="!text-sm !font-bold">
-                来自属性
-              </Typography>
-              <RadioGroup
-                orientation="horizontal"
-                value={hiddenBuildAxis}
-                onChange={(event) => {
-                  setHiddenBuildAxis(event.target.value as BlockAxis);
-                  clearAllRelationSources();
-                  setTargetTagName('');
-                  setTargetTagInput('');
-                }}
-                sx={{ flexWrap: 'wrap', gap: 1 }}
-              >
-                <Radio value="industry" label="行业" />
-                <Radio value="concept" label="概念" />
-                <Radio value="area" label="地域" />
-              </RadioGroup>
-            </CardContent>
-          </Card>
-          {renderRebuildLimitsCard(hiddenBuildAxis, hiddenTagNames)}
-          {renderBuildActionsRow(
-            hiddenBuildAxis === 'industry'
-              ? 'hidden_industry'
-              : hiddenBuildAxis === 'concept'
-                ? 'hidden_concept'
-                : 'hidden_area',
-            hiddenTagNames
-          )}
-          </Box>
-        )}
-
-        {operationSectionTab === 5 && (
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
@@ -1123,7 +1082,7 @@ export default function OperationsTab({
           </Card>
         )}
 
-        {operationSectionTab === 6 && (
+        {operationSectionTab === 5 && (
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">

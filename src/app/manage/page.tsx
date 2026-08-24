@@ -133,11 +133,13 @@ export default function ManagePage() {
               <TagSection
                 tagType="hidden_tag"
                 tags={hiddenTags}
+                industries={[]}
+                concepts={[]}
+                areas={[]}
                 loading={loading.hidden}
                 onCreate={(payload) => createTag('hidden_tag', payload)}
                 onUpdate={(payload) => updateTag('hidden_tag', payload)}
                 onDelete={(tagName) => deleteTag('hidden_tag', tagName)}
-                {...blockProps}
               />
             )}
             {tagTab === 3 && (
@@ -155,7 +157,6 @@ export default function ManagePage() {
             opLog={opLog}
             mainTags={mainTags}
             subTags={subTags}
-            hiddenTags={hiddenTags}
             industries={industries}
             concepts={concepts}
             areas={areas}

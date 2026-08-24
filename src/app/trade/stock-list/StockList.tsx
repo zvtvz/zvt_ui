@@ -58,6 +58,19 @@ function RiseReasonCell({ value }: { value?: string | null }) {
   );
 }
 
+function HiddenTagsCell({ value }: { value?: string[] | null }) {
+  const labels = (value || []).filter(Boolean);
+  if (!labels.length) return null;
+  const text = labels.join('、');
+  return (
+    <Tooltip title={<div className="max-w-[320px] whitespace-pre-wrap">{text}</div>} variant="solid">
+      <div className="max-w-[160px] text-left leading-snug line-clamp-2 break-words text-xs">
+        {text}
+      </div>
+    </Tooltip>
+  );
+}
+
 type Props = any;
 
 export default function StockList({
@@ -104,7 +117,7 @@ export default function StockList({
               <th>次标签</th>
               <th>{renderHeaderCell('high_days', '高度')}</th>
               <th>上涨原因</th>
-              {/* 隐藏标签列保留排序能力于后端 hidden_tag，前端暂改展示上涨原因 */}
+              <th>{renderHeaderCell('hidden_tag', '隐藏标签')}</th>
               <th>市场地位</th>
             </tr>
           </thead>
@@ -157,22 +170,9 @@ export default function StockList({
                 <td>
                   <RiseReasonCell value={stock.rise_reason} />
                 </td>
-                {/* hidden_tags 仍由后端返回，便于后续恢复展示：
                 <td>
-                  <Tooltip
-                    title={
-                      <div className="">
-                        {(stock.hidden_tags || []).join('、')}
-                      </div>
-                    }
-                    variant="solid"
-                  >
-                    <div className="relative overflow-hidden whitespace-nowrap text-ellipsis">
-                      {(stock.hidden_tags || []).join('、')}
-                    </div>
-                  </Tooltip>
+                  <HiddenTagsCell value={stock.hidden_tags} />
                 </td>
-                */}
                 <td>
                   <CoreBusinessCell value={stock.core_business_and_market_position} />
                 </td>

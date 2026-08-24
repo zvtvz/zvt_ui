@@ -27,10 +27,7 @@ export type StockTagBuildType =
   | 'main_sub_tag'
   | 'sub_industry'
   | 'sub_concept'
-  | 'sub_area'
-  | 'hidden_industry'
-  | 'hidden_concept'
-  | 'hidden_area';
+  | 'sub_area';
 
 /** 与后端 BuildStockTagsFromRelationsModel 对应；sources 按本次重建维度取其一传入接口 */
 export type BuildStockTagsOptions = {
@@ -179,9 +176,6 @@ export function useManageData() {
     sub_industry: '行业→次标签',
     sub_concept: '概念→次标签',
     sub_area: '地域→次标签',
-    hidden_industry: '行业→隐藏标签',
-    hidden_concept: '概念→隐藏标签',
-    hidden_area: '地域→隐藏标签',
   };
 
   const buildApiMap: Record<
@@ -194,9 +188,6 @@ export function useManageData() {
     sub_industry: (b) => services.buildStockSubTagByIndustry(b),
     sub_concept: (b) => services.buildStockSubTagByConcept(b),
     sub_area: (b) => services.buildStockSubTagByArea(b),
-    hidden_industry: (b) => services.buildStockHiddenTagByIndustry(b),
-    hidden_concept: (b) => services.buildStockHiddenTagByConcept(b),
-    hidden_area: (b) => services.buildStockHiddenTagByArea(b),
   };
 
   async function buildStockTags(type: StockTagBuildType, options: BuildStockTagsOptions) {
