@@ -24,6 +24,7 @@ export default function MarketStyleTooltipContent({
       <p>大市值占比：{toPercent(item.change_top_large_cap_ratio ?? 0)}</p>
       <p>容量涨幅：{toTradePercent(item.turnover_top_avg_change_pct ?? 0)}</p>
       <p>跌停数：{item.limit_down_count ?? '-'}</p>
+      <p>封板率：{item.limit_up_success_rate == null ? '-' : toPercent(item.limit_up_success_rate)}</p>
       <p>最高连板：{item.max_height ?? '-'}</p>
     </div>
   );

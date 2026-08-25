@@ -20,6 +20,7 @@ export type MarketStyleSnapshot = {
   change_top_large_cap_ratio?: number | null;
   limit_down_count?: number | null;
   max_height?: number | null;
+  limit_up_success_rate?: number | null;
 };
 
 export type MarketStyleEvolutionResponse = {
