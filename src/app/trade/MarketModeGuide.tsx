@@ -1,5 +1,7 @@
 'use client';
 
+/** 交易页暂改为显示情绪载体，本组件暂未挂载。 */
+
 import Tooltip from '@mui/joy/Tooltip';
 import { useRequest } from 'ahooks';
 import services from '@/services';

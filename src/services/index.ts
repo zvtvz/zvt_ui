@@ -130,6 +130,7 @@ const apis = {
   getMarketStyleEvolution: 'GET /api/factor/get_market_style_evolution',
   getModeGuide: 'GET /api/factor/get_mode_guide',
   listMarketStyles: 'GET /api/factor/list_market_styles',
+  listSentimentCarriers: 'GET /api/factor/list_sentiment_carriers',
   getKData: '/api/quote/query_kdata',
   getTData: '/api/quote/query_ts',
   buyStocks: '/api/trading/buy',
