@@ -8,6 +8,7 @@ import services from '@/services';
 import { useTradingSession } from '@/hooks/useTradingSession';
 import {
   ABSTRACT_CARRIER_CHIP_STYLE,
+  formatSentimentCarrierChipLabel,
   getTopActiveSentimentCarrierChipLabel,
   NORMAL_CARRIER_CHIP_STYLE,
   NORMAL_CARRIER_LABEL,
@@ -32,6 +33,7 @@ function CarrierChipList({
     <>
       {items.map((item, index) => {
         const chipLabel = getTopActiveSentimentCarrierChipLabel(item);
+        const chipDisplayLabel = formatSentimentCarrierChipLabel(chipLabel);
         const hasActive = chipLabel !== NORMAL_CARRIER_LABEL;
         const chipStyle = hasActive ? ABSTRACT_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
 
@@ -43,10 +45,10 @@ function CarrierChipList({
               variant="solid"
             >
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default max-w-[180px] truncate"
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default"
                 style={chipStyle}
               >
-                {chipLabel}
+                {chipDisplayLabel}
               </span>
             </Tooltip>
           </Fragment>

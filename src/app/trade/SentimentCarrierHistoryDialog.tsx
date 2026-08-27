@@ -18,6 +18,7 @@ import services from '@/services';
 import { getDate } from '@/utils';
 import {
   ABSTRACT_CARRIER_CHIP_STYLE,
+  formatSentimentCarrierChipLabel,
   getTopActiveSentimentCarrierChipLabel,
   NORMAL_CARRIER_CHIP_STYLE,
   NORMAL_CARRIER_LABEL,
@@ -80,6 +81,7 @@ function CarrierDayCell({
   muted?: boolean;
 }) {
   const chipLabel = item ? getTopActiveSentimentCarrierChipLabel(item) : null;
+  const chipDisplayLabel = chipLabel ? formatSentimentCarrierChipLabel(chipLabel) : null;
   const hasActive = chipLabel !== null && chipLabel !== NORMAL_CARRIER_LABEL;
   const chipStyle = hasActive ? ABSTRACT_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
 
@@ -90,12 +92,12 @@ function CarrierDayCell({
       }`}
     >
       <div className="text-xs mb-1">{day.format('D')}</div>
-      {item && chipLabel ? (
+      {item && chipDisplayLabel ? (
         <span
-          className="inline-flex items-center justify-center px-1 py-0.5 rounded text-[11px] leading-none max-w-full truncate"
+          className="inline-flex items-center justify-center px-1 py-0.5 rounded text-[11px] leading-none"
           style={chipStyle}
         >
-          {chipLabel}
+          {chipDisplayLabel}
         </span>
       ) : (
         <span className="text-[11px] text-neutral-300">-</span>

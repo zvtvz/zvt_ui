@@ -168,6 +168,17 @@ export const NORMAL_CARRIER_CHIP_STYLE = {
 export const ABSTRACT_CARRIER_LABEL = '抽象';
 export const NORMAL_CARRIER_LABEL = '正常';
 
+export const SENTIMENT_CARRIER_CHIP_LABEL_MAX_LENGTH = 2;
+
+/** chip 上最多显示 2 个字；tooltip 仍用完整载体名。 */
+export function formatSentimentCarrierChipLabel(label: string): string {
+  const normalized = label.trim();
+  if (!normalized) {
+    return normalized;
+  }
+  return normalized.slice(0, SENTIMENT_CARRIER_CHIP_LABEL_MAX_LENGTH);
+}
+
 /** 有成立载体时取命中比例最高者作为 chip 文案；否则「正常」。 */
 export function getTopActiveSentimentCarrierChipLabel(snapshot: SentimentCarrierSnapshot): string {
   const topActive = getSortedSentimentCarrierStatsForTooltip(snapshot).find((stat) => stat.is_active);
