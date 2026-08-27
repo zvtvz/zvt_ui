@@ -269,9 +269,24 @@ export default function TagSection(props: TagSectionProps) {
                   </td>
                   {!isReadOnlyHiddenCatalog && (
                     <>
-                      <td><ChipList items={tag.industries} color="primary" /></td>
-                      <td><ChipList items={tag.concepts} color="success" /></td>
-                      <td><ChipList items={tag.areas} color="warning" /></td>
+                      <td>
+                        <ChipList
+                          items={(tag as MainTagInfo | SubTagInfo).industries}
+                          color="primary"
+                        />
+                      </td>
+                      <td>
+                        <ChipList
+                          items={(tag as MainTagInfo | SubTagInfo).concepts}
+                          color="success"
+                        />
+                      </td>
+                      <td>
+                        <ChipList
+                          items={(tag as MainTagInfo | SubTagInfo).areas}
+                          color="warning"
+                        />
+                      </td>
                       <td>
                         <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0.75 }}>
                           <Button

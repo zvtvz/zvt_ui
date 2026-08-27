@@ -73,11 +73,28 @@ export default function TagEditDialog({
     if (mode === 'edit' && initial) {
       setName(initial.name);
       setDesc(initial.desc ?? '');
-      setPriority(initial.priority ?? 0);
-      setSelSubTags((initial as MainTagInfo).sub_tags ?? []);
-      setSelIndustries(initial.industries ?? []);
-      setSelConcepts(initial.concepts ?? []);
-      setSelAreas(initial.areas ?? []);
+      if (tagType === 'main_tag') {
+        const mainTag = initial as MainTagInfo;
+        setPriority(mainTag.priority ?? 0);
+        setSelSubTags(mainTag.sub_tags ?? []);
+        setSelIndustries(mainTag.industries ?? []);
+        setSelConcepts(mainTag.concepts ?? []);
+        setSelAreas(mainTag.areas ?? []);
+      } else if (tagType === 'sub_tag') {
+        const subTag = initial as SubTagInfo;
+        setPriority(subTag.priority ?? 0);
+        setSelSubTags([]);
+        setSelIndustries(subTag.industries ?? []);
+        setSelConcepts(subTag.concepts ?? []);
+        setSelAreas(subTag.areas ?? []);
+      } else {
+        const hiddenTag = initial as HiddenTagInfo;
+        setPriority(hiddenTag.priority ?? 0);
+        setSelSubTags([]);
+        setSelIndustries([]);
+        setSelConcepts([]);
+        setSelAreas([]);
+      }
     } else {
       setName('');
       setDesc('');
@@ -87,7 +104,7 @@ export default function TagEditDialog({
       setSelConcepts([]);
       setSelAreas([]);
     }
-  }, [open, mode, initial]);
+  }, [open, mode, initial, tagType]);
 
   function handleSubmit() {
     if (!name.trim()) return;

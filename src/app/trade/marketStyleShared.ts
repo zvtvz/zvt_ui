@@ -78,6 +78,11 @@ export type SentimentCarrierSnapshot = {
   detection_reason?: string | null;
 };
 
+export type SentimentCarrierEvolutionResponse = {
+  recent_days: SentimentCarrierSnapshot[];
+  today: SentimentCarrierSnapshot[];
+};
+
 export function getActiveSentimentCarrierStats(
   snapshot: SentimentCarrierSnapshot
 ): SentimentCarrierStat[] {
@@ -93,4 +98,9 @@ export function getActiveSentimentCarrierStats(
     is_active: true,
     entity_ids: [],
   }));
+}
+
+export function formatActiveSentimentCarrierLabel(snapshot: SentimentCarrierSnapshot): string {
+  const activeStats = getActiveSentimentCarrierStats(snapshot);
+  return activeStats.length ? activeStats.map((stat) => stat.label).join('、') : '暂无';
 }

@@ -80,18 +80,6 @@ export function useManageData() {
   }
 
   async function createTag(
-    tagType: 'main_tag',
-    payload: CreateMainTagInfo
-  ): Promise<void>;
-  async function createTag(
-    tagType: 'sub_tag',
-    payload: CreateSubTagInfo
-  ): Promise<void>;
-  async function createTag(
-    tagType: 'hidden_tag',
-    payload: CreateHiddenTagInfo
-  ): Promise<void>;
-  async function createTag(
     tagType: TagType,
     payload: CreateMainTagInfo | CreateSubTagInfo | CreateHiddenTagInfo
   ) {
@@ -106,13 +94,10 @@ export function useManageData() {
     refreshByType(tagType);
   }
 
-  async function updateTag(tagType: 'main_tag', payload: UpdateMainTagInfo): Promise<void>;
-  async function updateTag(tagType: 'sub_tag', payload: UpdateSubTagInfo): Promise<void>;
-  async function updateTag(tagType: 'hidden_tag', payload: UpdateHiddenTagInfo): Promise<void>;
   async function updateTag(
     tagType: TagType,
     payload: UpdateMainTagInfo | UpdateSubTagInfo | UpdateHiddenTagInfo
-  ) {
+  ): Promise<void> {
     if (tagType === 'main_tag') {
       await services.updateMainTagInfo(payload as UpdateMainTagInfo);
     } else if (tagType === 'sub_tag') {

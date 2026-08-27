@@ -1,62 +1,91 @@
 'use client';
 
+import { Fragment } from 'react';
 import Tooltip from '@mui/joy/Tooltip';
 import { useRequest } from 'ahooks';
-import dayjs from 'dayjs';
 import services from '@/services';
 import { useTradingSession } from '@/hooks/useTradingSession';
-import { getDate, toPercent } from '@/utils';
 import {
+  formatActiveSentimentCarrierLabel,
   getActiveSentimentCarrierStats,
+  SentimentCarrierEvolutionResponse,
   SentimentCarrierSnapshot,
 } from './marketStyleShared';
+import SentimentCarrierTooltipContent from './SentimentCarrierTooltipContent';
 
-function SentimentCarrierTooltip({ snapshot }: { snapshot: SentimentCarrierSnapshot }) {
-  const activeStats = getActiveSentimentCarrierStats(snapshot);
+const ACTIVE_CARRIER_CHIP_STYLE = {
+  backgroundColor: '#fef2f2',
+  color: '#dc2626',
+};
+
+const EMPTY_CARRIER_CHIP_STYLE = {
+  backgroundColor: '#f5f5f5',
+  color: '#a3a3a3',
+};
+
+function CarrierChipList({
+  items,
+  detail,
+}: {
+  items: SentimentCarrierSnapshot[];
+  detail: 'day' | 'intraday';
+}) {
+  if (!items.length) {
+    return <span className="text-neutral-400">暂无</span>;
+  }
+
   return (
-    <div className="w-[220px]">
-      <p>日期：{getDate(snapshot.timestamp)}</p>
-      <p>时间：{snapshot.is_close ? '收盘' : dayjs(snapshot.timestamp).format('HH:mm')}</p>
-      {activeStats.length ? (
-        activeStats.map((stat) => (
-          <p key={stat.kind}>
-            {stat.label}：{stat.hit_count} / {toPercent(stat.hit_ratio, 0)}
-          </p>
-        ))
-      ) : (
-        <p>暂无成立的情绪载体</p>
-      )}
-      {snapshot.detection_reason ? <p>{snapshot.detection_reason}</p> : null}
-    </div>
+    <>
+      {items.map((item, index) => {
+        const activeStats = getActiveSentimentCarrierStats(item);
+        const label = formatActiveSentimentCarrierLabel(item);
+        const chipStyle = activeStats.length ? ACTIVE_CARRIER_CHIP_STYLE : EMPTY_CARRIER_CHIP_STYLE;
+
+        return (
+          <Fragment key={item.id}>
+            {index > 0 ? <span className="text-neutral-400 mx-0.5">→</span> : null}
+            <Tooltip
+              title={<SentimentCarrierTooltipContent snapshot={item} detail={detail} />}
+              variant="solid"
+            >
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default max-w-[180px] truncate"
+                style={chipStyle}
+              >
+                {label}
+              </span>
+            </Tooltip>
+          </Fragment>
+        );
+      })}
+    </>
   );
 }
 
 export default function SentimentCarrierGuide() {
   const isTradingSession = useTradingSession();
-  const { data } = useRequest(services.listSentimentCarriers, {
-    defaultParams: [{ limit: 1 }],
+  const { data } = useRequest(services.getSentimentCarrierEvolution, {
+    defaultParams: [{ limit: 10 }],
     pollingInterval: isTradingSession ? 1000 * 60 : undefined,
   });
 
-  const snapshots = (data as SentimentCarrierSnapshot[] | undefined) ?? [];
-  const latest = snapshots.length ? snapshots[snapshots.length - 1] : undefined;
-  if (!latest) {
+  const evolution = data as SentimentCarrierEvolutionResponse | undefined;
+  const recentDays = evolution?.recent_days ?? [];
+  const todayItems = evolution?.today ?? [];
+  const hasCarrierEvolution = recentDays.length > 0 || todayItems.length > 0;
+
+  if (!hasCarrierEvolution) {
     return null;
   }
 
-  const activeStats = getActiveSentimentCarrierStats(latest);
-  const activeLabel = activeStats.length
-    ? activeStats.map((stat) => stat.label).join('、')
-    : '暂无';
-
   return (
-    <Tooltip title={<SentimentCarrierTooltip snapshot={latest} />} variant="solid">
-      <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1 cursor-default">
-        <span>情绪载体：</span>
-        <span className={activeStats.length ? 'text-red-600 font-medium' : 'text-neutral-400'}>
-          {activeLabel}
-        </span>
-      </div>
-    </Tooltip>
+    <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+      <span>情绪载体：</span>
+      <span className="text-neutral-500">最近10日</span>
+      <CarrierChipList items={recentDays} detail="day" />
+      <span className="text-neutral-300 mx-1">|</span>
+      <span className="text-neutral-500">当日</span>
+      <CarrierChipList items={todayItems} detail="intraday" />
+    </div>
   );
 }
