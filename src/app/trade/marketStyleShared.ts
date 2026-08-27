@@ -58,6 +58,17 @@ export const SENTIMENT_CARRIER_LABELS: Record<string, string> = {
   old_dragon_stock: '老妖股',
 };
 
+export const ALL_SENTIMENT_CARRIER_KINDS = [
+  'animal_stock',
+  'recent_new_stock',
+  'number_stock',
+  'mahjong_stock',
+  'st_stock',
+  'low_price_stock',
+  'restructuring_stock',
+  'old_dragon_stock',
+] as const;
+
 export type SentimentCarrierStat = {
   kind: string;
   label: string;
@@ -113,6 +124,35 @@ export function getAllSentimentCarrierStats(snapshot: SentimentCarrierSnapshot):
     is_active: true,
     entity_ids: [],
   }));
+}
+
+/** 情绪载体 tooltip：全量 8 类，按命中比例降序。 */
+export function getSortedSentimentCarrierStatsForTooltip(
+  snapshot: SentimentCarrierSnapshot
+): SentimentCarrierStat[] {
+  const statsByKind = new Map(
+    getAllSentimentCarrierStats(snapshot).map((stat) => [stat.kind, stat])
+  );
+  const fullStats = ALL_SENTIMENT_CARRIER_KINDS.map((kind) => {
+    const existing = statsByKind.get(kind);
+    if (existing) {
+      return existing;
+    }
+    return {
+      kind,
+      label: SENTIMENT_CARRIER_LABELS[kind] ?? kind,
+      hit_count: 0,
+      hit_ratio: 0,
+      is_active: false,
+      entity_ids: [],
+    };
+  });
+  return [...fullStats].sort((left, right) => {
+    if (right.hit_ratio !== left.hit_ratio) {
+      return right.hit_ratio - left.hit_ratio;
+    }
+    return left.label.localeCompare(right.label, 'zh-CN');
+  });
 }
 
 export const ABSTRACT_CARRIER_CHIP_STYLE = {

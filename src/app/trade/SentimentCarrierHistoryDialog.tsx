@@ -111,13 +111,7 @@ function CarrierDayCell({
 
   return (
     <Tooltip
-      title={
-        <SentimentCarrierTooltipContent
-          snapshot={item}
-          detail="day"
-          showActiveOnly={hasActive}
-        />
-      }
+      title={<SentimentCarrierTooltipContent snapshot={item} detail="day" />}
       variant="solid"
     >
       {content}

@@ -40,13 +40,7 @@ function CarrierChipList({
           <Fragment key={item.id}>
             {index > 0 ? <span className="text-neutral-400 mx-0.5">→</span> : null}
             <Tooltip
-              title={
-                <SentimentCarrierTooltipContent
-                  snapshot={item}
-                  detail={detail}
-                  showActiveOnly={hasActive}
-                />
-              }
+              title={<SentimentCarrierTooltipContent snapshot={item} detail={detail} />}
               variant="solid"
             >
               <span
