@@ -41,6 +41,7 @@ export default function ManagePage() {
     areas,
     loading,
     opLog,
+    addLog,
     createTag,
     updateTag,
     deleteTag,
@@ -50,6 +51,7 @@ export default function ManagePage() {
     buildStockTagsFromIndustryChain,
     deleteStockIndustryChainEntries,
     sanitizeStockTagReferences,
+    uploadOldDragonStocks,
     changeStockMainTag,
     refreshBlockRefs,
   } = useManageData();
@@ -155,6 +157,7 @@ export default function ManagePage() {
         {sectionTab === 2 && (
           <OperationsTab
             opLog={opLog}
+            appendOpLog={addLog}
             mainTags={mainTags}
             subTags={subTags}
             industries={industries}
@@ -166,6 +169,7 @@ export default function ManagePage() {
             onBuildStockTagsFromIndustryChain={buildStockTagsFromIndustryChain}
             onDeleteStockIndustryChainEntries={deleteStockIndustryChainEntries}
             onSanitizeStockTags={sanitizeStockTagReferences}
+            onUploadOldDragonStocks={uploadOldDragonStocks}
             onChangeStockMainTag={changeStockMainTag}
           />
         )}

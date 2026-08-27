@@ -75,6 +75,7 @@ const apis = {
   deleteStockIndustryChain: '/api/tag/delete_stock_industry_chain',
   listEntityIdsFromMainTag: '/api/tag/list_entity_ids_from_main_tag',
   sanitizeStockTagReferences: '/api/tag/sanitize_stock_tag_references',
+  uploadOldDragonStocks: '/api/tag/upload_old_dragon_stocks',
   changeStockMainTag: '/api/tag/change_stock_main_tag',
 
   // 手动打标

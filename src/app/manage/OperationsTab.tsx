@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'ahooks';
 import {
   Typography,
@@ -28,6 +28,7 @@ import LocationCityIcon from '@mui/icons-material/LocationCity';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import HealingIcon from '@mui/icons-material/Healing';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import BlockSelectorDialog from './BlockSelectorDialog';
 import BuildStockIndustryChainDialog from './BuildStockIndustryChainDialog';
 import SortCell from '@/app/trade/stock-list/SortCell';
@@ -70,12 +71,20 @@ const OPERATION_SECTION_LABELS = [
   '数据初始化',
   '维护主标签',
   '维护次标签',
+  '维护隐藏标签',
   '主标签切换',
   '数据补偿',
 ] as const;
 
+type OldDragonUploadItem = {
+  code: string;
+  name?: string;
+  reason?: string;
+};
+
 interface Props {
   opLog: string[];
+  appendOpLog: (line: string) => void;
   mainTags: MainTagInfo[];
   subTags: SubTagInfo[];
   industries: BlockInfo[];
@@ -97,11 +106,13 @@ interface Props {
     entityIds: string[];
   }) => Promise<void>;
   onSanitizeStockTags: () => Promise<void>;
+  onUploadOldDragonStocks: (items: OldDragonUploadItem[]) => Promise<void>;
   onChangeStockMainTag: (currentMainTag: string, newMainTag: string) => Promise<void>;
 }
 
 export default function OperationsTab({
   opLog,
+  appendOpLog,
   mainTags,
   subTags,
   industries,
@@ -113,8 +124,10 @@ export default function OperationsTab({
   onBuildStockTagsFromIndustryChain,
   onDeleteStockIndustryChainEntries,
   onSanitizeStockTags,
+  onUploadOldDragonStocks,
   onChangeStockMainTag,
 }: Props) {
+  const oldDragonUploadInputRef = useRef<HTMLInputElement>(null);
   const [operationSectionTab, setOperationSectionTab] = useState<number>(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [switchCurrentMainTag, setSwitchCurrentMainTag] = useState('');
@@ -475,11 +488,43 @@ export default function OperationsTab({
   }
 
   function switchOperationSection(index: number) {
-    if (operationSectionTab !== index && (index === 2 || index === 3 || index === 4)) {
+    if (operationSectionTab !== index && (index === 2 || index === 3)) {
       setTargetTagName('');
       setTargetTagInput('');
     }
     setOperationSectionTab(index);
+  }
+
+  async function handleOldDragonUpload(file: File) {
+    await handle('upload_old_dragon_stocks', async () => {
+      const text = await file.text();
+      const parsed = JSON.parse(text) as unknown;
+      if (!Array.isArray(parsed)) {
+        throw new Error('JSON 须为数组');
+      }
+      const items: OldDragonUploadItem[] = parsed.map((rawItem, index) => {
+        if (!rawItem || typeof rawItem !== 'object') {
+          throw new Error(`第 ${index + 1} 条须为对象`);
+        }
+        const record = rawItem as Record<string, unknown>;
+        const code = String(record.code ?? '').trim();
+        if (!code) {
+          throw new Error(`第 ${index + 1} 条缺少 code`);
+        }
+        return {
+          code,
+          name: record.name ? String(record.name) : undefined,
+          reason: record.reason ? String(record.reason) : undefined,
+        };
+      });
+      await onUploadOldDragonStocks(items);
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      appendOpLog(`上传妖股 JSON 解析失败：${message}`);
+    });
+    if (oldDragonUploadInputRef.current) {
+      oldDragonUploadInputRef.current.value = '';
+    }
   }
 
   return (
@@ -973,6 +1018,51 @@ export default function OperationsTab({
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
+                维护隐藏标签
+              </Typography>
+              <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
+                上传 JSON 数组，为个股写入「老妖股」隐藏标签；reason 写入标签理由，仅增改列表中的标的，不会清除未出现在文件中的老妖股标签。
+              </Typography>
+              <Typography
+                level="body-xs"
+                textColor="neutral.400"
+                sx={{ mb: 2, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}
+              >
+                {`[{"code":"002432","name":"九安医疗","reason":"..."}]`}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  ref={oldDragonUploadInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      void handleOldDragonUpload(file);
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  className="!text-[12px]"
+                  startDecorator={<UploadFileIcon />}
+                  variant="soft"
+                  color="primary"
+                  loading={busy === 'upload_old_dragon_stocks'}
+                  onClick={() => oldDragonUploadInputRef.current?.click()}
+                >
+                  上传妖股
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {operationSectionTab === 5 && (
+          <Card variant="plain" size="sm" sx={{ mb: 0 }}>
+            <CardContent>
+              <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">
                 主标签切换
               </Typography>
               <Typography level="body-sm" textColor="neutral.500" sx={{ mb: 2 }}>
@@ -1082,7 +1172,7 @@ export default function OperationsTab({
           </Card>
         )}
 
-        {operationSectionTab === 5 && (
+        {operationSectionTab === 6 && (
           <Card variant="plain" size="sm" sx={{ mb: 0 }}>
             <CardContent>
               <Typography level="title-sm" sx={{ mb: 2 }} className="!text-sm !font-bold">

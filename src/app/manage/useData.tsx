@@ -365,6 +365,49 @@ export function useManageData() {
     }
   }
 
+  async function uploadOldDragonStocks(
+    items: Array<{ code: string; name?: string; reason?: string }>
+  ) {
+    addLog(`正在上传老妖股标签（${items.length} 条）…`);
+    try {
+      const res = (await services.uploadOldDragonStocks({ items })) as {
+        requested?: number;
+        matched?: number;
+        added_or_updated?: number;
+        skipped_user_managed?: number;
+        invalid_codes?: string[];
+        not_found_codes?: string[];
+        detail?: unknown;
+      };
+      if (typeof res.matched !== 'number') {
+        const detail = res.detail;
+        addLog(
+          `上传老妖股失败：${
+            typeof detail === 'string' ? detail : JSON.stringify(detail ?? res)
+          }`
+        );
+        return;
+      }
+      const invalidTail =
+        res.invalid_codes?.length
+          ? `；无效代码 ${res.invalid_codes.slice(0, 5).join('、')}${
+              res.invalid_codes.length > 5 ? '…' : ''
+            }`
+          : '';
+      const missingTail =
+        res.not_found_codes?.length
+          ? `；未找到 ${res.not_found_codes.slice(0, 5).join('、')}${
+              res.not_found_codes.length > 5 ? '…' : ''
+            }`
+          : '';
+      addLog(
+        `上传老妖股完成：请求 ${res.requested ?? items.length} 条，匹配 ${res.matched} 只，写入/更新 ${res.added_or_updated ?? 0} 只，跳过用户维护 ${res.skipped_user_managed ?? 0}${invalidTail}${missingTail}`
+      );
+    } catch {
+      addLog('上传老妖股失败');
+    }
+  }
+
   async function changeStockMainTag(currentMainTag: string, newMainTag: string) {
     const current = currentMainTag.trim();
     const next = newMainTag.trim();
@@ -401,6 +444,8 @@ export function useManageData() {
       hidden: hiddenTags.loading,
     },
     opLog,
+    addLog,
+    appendOpLog: addLog,
     createTag,
     updateTag,
     deleteTag,
@@ -410,6 +455,7 @@ export function useManageData() {
     buildStockTagsFromIndustryChain,
     deleteStockIndustryChainEntries,
     sanitizeStockTagReferences,
+    uploadOldDragonStocks,
     changeStockMainTag,
     refreshByType,
     refreshBlockRefs,
