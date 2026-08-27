@@ -65,7 +65,6 @@ export default function MarketStyleEvolution() {
       {hasStyleEvolution ? (
         <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
           <span>风格演变：</span>
-          <span className="text-neutral-500">最近10日</span>
           <StyleChipList items={recentDays} detail="day" />
           <span className="text-neutral-300 mx-1">|</span>
           <span className="text-neutral-500">当日</span>

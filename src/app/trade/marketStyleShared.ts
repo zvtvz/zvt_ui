@@ -100,7 +100,30 @@ export function getActiveSentimentCarrierStats(
   }));
 }
 
-export function formatActiveSentimentCarrierLabel(snapshot: SentimentCarrierSnapshot): string {
-  const activeStats = getActiveSentimentCarrierStats(snapshot);
-  return activeStats.length ? activeStats.map((stat) => stat.label).join('、') : '正常人';
+export function getAllSentimentCarrierStats(snapshot: SentimentCarrierSnapshot): SentimentCarrierStat[] {
+  const stats = snapshot.carrier_stats ?? [];
+  if (stats.length) {
+    return stats;
+  }
+  return (snapshot.active_carrier_kinds ?? []).map((kind) => ({
+    kind,
+    label: SENTIMENT_CARRIER_LABELS[kind] ?? kind,
+    hit_count: 0,
+    hit_ratio: 0,
+    is_active: true,
+    entity_ids: [],
+  }));
 }
+
+export const ABSTRACT_CARRIER_CHIP_STYLE = {
+  backgroundColor: '#dc2626',
+  color: '#ffffff',
+};
+
+export const NORMAL_CARRIER_CHIP_STYLE = {
+  backgroundColor: '#416df9',
+  color: '#ffffff',
+};
+
+export const ABSTRACT_CARRIER_LABEL = '抽象';
+export const NORMAL_CARRIER_LABEL = '正常';

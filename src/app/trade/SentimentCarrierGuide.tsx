@@ -1,29 +1,22 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import Tooltip from '@mui/joy/Tooltip';
+import Button from '@mui/joy/Button';
 import { useRequest } from 'ahooks';
 import services from '@/services';
 import { useTradingSession } from '@/hooks/useTradingSession';
 import {
-  formatActiveSentimentCarrierLabel,
+  ABSTRACT_CARRIER_CHIP_STYLE,
+  ABSTRACT_CARRIER_LABEL,
   getActiveSentimentCarrierStats,
+  NORMAL_CARRIER_CHIP_STYLE,
+  NORMAL_CARRIER_LABEL,
   SentimentCarrierEvolutionResponse,
   SentimentCarrierSnapshot,
 } from './marketStyleShared';
+import SentimentCarrierHistoryDialog from './SentimentCarrierHistoryDialog';
 import SentimentCarrierTooltipContent from './SentimentCarrierTooltipContent';
-
-const ACTIVE_CARRIER_CHIP_STYLE = {
-  backgroundColor: '#fef2f2',
-  color: '#dc2626',
-};
-
-const NORMAL_CARRIER_CHIP_STYLE = {
-  backgroundColor: '#416df9',
-  color: '#ffffff',
-};
-
-const NORMAL_CARRIER_LABEL = '正常人';
 
 function CarrierChipList({
   items,
@@ -39,19 +32,25 @@ function CarrierChipList({
   return (
     <>
       {items.map((item, index) => {
-        const activeStats = getActiveSentimentCarrierStats(item);
-        const label = activeStats.length ? formatActiveSentimentCarrierLabel(item) : NORMAL_CARRIER_LABEL;
-        const chipStyle = activeStats.length ? ACTIVE_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
+        const hasActive = getActiveSentimentCarrierStats(item).length > 0;
+        const label = hasActive ? ABSTRACT_CARRIER_LABEL : NORMAL_CARRIER_LABEL;
+        const chipStyle = hasActive ? ABSTRACT_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
 
         return (
           <Fragment key={item.id}>
             {index > 0 ? <span className="text-neutral-400 mx-0.5">→</span> : null}
             <Tooltip
-              title={<SentimentCarrierTooltipContent snapshot={item} detail={detail} />}
+              title={
+                <SentimentCarrierTooltipContent
+                  snapshot={item}
+                  detail={detail}
+                  showActiveOnly={hasActive}
+                />
+              }
               variant="solid"
             >
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default max-w-[180px] truncate"
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default"
                 style={chipStyle}
               >
                 {label}
@@ -65,6 +64,7 @@ function CarrierChipList({
 }
 
 export default function SentimentCarrierGuide() {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const isTradingSession = useTradingSession();
   const { data } = useRequest(services.getSentimentCarrierEvolution, {
     defaultParams: [{ limit: 10 }],
@@ -81,13 +81,24 @@ export default function SentimentCarrierGuide() {
   }
 
   return (
-    <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
-      <span>情绪载体：</span>
-      <span className="text-neutral-500">最近10日</span>
-      <CarrierChipList items={recentDays} detail="day" />
-      <span className="text-neutral-300 mx-1">|</span>
-      <span className="text-neutral-500">当日</span>
-      <CarrierChipList items={todayItems} detail="intraday" />
-    </div>
+    <>
+      <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+        <span>情绪载体：</span>
+        <CarrierChipList items={recentDays} detail="day" />
+        <span className="text-neutral-300 mx-1">|</span>
+        <span className="text-neutral-500">当日</span>
+        <CarrierChipList items={todayItems} detail="intraday" />
+        <Button
+          size="sm"
+          variant="plain"
+          color="neutral"
+          className="!min-h-0 !px-1.5 !py-0.5 !text-xs"
+          onClick={() => setHistoryOpen(true)}
+        >
+          历史
+        </Button>
+      </div>
+      <SentimentCarrierHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
+    </>
   );
 }
