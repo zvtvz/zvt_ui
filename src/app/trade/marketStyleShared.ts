@@ -167,3 +167,9 @@ export const NORMAL_CARRIER_CHIP_STYLE = {
 
 export const ABSTRACT_CARRIER_LABEL = '抽象';
 export const NORMAL_CARRIER_LABEL = '正常';
+
+/** 有成立载体时取命中比例最高者作为 chip 文案；否则「正常」。 */
+export function getTopActiveSentimentCarrierChipLabel(snapshot: SentimentCarrierSnapshot): string {
+  const topActive = getSortedSentimentCarrierStatsForTooltip(snapshot).find((stat) => stat.is_active);
+  return topActive?.label ?? NORMAL_CARRIER_LABEL;
+}

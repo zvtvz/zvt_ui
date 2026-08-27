@@ -8,8 +8,7 @@ import services from '@/services';
 import { useTradingSession } from '@/hooks/useTradingSession';
 import {
   ABSTRACT_CARRIER_CHIP_STYLE,
-  ABSTRACT_CARRIER_LABEL,
-  getActiveSentimentCarrierStats,
+  getTopActiveSentimentCarrierChipLabel,
   NORMAL_CARRIER_CHIP_STYLE,
   NORMAL_CARRIER_LABEL,
   SentimentCarrierEvolutionResponse,
@@ -32,8 +31,8 @@ function CarrierChipList({
   return (
     <>
       {items.map((item, index) => {
-        const hasActive = getActiveSentimentCarrierStats(item).length > 0;
-        const label = hasActive ? ABSTRACT_CARRIER_LABEL : NORMAL_CARRIER_LABEL;
+        const chipLabel = getTopActiveSentimentCarrierChipLabel(item);
+        const hasActive = chipLabel !== NORMAL_CARRIER_LABEL;
         const chipStyle = hasActive ? ABSTRACT_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
 
         return (
@@ -44,10 +43,10 @@ function CarrierChipList({
               variant="solid"
             >
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default"
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default max-w-[180px] truncate"
                 style={chipStyle}
               >
-                {label}
+                {chipLabel}
               </span>
             </Tooltip>
           </Fragment>
