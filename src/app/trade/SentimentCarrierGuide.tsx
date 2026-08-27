@@ -18,10 +18,12 @@ const ACTIVE_CARRIER_CHIP_STYLE = {
   color: '#dc2626',
 };
 
-const EMPTY_CARRIER_CHIP_STYLE = {
-  backgroundColor: '#f5f5f5',
-  color: '#a3a3a3',
+const NORMAL_CARRIER_CHIP_STYLE = {
+  backgroundColor: '#416df9',
+  color: '#ffffff',
 };
+
+const NORMAL_CARRIER_LABEL = '正常人';
 
 function CarrierChipList({
   items,
@@ -38,8 +40,8 @@ function CarrierChipList({
     <>
       {items.map((item, index) => {
         const activeStats = getActiveSentimentCarrierStats(item);
-        const label = formatActiveSentimentCarrierLabel(item);
-        const chipStyle = activeStats.length ? ACTIVE_CARRIER_CHIP_STYLE : EMPTY_CARRIER_CHIP_STYLE;
+        const label = activeStats.length ? formatActiveSentimentCarrierLabel(item) : NORMAL_CARRIER_LABEL;
+        const chipStyle = activeStats.length ? ACTIVE_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
 
         return (
           <Fragment key={item.id}>

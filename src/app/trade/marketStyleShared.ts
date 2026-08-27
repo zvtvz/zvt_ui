@@ -102,5 +102,5 @@ export function getActiveSentimentCarrierStats(
 
 export function formatActiveSentimentCarrierLabel(snapshot: SentimentCarrierSnapshot): string {
   const activeStats = getActiveSentimentCarrierStats(snapshot);
-  return activeStats.length ? activeStats.map((stat) => stat.label).join('、') : '暂无';
+  return activeStats.length ? activeStats.map((stat) => stat.label).join('、') : '正常人';
 }
