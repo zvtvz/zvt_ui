@@ -31,3 +31,8 @@ export function toTradePercent(value: number, nx = 2) {
   const percentText = toPercent(value, nx);
   return value > 0 ? '+' + percentText : percentText;
 }
+
+/** 涨幅 / 缩量等：正值红色，否则绿色（A 股惯例） */
+export function positiveRedElseGreenClass(value: number | null | undefined): string {
+  return (value ?? 0) > 0 ? 'text-red-600' : 'text-green-600';
+}

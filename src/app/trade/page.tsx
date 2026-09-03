@@ -19,7 +19,7 @@ import CreateStockPoolDialog from './CreateStockPoolDialog';
 import EditActiveSubTagsDialog from './EditActiveSubTagsDialog';
 import UpdateStockPoolDialog from './UpdateStockPoolDialog';
 import { useCallback, useEffect, useState } from 'react';
-import { toMoney, toPercent, toTradePercent } from '@/utils';
+import { positiveRedElseGreenClass, toMoney, toPercent, toTradePercent } from '@/utils';
 
 import StockList from './stock-list/StockList';
 import StockDetail from './stock-detail/StockDetail';
@@ -118,28 +118,36 @@ export default function Workspace() {
           <div className="text-sm border-b pb-2 ">
             <span>涨跌停:</span>
             <span className="text-red-600">{dailyStats.limit_up_count}</span>/
-            <span className="text-green-600">
-              {dailyStats.limit_down_count}
-            </span>
+            <span className="text-green-600">{dailyStats.limit_down_count}</span>
             <span className="ml-6">涨跌比:</span>
             <span className="text-red-600">{dailyStats.up_count}</span>/
             <span className="text-green-600">{dailyStats.down_count}</span>
             <span className="ml-6">
-              平均涨幅:{toTradePercent(dailyStats.change_pct)}
+              平均涨幅:
+              <span className={positiveRedElseGreenClass(dailyStats.change_pct)}>
+                {toTradePercent(dailyStats.change_pct)}
+              </span>
             </span>
             <span className="ml-6">
-              容量涨幅:{toTradePercent(dailyStats.turnover_top_avg_change_pct ?? 0)}
+              容量涨幅:
+              <span
+                className={positiveRedElseGreenClass(dailyStats.turnover_top_avg_change_pct)}
+              >
+                {toTradePercent(dailyStats.turnover_top_avg_change_pct ?? 0)}
+              </span>
             </span>
-            <span className="ml-6">
-              交易量:{toMoney(dailyStats.turnover, 0)}
+            <span className="ml-6">交易量:{toMoney(dailyStats.turnover, 0)}</span>
+            <span className="ml-6 mr-2">
+              全天缩量:
+              <span className={positiveRedElseGreenClass(dailyStats.turnover_change)}>
+                {toMoney(dailyStats.turnover_change ?? 0, 0)}
+              </span>
             </span>
             <span className="ml-6 mr-2">
-              全天{dailyStats.turnover_change > 0 ? '放量' : '缩量'}:
-              {toMoney(dailyStats.turnover_change, 0)}
-            </span>
-            <span className="ml-6 mr-2">
-              30分钟{dailyStats.turnover_30min_change > 0 ? '放量' : '缩量'}:
-              {toMoney(dailyStats.turnover_30min_change, 0)}
+              30分钟缩量:
+              <span className={positiveRedElseGreenClass(dailyStats.turnover_30min_change)}>
+                {toMoney(dailyStats.turnover_30min_change ?? 0, 0)}
+              </span>
             </span>
           </div>
         )}

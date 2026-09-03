@@ -18,9 +18,11 @@ export type MarketStyleSnapshot = {
   small_cap_dominance?: number | null;
   turnover_top_avg_change_pct?: number | null;
   change_top_large_cap_ratio?: number | null;
+  limit_up_count?: number | null;
   limit_down_count?: number | null;
   max_height?: number | null;
   limit_up_success_rate?: number | null;
+  change_pct?: number | null;
 };
 
 export type MarketStyleEvolutionResponse = {
