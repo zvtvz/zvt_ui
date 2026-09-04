@@ -138,13 +138,13 @@ export default function Workspace() {
             </span>
             <span className="ml-6">交易量:{toMoney(dailyStats.turnover, 0)}</span>
             <span className="ml-6 mr-2">
-              全天缩量:
+              全天{(dailyStats.turnover_change ?? 0) > 0 ? '放量' : '缩量'}:
               <span className={positiveRedElseGreenClass(dailyStats.turnover_change)}>
                 {toMoney(dailyStats.turnover_change ?? 0, 0)}
               </span>
             </span>
             <span className="ml-6 mr-2">
-              30分钟缩量:
+              30分钟{(dailyStats.turnover_30min_change ?? 0) > 0 ? '放量' : '缩量'}:
               <span className={positiveRedElseGreenClass(dailyStats.turnover_30min_change)}>
                 {toMoney(dailyStats.turnover_30min_change ?? 0, 0)}
               </span>
