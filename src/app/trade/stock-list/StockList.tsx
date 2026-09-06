@@ -128,9 +128,8 @@ export default function StockList({
           <tbody>
             {stocks?.data?.map((stock: any) => {
               const isSelected = stock.id === (stocks.current as any)?.id;
-              const abnormalStatus: string | null = stock.abnormal_status;
-              const rowBg = stockListRowBackgroundClass(abnormalStatus, isSelected);
-              const row = (
+              const rowBg = stockListRowBackgroundClass(stock.abnormal_status, isSelected);
+              return (
               <tr
                 key={stock.id}
                 onClick={() => selectStock(stock)}
@@ -179,19 +178,6 @@ export default function StockList({
                   <CoreBusinessCell value={stock.core_business_and_market_position} />
                 </td>
               </tr>
-              );
-              // 有异动态的个股: 行 hover 展示 abnormal_status 详情 tips
-              return abnormalStatus ? (
-                <Tooltip
-                  key={stock.id}
-                  title={abnormalStatus}
-                  variant="solid"
-                  placement="right"
-                >
-                  {row}
-                </Tooltip>
-              ) : (
-                row
               );
             })}
           </tbody>

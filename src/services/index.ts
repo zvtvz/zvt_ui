@@ -126,6 +126,8 @@ const apis = {
   savePoolSetting: '/api/quote/build_query_stock_quote_setting',
   getPoolStocksByTag: '/api/quote/query_stock_quotes',
   getTagsStats: '/api/quote/query_tag_quotes',
+  getMonitoredStocks: 'GET /api/quote/query_monitored_stocks',
+  getAbnormalStockWatching: 'GET /api/quote/query_abnormal_stock_watching',
 
   getDailyQuoteStats: 'GET /api/quote/get_quote_stats',
   getMarketStyleEvolution: 'GET /api/factor/get_market_style_evolution',

@@ -14,6 +14,7 @@ import {
 import MarketStyleHistoryDialog from './MarketStyleHistoryDialog';
 import MarketStyleTooltipContent from './MarketStyleTooltipContent';
 import SentimentCarrierGuide from './SentimentCarrierGuide';
+import AbnormalMonitoringGuide from './AbnormalMonitoringGuide';
 
 function StyleChipList({ items, detail }: { items: MarketStyleSnapshot[]; detail: 'day' | 'intraday' }) {
   if (!items.length) {
@@ -81,6 +82,7 @@ export default function MarketStyleEvolution() {
         </div>
       ) : null}
       <SentimentCarrierGuide />
+      <AbnormalMonitoringGuide />
       <MarketStyleHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </>
   );
