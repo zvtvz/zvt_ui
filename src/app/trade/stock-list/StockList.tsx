@@ -6,17 +6,21 @@ import { CircularProgress } from '@mui/joy';
 import SortCell from './SortCell';
 import { toMoney } from '@/utils';
 import Blink from './Blink';
-import { SENTIMENT_PREFIX, TREND_PREFIX } from '@/constants/capitalStructure';
+import {
+  ABNORMAL_STATUS_APPROACHING,
+  ABNORMAL_STATUS_MONITORING,
+} from '@/constants/abnormalStatus';
 
-/** 仅情绪类资金结构用于行背景高亮；趋势类与其它值不做区分。 */
+/** 按异动状态行背景高亮：监管中 红色，接近异动 黄色。 */
 function stockListRowBackgroundClass(
-  capitalStructure: string | null | undefined,
+  abnormalStatus: string | null | undefined,
   isSelected: boolean
 ): string {
   if (isSelected) return 'bg-[#E3FBE3]';
-  const value = capitalStructure?.trim();
-  if (!value || value.startsWith(TREND_PREFIX)) return '';
-  if (value.startsWith(SENTIMENT_PREFIX)) return 'bg-amber-50';
+  const value = abnormalStatus?.trim();
+  if (!value) return '';
+  if (value.startsWith(ABNORMAL_STATUS_MONITORING)) return 'bg-red-100';
+  if (value.startsWith(ABNORMAL_STATUS_APPROACHING)) return 'bg-amber-100';
   return '';
 }
 function CoreBusinessCell({ value }: { value?: string | null }) {
@@ -124,11 +128,9 @@ export default function StockList({
           <tbody>
             {stocks?.data?.map((stock: any) => {
               const isSelected = stock.id === (stocks.current as any)?.id;
-              const rowBg = stockListRowBackgroundClass(
-                stock.capital_structure,
-                isSelected
-              );
-              return (
+              const abnormalStatus: string | null = stock.abnormal_status;
+              const rowBg = stockListRowBackgroundClass(abnormalStatus, isSelected);
+              const row = (
               <tr
                 key={stock.id}
                 onClick={() => selectStock(stock)}
@@ -177,6 +179,19 @@ export default function StockList({
                   <CoreBusinessCell value={stock.core_business_and_market_position} />
                 </td>
               </tr>
+              );
+              // 有异动态的个股: 行 hover 展示 abnormal_status 详情 tips
+              return abnormalStatus ? (
+                <Tooltip
+                  key={stock.id}
+                  title={abnormalStatus}
+                  variant="solid"
+                  placement="right"
+                >
+                  {row}
+                </Tooltip>
+              ) : (
+                row
               );
             })}
           </tbody>
