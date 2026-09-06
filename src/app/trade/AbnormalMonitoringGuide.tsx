@@ -30,12 +30,9 @@ interface AbnormalStockWatchingInfo {
   timestamp?: string | null;
 }
 
-/** 分组标签 chip: 与情绪载体 chip 同款实心样式 */
-const MONITORING_LABEL_CHIP_STYLE = { backgroundColor: '#dc2626', color: '#ffffff' };
-const APPROACHING_LABEL_CHIP_STYLE = { backgroundColor: '#facc15', color: '#111827' };
-
-const MONITORING_CHIP_STYLE = { backgroundColor: '#FEE2E2', color: '#991B1B' };
-const APPROACHING_CHIP_STYLE = { backgroundColor: '#FEF3C7', color: '#92400E' };
+/** 个股 chip: 与情绪载体 chip 同款实心样式(监管中 红 / 接近异动 黄) */
+const MONITORING_CHIP_STYLE = { backgroundColor: '#dc2626', color: '#ffffff' };
+const APPROACHING_CHIP_STYLE = { backgroundColor: '#facc15', color: '#111827' };
 
 function MonitoredStockTooltipContent({ item }: { item: MonitoredStockInfo }) {
   return (
@@ -111,12 +108,7 @@ export default function AbnormalMonitoringGuide() {
     <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
       {monitoredItems.length > 0 ? (
         <>
-          <span
-            className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default"
-            style={MONITORING_LABEL_CHIP_STYLE}
-          >
-            监管中
-          </span>
+          <span>监管中：</span>
           {monitoredItems.map((item) => (
             <StockChip
               key={item.entity_id}
@@ -132,12 +124,7 @@ export default function AbnormalMonitoringGuide() {
       ) : null}
       {watchingItems.length > 0 ? (
         <>
-          <span
-            className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default"
-            style={APPROACHING_LABEL_CHIP_STYLE}
-          >
-            接近异动
-          </span>
+          <span>接近异动：</span>
           {watchingItems.map((item) => (
             <StockChip
               key={item.entity_id}
