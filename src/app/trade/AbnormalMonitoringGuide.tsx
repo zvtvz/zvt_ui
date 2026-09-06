@@ -80,7 +80,7 @@ function StockChip({
   return (
     <Tooltip title={tooltip} variant="solid">
       <span
-        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs leading-none cursor-default"
+        className="inline-flex items-center px-1.5 py-0.5 mx-0.5 rounded text-xs leading-none cursor-default"
         style={style}
       >
         {label}
@@ -106,35 +106,26 @@ export default function AbnormalMonitoringGuide() {
 
   return (
     <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
-      {monitoredItems.length > 0 ? (
-        <>
-          <span>监管中：</span>
-          {monitoredItems.map((item) => (
-            <StockChip
-              key={item.entity_id}
-              label={item.name || item.code || item.entity_id}
-              style={MONITORING_CHIP_STYLE}
-              tooltip={<MonitoredStockTooltipContent item={item} />}
-            />
-          ))}
-        </>
-      ) : null}
+      <span>异动监管：</span>
+      {monitoredItems.map((item) => (
+        <StockChip
+          key={item.entity_id}
+          label={item.name || item.code || item.entity_id}
+          style={MONITORING_CHIP_STYLE}
+          tooltip={<MonitoredStockTooltipContent item={item} />}
+        />
+      ))}
       {monitoredItems.length > 0 && watchingItems.length > 0 ? (
         <span className="text-neutral-300 mx-1">|</span>
       ) : null}
-      {watchingItems.length > 0 ? (
-        <>
-          <span>接近异动：</span>
-          {watchingItems.map((item) => (
-            <StockChip
-              key={item.entity_id}
-              label={item.name || item.code || item.entity_id}
-              style={APPROACHING_CHIP_STYLE}
-              tooltip={<AbnormalStockWatchingTooltipContent item={item} />}
-            />
-          ))}
-        </>
-      ) : null}
+      {watchingItems.map((item) => (
+        <StockChip
+          key={item.entity_id}
+          label={item.name || item.code || item.entity_id}
+          style={APPROACHING_CHIP_STYLE}
+          tooltip={<AbnormalStockWatchingTooltipContent item={item} />}
+        />
+      ))}
     </div>
   );
 }
