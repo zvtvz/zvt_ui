@@ -242,9 +242,19 @@ export default function Workspace() {
                     }}
                   >
                     <div className="flex items-center py-2">
-                      <div className="text-center mr-2 text-[14px]">
+                      <div className="text-center mr-1 text-[14px]">
                         {tag.name}
                       </div>
+                      {/* 涨停数小圆圈: 有涨停红色, 无涨停灰色 */}
+                      <span
+                        className={`flex items-center justify-center min-w-[16px] h-4 px-0.5 mr-2 rounded-full text-[10px] leading-none ${
+                          stats?.limit_up_count > 0
+                            ? 'bg-red-600 text-white'
+                            : 'bg-neutral-300 text-neutral-600'
+                        }`}
+                      >
+                        {stats?.limit_up_count ?? 0}
+                      </span>
                       <div className="text-[12px] leading-none">
                         <div>{toMoney(stats?.turnover)}</div>
                         <div>
