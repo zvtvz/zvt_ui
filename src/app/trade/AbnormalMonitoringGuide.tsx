@@ -3,7 +3,7 @@
 import Tooltip from '@mui/joy/Tooltip';
 import { useRequest } from 'ahooks';
 import services from '@/services';
-import { getDate, toPercent } from '@/utils';
+import { getDate, positiveRedElseGreenClass, toPercent } from '@/utils';
 
 /** 与后端 MonitoredStockInfoModel 一致（监管中个股，详情来自 MonitoredStock，无需盘中刷新） */
 interface MonitoredStockInfo {
@@ -74,13 +74,21 @@ function monitoredChipLabel(item: MonitoredStockInfo): string {
   return item.monitor_end_date ? `${name}(${getDate(item.monitor_end_date)}到期)` : name;
 }
 
-/** 监控中 chip 文案: 名称(当前涨幅|触发涨幅); 预测行无当前涨幅, 当前涨幅位显示 - */
-function watchingChipLabel(item: AbnormalStockWatchingInfo): string {
+/** 监控中 chip 文案: 名称(当前涨幅|触发涨幅); 当前涨幅涨红跌绿, 预测行无当前涨幅显示 - */
+function watchingChipLabel(item: AbnormalStockWatchingInfo): React.ReactNode {
   const name = item.name || item.code || item.entity_id;
   const triggerText = item.trigger_change_pct == null ? '-' : toPercent(item.trigger_change_pct);
   const latestText =
     item.is_predict || item.latest_change_pct == null ? '-' : toPercent(item.latest_change_pct);
-  return `${name}(${latestText}|${triggerText})`;
+  return (
+    <>
+      {name}(
+      <span className={item.is_predict ? undefined : positiveRedElseGreenClass(item.latest_change_pct)}>
+        {latestText}
+      </span>
+      |{triggerText})
+    </>
+  );
 }
 
 function StockChip({
@@ -88,7 +96,7 @@ function StockChip({
   style,
   tooltip,
 }: {
-  label: string;
+  label: React.ReactNode;
   style: React.CSSProperties;
   tooltip: React.ReactNode;
 }) {
