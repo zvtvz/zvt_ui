@@ -68,6 +68,21 @@ function AbnormalStockWatchingTooltipContent({ item }: { item: AbnormalStockWatc
   );
 }
 
+/** 监管中 chip 文案: 名称(YYYY-MM-DD到期) */
+function monitoredChipLabel(item: MonitoredStockInfo): string {
+  const name = item.name || item.code || item.entity_id;
+  return item.monitor_end_date ? `${name}(${getDate(item.monitor_end_date)}到期)` : name;
+}
+
+/** 监控中 chip 文案: 名称(当前涨幅|触发涨幅); 预测行无当前涨幅, 当前涨幅位显示 - */
+function watchingChipLabel(item: AbnormalStockWatchingInfo): string {
+  const name = item.name || item.code || item.entity_id;
+  const triggerText = item.trigger_change_pct == null ? '-' : toPercent(item.trigger_change_pct);
+  const latestText =
+    item.is_predict || item.latest_change_pct == null ? '-' : toPercent(item.latest_change_pct);
+  return `${name}(${latestText}|${triggerText})`;
+}
+
 function StockChip({
   label,
   style,
@@ -110,7 +125,7 @@ export default function AbnormalMonitoringGuide() {
       {monitoredItems.map((item) => (
         <StockChip
           key={item.entity_id}
-          label={item.name || item.code || item.entity_id}
+          label={monitoredChipLabel(item)}
           style={MONITORING_CHIP_STYLE}
           tooltip={<MonitoredStockTooltipContent item={item} />}
         />
@@ -121,7 +136,7 @@ export default function AbnormalMonitoringGuide() {
       {watchingItems.map((item) => (
         <StockChip
           key={item.entity_id}
-          label={item.name || item.code || item.entity_id}
+          label={watchingChipLabel(item)}
           style={APPROACHING_CHIP_STYLE}
           tooltip={<AbnormalStockWatchingTooltipContent item={item} />}
         />
