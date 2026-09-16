@@ -7,11 +7,9 @@ import { useRequest } from 'ahooks';
 import services from '@/services';
 import { useTradingSession } from '@/hooks/useTradingSession';
 import {
-  ABSTRACT_CARRIER_CHIP_STYLE,
   formatSentimentCarrierChipLabel,
+  getSentimentCarrierChipStyle,
   getTopActiveSentimentCarrierChipLabel,
-  NORMAL_CARRIER_CHIP_STYLE,
-  NORMAL_CARRIER_LABEL,
   SentimentCarrierEvolutionResponse,
   SentimentCarrierSnapshot,
 } from './marketStyleShared';
@@ -34,8 +32,7 @@ function CarrierChipList({
       {items.map((item, index) => {
         const chipLabel = getTopActiveSentimentCarrierChipLabel(item);
         const chipDisplayLabel = formatSentimentCarrierChipLabel(chipLabel);
-        const hasActive = chipLabel !== NORMAL_CARRIER_LABEL;
-        const chipStyle = hasActive ? ABSTRACT_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
+        const chipStyle = getSentimentCarrierChipStyle(item);
 
         return (
           <Fragment key={item.id}>

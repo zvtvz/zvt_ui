@@ -71,6 +71,13 @@ export const ALL_SENTIMENT_CARRIER_KINDS = [
   'old_dragon_stock',
 ] as const;
 
+export const MIXED_SENTIMENT_CARRIER_KINDS = new Set([
+  'recent_new_stock',
+  'restructuring_stock',
+]);
+
+export type SentimentCarrierStructureKind = 'normal' | 'abstract' | 'mixed';
+
 export type SentimentCarrierStat = {
   kind: string;
   label: string;
@@ -87,6 +94,8 @@ export type SentimentCarrierSnapshot = {
   top_change_count: number;
   min_hit_threshold: number;
   active_carrier_kinds: string[];
+  carrier_structure?: SentimentCarrierStructureKind;
+  carrier_structure_label?: string;
   carrier_stats: SentimentCarrierStat[];
   detection_reason?: string | null;
 };
@@ -162,13 +171,25 @@ export const ABSTRACT_CARRIER_CHIP_STYLE = {
   color: '#ffffff',
 };
 
+export const MIXED_CARRIER_CHIP_STYLE = {
+  backgroundColor: '#16a34a',
+  color: '#ffffff',
+};
+
 export const NORMAL_CARRIER_CHIP_STYLE = {
   backgroundColor: '#416df9',
   color: '#ffffff',
 };
 
 export const ABSTRACT_CARRIER_LABEL = '抽象';
+export const MIXED_CARRIER_LABEL = '混合';
 export const NORMAL_CARRIER_LABEL = '正常';
+
+export const SENTIMENT_CARRIER_STRUCTURE_LABELS: Record<SentimentCarrierStructureKind, string> = {
+  normal: NORMAL_CARRIER_LABEL,
+  abstract: ABSTRACT_CARRIER_LABEL,
+  mixed: MIXED_CARRIER_LABEL,
+};
 
 export const SENTIMENT_CARRIER_CHIP_LABEL_MAX_LENGTH = 2;
 
@@ -185,4 +206,35 @@ export function formatSentimentCarrierChipLabel(label: string): string {
 export function getTopActiveSentimentCarrierChipLabel(snapshot: SentimentCarrierSnapshot): string {
   const topActive = getSortedSentimentCarrierStatsForTooltip(snapshot).find((stat) => stat.is_active);
   return topActive?.label ?? NORMAL_CARRIER_LABEL;
+}
+
+export function getTopActiveSentimentCarrierKind(
+  snapshot: SentimentCarrierSnapshot
+): string | null {
+  const topActive = getSortedSentimentCarrierStatsForTooltip(snapshot).find((stat) => stat.is_active);
+  return topActive?.kind ?? null;
+}
+
+export function resolveSentimentCarrierStructure(
+  snapshot: SentimentCarrierSnapshot
+): SentimentCarrierStructureKind {
+  if (snapshot.carrier_structure) {
+    return snapshot.carrier_structure;
+  }
+  const topKind = getTopActiveSentimentCarrierKind(snapshot);
+  if (!topKind) {
+    return 'normal';
+  }
+  return MIXED_SENTIMENT_CARRIER_KINDS.has(topKind) ? 'mixed' : 'abstract';
+}
+
+export function getSentimentCarrierChipStyle(snapshot: SentimentCarrierSnapshot) {
+  const structure = resolveSentimentCarrierStructure(snapshot);
+  if (structure === 'mixed') {
+    return MIXED_CARRIER_CHIP_STYLE;
+  }
+  if (structure === 'abstract') {
+    return ABSTRACT_CARRIER_CHIP_STYLE;
+  }
+  return NORMAL_CARRIER_CHIP_STYLE;
 }

@@ -17,11 +17,9 @@ import dayjs, { Dayjs } from 'dayjs';
 import services from '@/services';
 import { getDate } from '@/utils';
 import {
-  ABSTRACT_CARRIER_CHIP_STYLE,
   formatSentimentCarrierChipLabel,
+  getSentimentCarrierChipStyle,
   getTopActiveSentimentCarrierChipLabel,
-  NORMAL_CARRIER_CHIP_STYLE,
-  NORMAL_CARRIER_LABEL,
   SentimentCarrierSnapshot,
 } from './marketStyleShared';
 import SentimentCarrierTooltipContent from './SentimentCarrierTooltipContent';
@@ -82,8 +80,7 @@ function CarrierDayCell({
 }) {
   const chipLabel = item ? getTopActiveSentimentCarrierChipLabel(item) : null;
   const chipDisplayLabel = chipLabel ? formatSentimentCarrierChipLabel(chipLabel) : null;
-  const hasActive = chipLabel !== null && chipLabel !== NORMAL_CARRIER_LABEL;
-  const chipStyle = hasActive ? ABSTRACT_CARRIER_CHIP_STYLE : NORMAL_CARRIER_CHIP_STYLE;
+  const chipStyle = item ? getSentimentCarrierChipStyle(item) : undefined;
 
   const content = (
     <div
@@ -92,7 +89,7 @@ function CarrierDayCell({
       }`}
     >
       <div className="text-xs mb-1">{day.format('D')}</div>
-      {item && chipDisplayLabel ? (
+      {item && chipDisplayLabel && chipStyle ? (
         <span
           className="inline-flex items-center justify-center px-1 py-0.5 rounded text-[11px] leading-none"
           style={chipStyle}
