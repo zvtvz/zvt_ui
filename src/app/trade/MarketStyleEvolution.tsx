@@ -52,20 +52,26 @@ export default function MarketStyleEvolution() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const isTradingSession = useTradingSession();
   const { data } = useRequest(services.getMarketStyleEvolution, {
-    defaultParams: [{ limit: 10 }],
+    defaultParams: [{ limit: 5, month_limit: 6 }],
     pollingInterval: isTradingSession ? 1000 * 60 : undefined,
   });
 
   const evolution = data as MarketStyleEvolutionResponse | undefined;
+  const recentMonths = evolution?.recent_months ?? [];
   const recentDays = evolution?.recent_days ?? [];
   const todayItems = evolution?.today ?? [];
-  const hasStyleEvolution = recentDays.length > 0 || todayItems.length > 0;
+  const hasStyleEvolution =
+    recentMonths.length > 0 || recentDays.length > 0 || todayItems.length > 0;
 
   return (
     <>
       {hasStyleEvolution ? (
         <div className="text-sm border-b pb-2 flex flex-wrap items-center gap-x-1 gap-y-1">
           <span>风格演变：</span>
+          <span className="text-neutral-500">月度</span>
+          <StyleChipList items={recentMonths} detail="day" />
+          <span className="text-neutral-300 mx-1">|</span>
+          <span className="text-neutral-500">5日</span>
           <StyleChipList items={recentDays} detail="day" />
           <span className="text-neutral-300 mx-1">|</span>
           <span className="text-neutral-500">当日</span>

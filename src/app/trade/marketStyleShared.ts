@@ -26,6 +26,7 @@ export type MarketStyleSnapshot = {
 };
 
 export type MarketStyleEvolutionResponse = {
+  recent_months: MarketStyleSnapshot[];
   recent_days: MarketStyleSnapshot[];
   today: MarketStyleSnapshot[];
 };
