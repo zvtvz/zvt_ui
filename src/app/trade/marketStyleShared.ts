@@ -93,7 +93,6 @@ export type SentimentCarrierSnapshot = {
   timestamp: string;
   is_close?: boolean;
   top_change_count: number;
-  min_hit_threshold: number;
   active_carrier_kinds: string[];
   carrier_structure?: SentimentCarrierStructureKind;
   carrier_structure_label?: string;
@@ -203,17 +202,19 @@ export function formatSentimentCarrierChipLabel(label: string): string {
   return normalized.slice(0, SENTIMENT_CARRIER_CHIP_LABEL_MAX_LENGTH);
 }
 
-/** 有成立载体时取命中比例最高者作为 chip 文案；否则「正常」。 */
+/** chip 文案取 ``active_carrier_kinds`` 首个载体的完整标签。 */
 export function getTopActiveSentimentCarrierChipLabel(snapshot: SentimentCarrierSnapshot): string {
-  const topActive = getSortedSentimentCarrierStatsForTooltip(snapshot).find((stat) => stat.is_active);
-  return topActive?.label ?? NORMAL_CARRIER_LABEL;
+  const firstKind = snapshot.active_carrier_kinds?.[0];
+  if (!firstKind) {
+    return NORMAL_CARRIER_LABEL;
+  }
+  return SENTIMENT_CARRIER_LABELS[firstKind] ?? firstKind;
 }
 
 export function getTopActiveSentimentCarrierKind(
   snapshot: SentimentCarrierSnapshot
 ): string | null {
-  const topActive = getSortedSentimentCarrierStatsForTooltip(snapshot).find((stat) => stat.is_active);
-  return topActive?.kind ?? null;
+  return snapshot.active_carrier_kinds?.[0] ?? null;
 }
 
 export function resolveSentimentCarrierStructure(
