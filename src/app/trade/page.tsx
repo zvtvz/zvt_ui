@@ -155,17 +155,33 @@ export default function Workspace() {
       </div>
       <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center">
-          {pools.data?.map((pool, index) => (
-            <div
-              key={index}
-              className={`mr-4 px-2 text-[14px] h-6 cursor-pointer hover:text-[#416df9] rounded-md ${
-                pools.current?.id === pool.id && 'bg-[rgba(65,109,249,.1)]'
-              }`}
-              onClick={() => changePool(pool.id)}
-            >
-              {pool.stock_pool_name}
-            </div>
-          ))}
+          {pools.data?.map((pool) => {
+            const tooltipTitle = pool.desc?.trim();
+            const poolTabClassName = `mr-4 px-2 text-[14px] h-6 cursor-pointer hover:text-[#416df9] rounded-md ${
+              pools.current?.id === pool.id && 'bg-[rgba(65,109,249,.1)]'
+            }`;
+            if (!tooltipTitle) {
+              return (
+                <div
+                  key={pool.id}
+                  className={poolTabClassName}
+                  onClick={() => changePool(pool.id)}
+                >
+                  {pool.stock_pool_name}
+                </div>
+              );
+            }
+            return (
+              <Tooltip key={pool.id} title={tooltipTitle} variant="solid">
+                <div
+                  className={poolTabClassName}
+                  onClick={() => changePool(pool.id)}
+                >
+                  {pool.stock_pool_name}
+                </div>
+              </Tooltip>
+            );
+          })}
           {isAdmin && pools.current?.stock_pool_type === 'custom' && (
             <Tooltip title="更新股票池标的" variant="solid">
               <span>
@@ -200,11 +216,6 @@ export default function Workspace() {
           ) : null}
         </div>
       </div>
-      {pools.current?.desc ? (
-        <div className="px-2 pb-1 text-sm text-neutral-500 leading-relaxed">
-          {pools.current.desc}
-        </div>
-      ) : null}
       <div className="flex flex-row justify-between my-2 mt-2 ">
         <div className="flex flex-row flex-nowrap flex-grow overflow-x-auto pt-2 py-3 h-[60px] ">
           {tags.data?.length ? (
