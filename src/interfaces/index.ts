@@ -294,6 +294,8 @@ export type Pool = {
   style?: string | null;
   /** 展示优先级，数值越小越高；默认 100 */
   priority?: number;
+  /** 股票池说明 */
+  desc?: string | null;
 };
 
 /** ``query_tag_quotes`` 返回的主标签行情聚合 */

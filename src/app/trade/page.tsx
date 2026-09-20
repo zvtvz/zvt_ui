@@ -200,6 +200,11 @@ export default function Workspace() {
           ) : null}
         </div>
       </div>
+      {pools.current?.desc ? (
+        <div className="px-2 pb-1 text-sm text-neutral-500 leading-relaxed">
+          {pools.current.desc}
+        </div>
+      ) : null}
       <div className="flex flex-row justify-between my-2 mt-2 ">
         <div className="flex flex-row flex-nowrap flex-grow overflow-x-auto pt-2 py-3 h-[60px] ">
           {tags.data?.length ? (
