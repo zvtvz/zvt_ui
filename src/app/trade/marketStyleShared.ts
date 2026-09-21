@@ -31,25 +31,6 @@ export type MarketStyleEvolutionResponse = {
   today: MarketStyleSnapshot[];
 };
 
-export type TradingModeItem = {
-  mode: string;
-  label: string;
-};
-
-export type ModeGuideResponse = {
-  market_style: string;
-  market_style_label: string;
-  primary: TradingModeItem[];
-  secondary: TradingModeItem[];
-  forbidden: TradingModeItem[];
-  cash: boolean;
-  note: string;
-};
-
-export function formatModeLabels(items: TradingModeItem[]): string {
-  return items.map((item) => item.label).join('、');
-}
-
 export const SENTIMENT_CARRIER_LABELS: Record<string, string> = {
   animal_stock: '动物股',
   recent_new_stock: '次新股',
