@@ -138,6 +138,8 @@ const apis = {
   getTData: '/api/quote/query_ts',
   buyStocks: '/api/trading/buy',
   sellStocks: '/api/trading/sell',
+  getTradingOpportunity: 'GET /api/trading/get_trading_opportunity',
+  listTradingPatterns: 'GET /api/trading/list_trading_patterns',
 
   // monitor
   listMonitorJobs: 'GET /api/monitor/jobs',
