@@ -29,7 +29,8 @@ import Dialog from '@/components/Dialog';
 import useDialog from '@/components/Dialog/useDialog';
 
 const HOT_TOPICS_SIDEBAR_STORAGE_KEY = 'zvt_trade_hot_topics_sidebar_open';
-const STOCK_DETAIL_SIDEBAR_STORAGE_KEY = 'zvt_trade_stock_detail_sidebar_open';
+/** 相关热点侧栏暂不展示；组件与展开状态保留，改为 true 即可恢复。 */
+const SHOW_HOT_TOPICS_SIDEBAR = false;
 
 export default function Workspace() {
   const {
@@ -57,7 +58,6 @@ export default function Workspace() {
   const [editActiveSubTagsOpen, setEditActiveSubTagsOpen] = useState(false);
   const [updatePoolOpen, setUpdatePoolOpen] = useState(false);
   const [hotTopicsSidebarOpen, setHotTopicsSidebarOpen] = useState(true);
-  const [stockDetailSidebarOpen, setStockDetailSidebarOpen] = useState(true);
   const dialog = useDialog();
 
   useEffect(() => {
@@ -71,30 +71,10 @@ export default function Workspace() {
     }
   }, []);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STOCK_DETAIL_SIDEBAR_STORAGE_KEY);
-      if (raw === '0') {
-        setStockDetailSidebarOpen(false);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   const setHotTopicsSidebarOpenPersisted = useCallback((open: boolean) => {
     setHotTopicsSidebarOpen(open);
     try {
       localStorage.setItem(HOT_TOPICS_SIDEBAR_STORAGE_KEY, open ? '1' : '0');
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const setStockDetailSidebarOpenPersisted = useCallback((open: boolean) => {
-    setStockDetailSidebarOpen(open);
-    try {
-      localStorage.setItem(STOCK_DETAIL_SIDEBAR_STORAGE_KEY, open ? '1' : '0');
     } catch {
       /* ignore */
     }
@@ -379,49 +359,51 @@ export default function Workspace() {
       ) : null}
       {showTradeMain ? (
         <div className="flex flex-row items-stretch gap-2 mt-0 mb-2 min-w-0">
-          {hotTopicsSidebarOpen ? (
-            <Card
-              className="w-[min(100%,300px)] flex-shrink-0 overflow-hidden flex flex-col min-h-0"
-              size="sm"
-              variant="plain"
-            >
-              <TradeHotTopicsPanel
-                mainTagName={tags.current?.name}
-                stockPoolName={pools.current?.stock_pool_name ?? null}
-                titleEndAction={
-                  <Tooltip title="收起侧栏" placement="bottom" variant="solid">
-                    <IconButton
-                      size="sm"
-                      variant="plain"
-                      color="neutral"
-                      aria-label="收起相关热点侧栏"
-                      onClick={() => setHotTopicsSidebarOpenPersisted(false)}
-                    >
-                      <ChevronLeft sx={{ fontSize: 20 }} />
-                    </IconButton>
-                  </Tooltip>
-                }
-              />
-            </Card>
-          ) : (
-            <Card
-              className="w-10 flex-shrink-0 flex flex-col items-center py-2 min-h-0 self-stretch"
-              size="sm"
-              variant="plain"
-            >
-              <Tooltip title="展开相关热点" placement="right" variant="solid">
-                <IconButton
-                  size="sm"
-                  variant="soft"
-                  color="neutral"
-                  aria-label="展开相关热点侧栏"
-                  onClick={() => setHotTopicsSidebarOpenPersisted(true)}
-                >
-                  <ChevronRight sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-            </Card>
-          )}
+          {SHOW_HOT_TOPICS_SIDEBAR ? (
+            hotTopicsSidebarOpen ? (
+              <Card
+                className="w-[min(100%,300px)] flex-shrink-0 overflow-hidden flex flex-col min-h-0"
+                size="sm"
+                variant="plain"
+              >
+                <TradeHotTopicsPanel
+                  mainTagName={tags.current?.name}
+                  stockPoolName={pools.current?.stock_pool_name ?? null}
+                  titleEndAction={
+                    <Tooltip title="收起侧栏" placement="bottom" variant="solid">
+                      <IconButton
+                        size="sm"
+                        variant="plain"
+                        color="neutral"
+                        aria-label="收起相关热点侧栏"
+                        onClick={() => setHotTopicsSidebarOpenPersisted(false)}
+                      >
+                        <ChevronLeft sx={{ fontSize: 20 }} />
+                      </IconButton>
+                    </Tooltip>
+                  }
+                />
+              </Card>
+            ) : (
+              <Card
+                className="w-10 flex-shrink-0 flex flex-col items-center py-2 min-h-0 self-stretch"
+                size="sm"
+                variant="plain"
+              >
+                <Tooltip title="展开相关热点" placement="right" variant="solid">
+                  <IconButton
+                    size="sm"
+                    variant="soft"
+                    color="neutral"
+                    aria-label="展开相关热点侧栏"
+                    onClick={() => setHotTopicsSidebarOpenPersisted(true)}
+                  >
+                    <ChevronRight sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+              </Card>
+            )
+          ) : null}
           <Card
             className={`flex-1 min-w-0 overflow-hidden flex flex-col relative ${
               hasListRows ? 'min-h-[1000px]' : 'min-h-[400px]'
@@ -443,57 +425,25 @@ export default function Workspace() {
               )}
             </div>
           </Card>
-          {hasListRows &&
-            (stockDetailSidebarOpen ? (
-              <Card
-                className="w-[550px] max-w-[550px] shrink-0 grow-0 basis-[550px] !sticky !top-[56px] min-h-0 flex flex-col overflow-hidden"
-                size="sm"
-                variant="plain"
-              >
-                <div className="flex flex-row justify-end items-center flex-shrink-0 px-2 pt-2">
-                  <Tooltip title="收起个股详情侧栏" placement="bottom" variant="solid">
-                    <IconButton
-                      size="sm"
-                      variant="plain"
-                      color="neutral"
-                      aria-label="收起个股详情侧栏"
-                      onClick={() => setStockDetailSidebarOpenPersisted(false)}
-                    >
-                      <ChevronRight sx={{ fontSize: 20 }} />
-                    </IconButton>
-                  </Tooltip>
-                </div>
-                <CardContent className="flex-1 min-h-0 overflow-auto !pt-0">
-                  <StockDetail
-                    loading={loading}
-                    stocks={stocks}
-                    dialog={dialog}
-                    refreshNews={updateStockEvents}
-                    isAdmin={isAdmin}
-                    onRiseReasonSaved={patchStockRiseReason}
-                    onTagsUpdated={refreshCurrentStocks}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <Card
-                className="w-10 flex-shrink-0 flex flex-col items-center py-2 min-h-0 self-stretch !sticky !top-[56px]"
-                size="sm"
-                variant="plain"
-              >
-                <Tooltip title="展开个股详情" placement="left" variant="solid">
-                  <IconButton
-                    size="sm"
-                    variant="soft"
-                    color="neutral"
-                    aria-label="展开个股详情侧栏"
-                    onClick={() => setStockDetailSidebarOpenPersisted(true)}
-                  >
-                    <ChevronLeft sx={{ fontSize: 20 }} />
-                  </IconButton>
-                </Tooltip>
-              </Card>
-            ))}
+          {hasListRows ? (
+            <Card
+              className="w-[550px] max-w-[550px] shrink-0 grow-0 basis-[550px] !sticky !top-[56px] min-h-0 flex flex-col overflow-hidden"
+              size="sm"
+              variant="plain"
+            >
+              <CardContent className="flex-1 min-h-0 overflow-auto">
+                <StockDetail
+                  loading={loading}
+                  stocks={stocks}
+                  dialog={dialog}
+                  refreshNews={updateStockEvents}
+                  isAdmin={isAdmin}
+                  onRiseReasonSaved={patchStockRiseReason}
+                  onTagsUpdated={refreshCurrentStocks}
+                />
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       ) : null}
       {isAdmin && tags.current?.name ? (
