@@ -183,13 +183,20 @@ export function formatSentimentCarrierChipLabel(label: string): string {
   return normalized.slice(0, SENTIMENT_CARRIER_CHIP_LABEL_MAX_LENGTH);
 }
 
-/** chip 文案取 ``active_carrier_kinds`` 首个载体的完整标签。 */
+/** chip 文案取当前结构下第一个子类标签；无成立时用「正常」。颜色同源。 */
 export function getTopActiveSentimentCarrierChipLabel(snapshot: SentimentCarrierSnapshot): string {
-  const firstKind = snapshot.active_carrier_kinds?.[0];
-  if (!firstKind) {
+  const structure = resolveSentimentCarrierStructure(snapshot);
+  if (structure === 'normal') {
     return NORMAL_CARRIER_LABEL;
   }
-  return SENTIMENT_CARRIER_LABELS[firstKind] ?? firstKind;
+  const topKindForStructure = (snapshot.active_carrier_kinds ?? []).find((kind) => {
+    const kindStructure = MIXED_SENTIMENT_CARRIER_KINDS.has(kind) ? 'mixed' : 'abstract';
+    return kindStructure === structure;
+  });
+  if (!topKindForStructure) {
+    return SENTIMENT_CARRIER_STRUCTURE_LABELS[structure];
+  }
+  return SENTIMENT_CARRIER_LABELS[topKindForStructure] ?? topKindForStructure;
 }
 
 export function getTopActiveSentimentCarrierKind(
