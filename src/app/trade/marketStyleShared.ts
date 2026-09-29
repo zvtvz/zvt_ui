@@ -36,6 +36,7 @@ export const SENTIMENT_CARRIER_LABELS: Record<string, string> = {
   recent_new_stock: '次新股',
   number_stock: '数字股',
   mahjong_stock: '麻将股',
+  hua_character_stock: '华字辈',
   st_stock: 'ST股',
   low_price_stock: '低价股',
   restructuring_stock: '重组并购股',
@@ -47,6 +48,7 @@ export const ALL_SENTIMENT_CARRIER_KINDS = [
   'recent_new_stock',
   'number_stock',
   'mahjong_stock',
+  'hua_character_stock',
   'st_stock',
   'low_price_stock',
   'restructuring_stock',
@@ -118,7 +120,7 @@ export function getAllSentimentCarrierStats(snapshot: SentimentCarrierSnapshot):
   }));
 }
 
-/** 情绪载体 tooltip：全量 8 类，按命中比例降序。 */
+/** 情绪载体 tooltip：全量子类，按命中比例降序。 */
 export function getSortedSentimentCarrierStatsForTooltip(
   snapshot: SentimentCarrierSnapshot
 ): SentimentCarrierStat[] {
